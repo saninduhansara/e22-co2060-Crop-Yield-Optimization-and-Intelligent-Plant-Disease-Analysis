@@ -26,5 +26,6 @@ mongoose.connect(connectionString).then(
 
 app.use("/api/users", userRouter)
 
+
 app.listen(5000, ()=>{
     console.log("server started at port 5000")})
