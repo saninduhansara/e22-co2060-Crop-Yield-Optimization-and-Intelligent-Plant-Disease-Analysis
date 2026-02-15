@@ -2,6 +2,7 @@ import express from "express"
 import mongoose from "mongoose"
 import dotenv from "dotenv"
 import bodyParser from "body-parser"
+import userRouter from "./routers/userRouter.js"
 dotenv.config()
 
 
@@ -23,6 +24,7 @@ mongoose.connect(connectionString).then(
     }
 )
 
+app.use("/api/users", userRouter)
 
 app.listen(5000, ()=>{
     console.log("server started at port 5000")})
