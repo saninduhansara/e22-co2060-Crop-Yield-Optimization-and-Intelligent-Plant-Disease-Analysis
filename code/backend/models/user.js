@@ -59,5 +59,16 @@ const userSchema = new mongoose.Schema(
     }
 )
 
+export function isAdmin(req){
+    if(req.user == null){
+        return false
+    }
+    if(req.user.role == "admin"){
+        return true
+    }else{
+        return false
+    }
+}
+
 const User = mongoose.model("users", userSchema)
 export default User

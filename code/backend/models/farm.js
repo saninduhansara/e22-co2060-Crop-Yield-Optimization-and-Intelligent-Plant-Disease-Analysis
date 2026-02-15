@@ -1,0 +1,62 @@
+import mongoose from "mongoose";
+
+const farmSchema = new mongoose.Schema({
+    farmId: {
+        type: String,
+        required: true,
+        unique: true
+    },
+
+    farmName: {
+        type: String,
+        required: true
+    },
+
+    location: {
+        type: String,
+        required: true
+    },
+
+    district: {
+        type: String,
+        default: "NOT GIVEN"
+    },
+
+    sizeInAcres: {
+        type: Number,
+        required: true
+    },
+
+    status: {
+        type: String,
+        default: "active"
+    },
+
+    harvestQty:{
+        type: Number,
+        default: 0
+    },
+
+    // Reference to the farmer (user)
+    farmer: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "users",
+        required: true
+    },
+
+    crop: {
+        type: String,
+        required: true
+    },
+    season: {
+        type: String,
+        required: true
+    },
+    createdDate: {
+        type: Date,
+        default: Date.now
+    }
+});
+
+const Farm = mongoose.model("farms", farmSchema);
+export default Farm;
