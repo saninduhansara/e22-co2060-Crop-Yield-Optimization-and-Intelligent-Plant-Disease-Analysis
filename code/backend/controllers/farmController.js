@@ -1,6 +1,7 @@
 import Farm from "../models/farm.js";
 import User from "../models/user.js";
 import { isAdmin } from "./userController.js";
+import AvgYield from "../models/avgYield.js";
 
 export async function createFarm(req, res) {
     if (!isAdmin(req)) {
@@ -44,3 +45,66 @@ export async function createFarm(req, res) {
     }
 }
 
+
+
+
+export const addHarvestAndPoints = async (req, res) => {
+    const { farmId, season, year, harvestQty } = req.body;
+
+    try {
+        // Find farm by farmId
+        const farm = await Farm.findOne({ farmId });
+
+        if (!farm) {
+            return res.status(404).json({ message: "Farm not found" });
+        }
+
+        // Add or update harvest
+        const existingHarvest = farm.harvests.find(
+            h => h.season === season && h.year === year
+        );
+
+        if (existingHarvest) {
+            existingHarvest.harvestQty = harvestQty;
+        } else {
+            farm.harvests.push({ season, year, harvestQty });
+        }
+
+        await farm.save();
+
+        // Calculate yield per acre
+        const farmYield = harvestQty / farm.sizeInAcres;
+
+        // Find average yield
+        const avgYield = await AvgYield.findOne({
+            district: farm.district,
+            crop: farm.crop,
+            season,
+            year
+        });
+
+        if (!avgYield) {
+            return res.status(404).json({ message: "Average yield not found" });
+        }
+
+        // Calculate points (example: 10 points if yield > average)
+        let pointsEarned = 0;
+        if (farmYield > avgYield.averageYield) {
+            pointsEarned = 10; // You can adjust the scoring system
+            await User.findByIdAndUpdate(
+                farm.farmer,
+                { $inc: { points: pointsEarned } }
+            );
+        }
+
+        res.json({
+            message: "Harvest added and points calculated",
+            farmYield,
+            averageYield: avgYield.averageYield,
+            pointsEarned
+        });
+
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};

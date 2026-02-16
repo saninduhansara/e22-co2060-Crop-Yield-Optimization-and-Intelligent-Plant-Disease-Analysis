@@ -32,12 +32,27 @@ const farmSchema = new mongoose.Schema({
         default: "active"
     },
 
-    harvestQty:{
-        type: Number,
-        default: 0
-    },
+    harvests: [
+        {
+            season: {
+                type: String,
+                required: true
+            },
+            year: {
+                type: Number,
+                required: true
+            },
+            harvestQty: {
+                type: Number,
+                default: 0
+            },
+            createdDate: {
+                type: Date,
+                default: Date.now
+            }
+        }
+    ],
 
-    // Reference to the farmer (user)
     farmer: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "users",
@@ -48,10 +63,7 @@ const farmSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    season: {
-        type: String,
-        required: true
-    },
+
     createdDate: {
         type: Date,
         default: Date.now
@@ -59,4 +71,4 @@ const farmSchema = new mongoose.Schema({
 });
 
 const Farm = mongoose.model("farms", farmSchema);
-export default Farm;
+export default Farm

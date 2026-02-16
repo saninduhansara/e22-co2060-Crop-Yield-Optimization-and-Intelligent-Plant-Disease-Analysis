@@ -1,3 +1,4 @@
+
 import mongoose from "mongoose";
 
 const avgYieldSchema = new mongoose.Schema({
@@ -12,7 +13,11 @@ const avgYieldSchema = new mongoose.Schema({
     season: {
         type: String,
         required: true,
-        enum: ["Maha", "Yala"]   
+        enum: ["Maha", "Yala"]
+    },
+    year: {
+        type: Number,
+        required: true
     },
     averageYield: {
         type: Number,
@@ -20,8 +25,11 @@ const avgYieldSchema = new mongoose.Schema({
     }
 });
 
-
-avgYieldSchema.index({ district: 1, season: 1, crop: 1 }, { unique: true });
+// Unique per district + crop + season + year
+avgYieldSchema.index(
+    { district: 1, season: 1, crop: 1, year: 1 },
+    { unique: true }
+);
 
 const AvgYield = mongoose.model("avgYields", avgYieldSchema);
 export default AvgYield;
