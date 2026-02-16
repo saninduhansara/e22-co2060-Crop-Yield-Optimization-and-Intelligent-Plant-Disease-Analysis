@@ -46,65 +46,82 @@ export async function createFarm(req, res) {
 }
 
 
-
+// add harvest and update points automatically in farmers
+// y max = maximum average yield for that season and year across all districts
+// points = P max * sqrt( max(0, farm yield - average yield) / (y max - average yield) )
 
 export const addHarvestAndPoints = async (req, res) => {
-    const { farmId, season, year, harvestQty } = req.body;
-
-    try {
-        // Find farm by farmId
-        const farm = await Farm.findOne({ farmId });
-
-        if (!farm) {
-            return res.status(404).json({ message: "Farm not found" });
-        }
-
-        // Add or update harvest
-        const existingHarvest = farm.harvests.find(
-            h => h.season === season && h.year === year
-        );
-
-        if (existingHarvest) {
-            existingHarvest.harvestQty = harvestQty;
-        } else {
-            farm.harvests.push({ season, year, harvestQty });
-        }
-
-        await farm.save();
-
-        // Calculate yield per acre
-        const farmYield = harvestQty / farm.sizeInAcres;
-
-        // Find average yield
-        const avgYield = await AvgYield.findOne({
-            district: farm.district,
-            crop: farm.crop,
-            season,
-            year
-        });
-
-        if (!avgYield) {
-            return res.status(404).json({ message: "Average yield not found" });
-        }
-
-        // Calculate points (example: 10 points if yield > average)
-        let pointsEarned = 0;
-        if (farmYield > avgYield.averageYield) {
-            pointsEarned = 10; // You can adjust the scoring system
-            await User.findByIdAndUpdate(
-                farm.farmer,
-                { $inc: { points: pointsEarned } }
-            );
-        }
-
-        res.json({
-            message: "Harvest added and points calculated",
-            farmYield,
-            averageYield: avgYield.averageYield,
-            pointsEarned
-        });
-
-    } catch (err) {
-        res.status(500).json({ error: err.message });
+    if (!isAdmin(req)) {
+        return res.status(403).json({ message: "Access denied. Admins only" });
     }
+  const { farmId, season, year, harvestQty } = req.body;
+
+  try {
+    // Find farm by farmId
+    const farm = await Farm.findOne({ farmId });
+    if (!farm) return res.status(404).json({ message: "Farm not found" });
+
+    // Add or update harvest
+    const existingHarvest = farm.harvests.find(
+      (h) => h.season === season && h.year === year
+    );
+    if (existingHarvest) {
+      existingHarvest.harvestQty = harvestQty;
+    } else {
+      farm.harvests.push({ season, year, harvestQty });
+    }
+    await farm.save();
+
+    // Farmer yield per acre
+    const farmYield = harvestQty / farm.sizeInAcres;
+
+    // Average yield for this farm/district
+    const avgYieldRecord = await AvgYield.findOne({
+      district: farm.district,
+      crop: farm.crop,
+      season,
+      year,
+    });
+    if (!avgYieldRecord)
+      return res.status(404).json({ message: "Average yield not found" });
+    const avgYield = avgYieldRecord.averageYield;
+
+    // Find global maximum averageYield for season + year
+    const maxYieldRecord = await AvgYield.find(
+      { season, year },
+      "averageYield"
+    )
+      .sort({ averageYield: -1 })
+      .limit(1);
+
+    const Y_MAX = maxYieldRecord.length
+      ? maxYieldRecord[0].averageYield
+      : avgYield; // fallback to local average
+
+    // Points calculation
+    const P_MAX = 1000;
+    const numerator = Math.max(0, farmYield - avgYield);
+    const denominator = (Y_MAX - avgYield);
+    let pointsEarned = 0;
+    if (denominator > 0) {
+      pointsEarned = P_MAX * Math.sqrt(numerator / denominator);
+    }
+
+    // Update farmer points
+    if (pointsEarned > 0) {
+      await User.findByIdAndUpdate(farm.farmer, {
+        $inc: { points: pointsEarned },
+      });
+    }
+
+    res.json({
+      message: "Harvest added and points calculated",
+      farmYield,
+      averageYield: avgYield,
+      maxYieldAcrossDistricts: Y_MAX,
+      pointsEarned: parseFloat(pointsEarned.toFixed(2)),
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };
