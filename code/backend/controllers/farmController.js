@@ -131,7 +131,7 @@ export const getAllFarms = async (req, res) => {
   try {
     // Populate farmer details from users collection
     const farms = await Farm.find()
-      .populate('farmer', 'firstName lastName nic phone division district points')
+      .populate('farmer', 'firstName lastName nic phone division district points image')
       .select('farmId farmName location district sizeInAcres crop status createdDate harvests farmer')
       .lean();
 
@@ -148,6 +148,7 @@ export const getAllFarms = async (req, res) => {
       crop: farm.crop,
       status: farm.status,
       points: farm.farmer?.points || 0,
+      farmerImage: farm.farmer?.image || 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png',
       createdDate: farm.createdDate,
       harvests: farm.harvests || []
     }));

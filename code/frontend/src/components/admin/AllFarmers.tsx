@@ -17,6 +17,7 @@ interface Farm {
   crop: string;
   status: string;
   points: number;
+  farmerImage?: string;
 }
 
 export function AllFarmers() {
@@ -181,8 +182,19 @@ export function AllFarmers() {
                           </td>
                           <td className="px-3 py-3 whitespace-nowrap">
                             <div className="flex items-center gap-2">
-                              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-                                <span className="text-xs font-semibold text-green-700">
+                              <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden bg-green-100 border border-green-200">
+                                {farm.farmerImage ? (
+                                  <img 
+                                    src={farm.farmerImage} 
+                                    alt={farm.farmerName}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      (e.target as HTMLImageElement).style.display = 'none';
+                                      (e.target as HTMLImageElement).nextElementSibling!.classList.remove('hidden');
+                                    }}
+                                  />
+                                ) : null}
+                                <span className={`text-xs font-semibold text-green-700 ${farm.farmerImage ? 'hidden' : ''}`}>
                                   {farm.farmerName.split(' ').map(n => n[0]).join('')}
                                 </span>
                               </div>
@@ -243,8 +255,19 @@ export function AllFarmers() {
                   >
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-                          <span className="text-sm font-semibold text-green-700">
+                        <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden bg-green-100 border-2 border-green-200">
+                          {farm.farmerImage ? (
+                            <img 
+                              src={farm.farmerImage} 
+                              alt={farm.farmerName}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = 'none';
+                                (e.target as HTMLImageElement).nextElementSibling!.classList.remove('hidden');
+                              }}
+                            />
+                          ) : null}
+                          <span className={`text-sm font-semibold text-green-700 ${farm.farmerImage ? 'hidden' : ''}`}>
                             {farm.farmerName.split(' ').map(n => n[0]).join('')}
                           </span>
                         </div>

@@ -14,6 +14,7 @@ interface FarmerProfileProps {
     crop: string;
     status: string;
     points: number;
+    farmerImage?: string;
   };
   onClose: () => void;
 }
@@ -27,8 +28,19 @@ export function FarmerProfile({ farm, onClose }: FarmerProfileProps) {
         {/* Header */}
         <div className="bg-gradient-to-r from-green-700 to-green-800 text-white p-3 rounded-t-lg flex items-start justify-between">
           <div className="flex items-start gap-3 flex-1">
-            <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center flex-shrink-0">
-              <span className="text-lg font-bold">{initials}</span>
+            <div className="w-12 h-12 rounded-full overflow-hidden bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0 border-2 border-white/30">
+              {farm.farmerImage ? (
+                <img 
+                  src={farm.farmerImage} 
+                  alt={farm.farmerName}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                    (e.target as HTMLImageElement).nextElementSibling!.classList.remove('hidden');
+                  }}
+                />
+              ) : null}
+              <span className={`text-lg font-bold ${farm.farmerImage ? 'hidden' : ''}`}>{initials}</span>
             </div>
             <div>
               <h2 className="text-xl font-bold mb-1">{farm.farmerName}</h2>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { User, MapPin, Phone, IdCard, Save, Plus, Trash2, AlertCircle, CheckCircle } from 'lucide-react';
+import { User, MapPin, Phone, IdCard, Save, Plus, Trash2, AlertCircle, CheckCircle, Upload, Camera } from 'lucide-react';
 import { userAPI, farmAPI } from '../../services/api';
+import uploadfile from '../../utils/mediaUpload';
 
 interface FarmData {
   farmName: string;
@@ -27,6 +28,9 @@ export function RegisterFarmer() {
   const [error, setError] = useState(null as string | null);
   const [success, setSuccess] = useState(false);
   const [generatedPassword, setGeneratedPassword] = useState(null as string | null);
+  const [profileImage, setProfileImage] = useState(null as File | null);
+  const [profileImagePreview, setProfileImagePreview] = useState(null as string | null);
+  const [uploadingImage, setUploadingImage] = useState(false);
   
   const [farmerData, setFarmerData] = useState({
     firstName: '',
@@ -62,6 +66,21 @@ export function RegisterFarmer() {
     setError(null);
 
     try {
+      // Upload profile image if provided
+      let imageUrl = 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png';
+      if (profileImage) {
+        setUploadingImage(true);
+        try {
+          imageUrl = await uploadfile(profileImage);
+        } catch (uploadError) {
+          console.error('Error uploading image:', uploadError);
+          setError('Failed to upload profile picture. Please try again.');
+          setUploadingImage(false);
+          return;
+        }
+        setUploadingImage(false);
+      }
+
       // Generate a temporary password if not provided
       const password = farmerData.password || `${farmerData.nic.slice(-4)}@2026`;
       
@@ -82,6 +101,7 @@ export function RegisterFarmer() {
         district: farmerData.district,
         role: 'farmer' as const,
         isBlocked: false,
+        image: imageUrl,
       };
 
       const response = await userAPI.register(userData);
@@ -160,6 +180,8 @@ export function RegisterFarmer() {
         setStep(1);
         setRegisteredFarmerId(null);
         setGeneratedPassword(null);
+        setProfileImage(null);
+        setProfileImagePreview(null);
         setSuccess(false);
       }, 2000);
     } catch (err: any) {
@@ -233,6 +255,58 @@ export function RegisterFarmer() {
           </div>
 
           <form onSubmit={handleRegisterFarmer} className="p-6 space-y-6">
+            {/* Profile Picture Upload */}
+            <div>
+              <h4 className="text-md font-medium text-gray-800 mb-4">Profile Picture</h4>
+              <div className="flex items-center gap-6">
+                <div className="relative">
+                  <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-green-100 bg-gray-100 flex items-center justify-center">
+                    {profileImagePreview ? (
+                      <img src={profileImagePreview} alt="Profile Preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <User className="w-12 h-12 text-gray-400" />
+                    )}
+                  </div>
+                  {profileImagePreview && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setProfileImage(null);
+                        setProfileImagePreview(null);
+                      }}
+                      className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
+                      title="Remove image"
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+                <div className="flex-1">
+                  <label className="flex items-center gap-2 px-4 py-2.5 bg-green-50 hover:bg-green-100 text-green-700 border border-green-300 rounded-lg cursor-pointer transition-colors w-fit">
+                    <Camera className="w-5 h-5" />
+                    <span className="text-sm font-medium">Choose Profile Picture</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setProfileImage(file);
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            setProfileImagePreview(reader.result as string);
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                      className="hidden"
+                    />
+                  </label>
+                  <p className="text-xs text-gray-600 mt-2">Recommended: Square image, at least 200x200px</p>
+                </div>
+              </div>
+            </div>
+
             {/* Personal Information */}
             <div>
               <h4 className="text-md font-medium text-gray-800 mb-4">Personal Details</h4>
@@ -389,18 +463,22 @@ export function RegisterFarmer() {
             <div className="flex gap-4 pt-4 border-t border-gray-200">
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || uploadingImage}
                 className="flex-1 py-3 bg-green-700 hover:bg-green-800 disabled:bg-gray-400 text-white font-medium rounded-lg flex items-center justify-center gap-2 transition-all"
               >
                 <Save className="w-5 h-5" />
-                {loading ? 'Registering...' : 'Next: Add Farms'}
+                {uploadingImage ? 'Uploading Image...' : loading ? 'Registering...' : 'Next: Add Farms'}
               </button>
               <button
                 type="button"
-                onClick={() => setFarmerData({
-                  firstName: '', lastName: '', nic: '', address: '',
-                  district: '', division: '', phone: '', email: '', password: ''
-                })}
+                onClick={() => {
+                  setFarmerData({
+                    firstName: '', lastName: '', nic: '', address: '',
+                    district: '', division: '', phone: '', email: '', password: ''
+                  });
+                  setProfileImage(null);
+                  setProfileImagePreview(null);
+                }}
                 className="px-8 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg"
               >
                 Clear
