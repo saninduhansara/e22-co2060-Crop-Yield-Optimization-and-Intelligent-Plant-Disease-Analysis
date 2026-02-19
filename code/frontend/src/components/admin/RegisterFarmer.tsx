@@ -26,6 +26,7 @@ export function RegisterFarmer() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null as string | null);
   const [success, setSuccess] = useState(false);
+  const [generatedPassword, setGeneratedPassword] = useState(null as string | null);
   
   const [farmerData, setFarmerData] = useState({
     firstName: '',
@@ -63,6 +64,11 @@ export function RegisterFarmer() {
     try {
       // Generate a temporary password if not provided
       const password = farmerData.password || `${farmerData.nic.slice(-4)}@2026`;
+      
+      // Store generated password if it was auto-generated
+      if (!farmerData.password) {
+        setGeneratedPassword(password);
+      }
 
       const userData = {
         firstName: farmerData.firstName,
@@ -153,6 +159,7 @@ export function RegisterFarmer() {
         setFarms([{ farmName: '', crop: '', sizeInAcres: '', location: '' }]);
         setStep(1);
         setRegisteredFarmerId(null);
+        setGeneratedPassword(null);
         setSuccess(false);
       }, 2000);
     } catch (err: any) {
@@ -175,10 +182,20 @@ export function RegisterFarmer() {
       {success && (
         <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-start gap-3">
           <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-          <div>
+          <div className="flex-1">
             <p className="text-green-700 font-medium">
               {step === 2 ? 'Farmer registered successfully! Now add their farm details.' : 'Farm(s) registered successfully!'}
             </p>
+            {step === 2 && generatedPassword && (
+              <div className="mt-3 bg-white border border-green-300 rounded-lg p-3">
+                <p className="text-sm text-gray-700 font-medium mb-1">Auto-generated Login Credentials:</p>
+                <div className="space-y-1">
+                  <p className="text-xs text-gray-600">Email: <span className="font-mono font-semibold text-gray-900">{farmerData.email}</span></p>
+                  <p className="text-xs text-gray-600">Password: <span className="font-mono font-semibold text-gray-900">{generatedPassword}</span></p>
+                </div>
+                <p className="text-xs text-amber-600 mt-2">⚠️ Please save these credentials and share with the farmer</p>
+              </div>
+            )}
           </div>
         </div>
       )}
