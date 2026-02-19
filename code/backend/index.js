@@ -2,6 +2,7 @@ import express from "express"
 import mongoose from "mongoose"
 import dotenv from "dotenv"
 import bodyParser from "body-parser"
+import cors from "cors"
 import userRouter from "./routers/userRouter.js"
 import farmRouter from "./routers/farmRouter.js"
 import jwt from "jsonwebtoken"
@@ -10,6 +11,12 @@ dotenv.config()
 
 
 const app = express()
+
+// Enable CORS for frontend
+app.use(cors({
+    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    credentials: true
+}))
 
 app.use(bodyParser.json())
 

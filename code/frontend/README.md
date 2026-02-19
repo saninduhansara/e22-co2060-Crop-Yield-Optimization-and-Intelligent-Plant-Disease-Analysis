@@ -1,7 +1,7 @@
 
-  # AgtiConnect
+  # AgriConnect
 
-  This is a code bundle for AgtiConnect. The original project is available at https://www.figma.com/design/F30Tln1qq6x147FH2jCDFW/AgtiConnect.
+  This is a code bundle for AgriConnect. The original project is available at https://www.figma.com/design/F30Tln1qq6x147FH2jCDFW/AgriConnect.
 
   ## Running the code
 

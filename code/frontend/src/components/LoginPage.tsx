@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Lock, Mail, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router';
+import { userAPI } from '../services/api';
 
 interface LoginPageProps {
   onLogin?: (userType: 'farmer' | 'admin') => void;
@@ -12,21 +13,37 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email && password) {
-      // Store auth in localStorage (simulated JWT)
+    setError('');
+    setIsLoading(true);
+
+    try {
+      // Call the backend API to login
+      const response = await userAPI.login({ email, password });
+      
+      // Store auth data in localStorage
+      // Map 'user' role to 'farmer' for compatibility
+      const userRole = response.user?.type || response.user?.role || userType;
+      const mappedUserType = (userRole === 'user') ? 'farmer' : userRole;
+      
       const authData = {
-        userType,
-        email,
+        userType: mappedUserType,
+        email: response.user?.email || email,
+        token: response.token,
         isAuthenticated: true,
         timestamp: new Date().toISOString(),
+        userId: response.user?._id,
+        firstName: response.user?.firstName,
+        lastName: response.user?.lastName,
       };
       localStorage.setItem('agriconnect_auth', JSON.stringify(authData));
       
       // Navigate based on user type
-      if (userType === 'farmer') {
+      if (mappedUserType === 'farmer' || mappedUserType === 'user') {
         navigate('/farmer/home');
       } else {
         navigate('/admin/dashboard');
@@ -34,8 +51,29 @@ export function LoginPage({ onLogin }: LoginPageProps) {
       
       // Call legacy onLogin if provided (for backwards compatibility)
       if (onLogin) {
-        onLogin(userType);
+        onLogin(mappedUserType as 'farmer' | 'admin');
       }
+    } catch (err: any) {
+      console.error('Login error details:', {
+        message: err.message,
+        response: err.response?.data,
+        status: err.response?.status,
+        fullError: err
+      });
+      
+      let errorMessage = 'Failed to login. Please check your credentials and try again.';
+      
+      if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.message === 'Network Error') {
+        errorMessage = 'Cannot connect to server. Please make sure the backend is running.';
+      } else if (err.code === 'ECONNABORTED') {
+        errorMessage = 'Request timeout. Please try again.';
+      }
+      
+      setError(errorMessage);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -160,6 +198,13 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                 </div>
               </div>
 
+              {/* Error Message */}
+              {error && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-sm text-red-600">{error}</p>
+                </div>
+              )}
+
               {/* Forgot Password */}
               <div className="text-right">
                 <a href="#" className="text-sm font-medium text-green-600 hover:text-green-700 transition-colors">
@@ -170,9 +215,10 @@ export function LoginPage({ onLogin }: LoginPageProps) {
               {/* Sign In Button */}
               <button
                 type="submit"
-                className="w-full py-4 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-all shadow-md hover:shadow-lg"
+                disabled={isLoading}
+                className="w-full py-4 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-all shadow-md hover:shadow-lg disabled:bg-gray-400 disabled:cursor-not-allowed"
               >
-                Sign In
+                {isLoading ? 'Signing In...' : 'Sign In'}
               </button>
             </form>
 
