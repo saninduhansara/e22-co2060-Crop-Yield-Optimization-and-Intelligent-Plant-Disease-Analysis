@@ -1,6 +1,6 @@
 import { Search, Filter, Eye, Edit, Trash2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { FarmerDetails } from './FarmerDetails';
+import { FarmerProfile } from './FarmerProfile';
 import { EditFarmModal } from './EditFarmModal';
 import { DeleteConfirmationModal } from './DeleteConfirmationModal';
 import { farmAPI } from '../../services/api';
@@ -313,9 +313,9 @@ export function AllFarmers() {
         </>
       )}
 
-      {/* Farmer Details Modal */}
+      {/* Farmer Profile Modal */}
       {selectedFarmer && (
-        <FarmerDetails farmer={selectedFarmer as any} onClose={() => setSelectedFarmer(null)} />
+        <FarmerProfile farm={selectedFarmer} onClose={() => setSelectedFarmer(null)} />
       )}
 
       {/* Edit Farm Modal */}
