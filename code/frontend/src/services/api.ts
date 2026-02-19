@@ -50,9 +50,15 @@ export const userAPI = {
   register: async (userData: {
     email: string;
     password: string;
-    firstName?: string;
-    lastName?: string;
-    type?: 'farmer' | 'admin';
+    firstName: string;
+    lastName: string;
+    phone: string;
+    nic: string;
+    address: string;
+    division: string;
+    district: string;
+    role: 'farmer' | 'admin';
+    isBlocked?: boolean;
   }) => {
     const response = await api.post('/api/users', userData);
     return response.data;
@@ -72,10 +78,13 @@ export const userAPI = {
 // Farm API endpoints
 export const farmAPI = {
   createFarm: async (farmData: {
-    name: string;
+    farmName: string;
     location: string;
-    size?: number;
-    crops?: string[];
+    crop: string;
+    sizeInAcres: number;
+    farmerNIC: string;
+    district: string;
+    status?: string;
   }) => {
     const response = await api.post('/api/farms', farmData);
     return response.data;
