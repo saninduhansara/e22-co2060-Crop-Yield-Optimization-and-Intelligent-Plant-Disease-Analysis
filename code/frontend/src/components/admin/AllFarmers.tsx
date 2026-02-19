@@ -88,15 +88,33 @@ export function AllFarmers() {
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search by Farm ID, farmer name, NIC..."
-                  className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm md:text-base"
+                  placeholder="Search by Farm ID, farmer name, NIC, or phone..."
+                  className="w-full pl-11 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm md:text-base"
                 />
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    title="Clear search"
+                  >
+                    ✕
+                  </button>
+                )}
               </div>
               <button className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg flex items-center justify-center gap-2 transition-colors">
                 <Filter className="w-5 h-5" />
                 <span className="text-sm md:text-base">Filter</span>
               </button>
             </div>
+
+            {/* Search Results Info */}
+            {searchTerm && (
+              <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-700">
+                  <span className="font-semibold">{filteredFarms.length}</span> result{filteredFarms.length !== 1 ? 's' : ''} found for "<span className="font-semibold">{searchTerm}</span>" (searching by Farm ID, name, NIC, or phone)
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Empty State */}
