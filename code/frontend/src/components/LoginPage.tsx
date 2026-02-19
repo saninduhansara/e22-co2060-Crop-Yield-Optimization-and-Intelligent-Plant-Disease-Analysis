@@ -1,0 +1,179 @@
+import { useState } from 'react';
+import { Lock, Mail, ChevronDown } from 'lucide-react';
+
+interface LoginPageProps {
+  onLogin: (userType: 'farmer' | 'admin') => void;
+}
+
+export function LoginPage({ onLogin }: LoginPageProps) {
+  const [userType, setUserType] = useState<'farmer' | 'admin'>('farmer');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (email && password) {
+      onLogin(userType);
+    }
+  };
+
+  const toggleDropdown = () => {
+    setIsDropdownOpen(!isDropdownOpen);
+  };
+
+  return (
+    <div className="min-h-screen flex">
+      {/* Left Side - Background Image with Overlay */}
+      <div 
+        className="hidden lg:flex flex-1 relative bg-cover bg-center"
+        style={{ backgroundImage: `url(https://images.unsplash.com/photo-1701461497603-92d693136b00?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxyaWNlJTIwZmllbGQlMjBwYWRkeSUyMGZhcm0lMjBhZ3JpY3VsdHVyZXxlbnwxfHx8fDE3NzE0MzQxNzN8MA&ixlib=rb-4.1.0&q=80&w=1080)` }}
+      >
+        {/* Dark overlay */}
+        <div className="absolute inset-0 bg-green-900/60"></div>
+        
+        {/* Content */}
+        <div className="relative z-10 flex flex-col justify-center px-16 text-white">
+          <h1 className="text-5xl font-bold mb-6 leading-tight">
+            AGRICONNECT
+          </h1>
+          <p className="text-xl text-green-50 leading-relaxed max-w-lg">
+            Empowering Sri Lankan farmers with data-driven insights and real-time disease and disaster monitoring
+          </p>
+        </div>
+      </div>
+
+      {/* Right Side - Login Form */}
+      <div className="flex-1 flex items-center justify-center p-8 bg-gradient-to-br from-green-50 to-blue-50">
+        <div className="w-full max-w-md">
+          {/* Login Card */}
+          <div className="bg-white rounded-2xl shadow-2xl p-8">
+            {/* Header */}
+            <div className="mb-8">
+              <h2 className="text-3xl font-bold text-gray-900 mb-2">Sign In</h2>
+              <p className="text-green-600">Enter your credentials to access the dashboard</p>
+            </div>
+
+            {/* Login Form */}
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {/* Login As Dropdown */}
+              <div>
+                <label className="block text-sm font-medium text-gray-800 mb-2">
+                  Login As
+                </label>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={toggleDropdown}
+                    className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-lg text-left flex items-center justify-between hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  >
+                    <span className="text-gray-800 font-medium">
+                      {userType === 'farmer' ? 'Farmer' : 'Admin / District Officer'}
+                    </span>
+                    <ChevronDown className={`w-5 h-5 text-gray-600 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  {/* Dropdown Menu */}
+                  {isDropdownOpen && (
+                    <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setUserType('farmer');
+                          setIsDropdownOpen(false);
+                        }}
+                        className={`w-full px-4 py-3 text-left hover:bg-green-50 transition-colors ${
+                          userType === 'farmer' ? 'bg-green-100 text-green-700 font-medium' : 'text-gray-800'
+                        }`}
+                      >
+                        Farmer
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setUserType('admin');
+                          setIsDropdownOpen(false);
+                        }}
+                        className={`w-full px-4 py-3 text-left hover:bg-green-50 transition-colors ${
+                          userType === 'admin' ? 'bg-green-100 text-green-700 font-medium' : 'text-gray-800'
+                        }`}
+                      >
+                        Admin / District Officer
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Email Address */}
+              <div>
+                <label className="block text-sm font-medium text-gray-800 mb-2">
+                  Email Address
+                </label>
+                <div className="relative">
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Enter your email"
+                    className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent focus:bg-white transition-all placeholder:text-gray-400"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Password */}
+              <div>
+                <label className="block text-sm font-medium text-gray-800 mb-2">
+                  Password
+                </label>
+                <div className="relative">
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter your password"
+                    className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent focus:bg-white transition-all placeholder:text-gray-400"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Forgot Password */}
+              <div className="text-right">
+                <a href="#" className="text-sm font-medium text-green-600 hover:text-green-700 transition-colors">
+                  Forgot password?
+                </a>
+              </div>
+
+              {/* Sign In Button */}
+              <button
+                type="submit"
+                className="w-full py-4 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-all shadow-md hover:shadow-lg"
+              >
+                Sign In
+              </button>
+            </form>
+
+            {/* Footer Links */}
+            <div className="mt-6 text-center">
+              <p className="text-sm text-green-600">
+                Don't have an account?{' '}
+                <a href="#" className="font-medium hover:text-green-700 transition-colors">
+                  Contact your district officer
+                </a>
+              </p>
+            </div>
+          </div>
+
+          {/* Ministry Footer */}
+          <div className="mt-6 text-center">
+            <p className="text-sm text-green-700 font-medium">
+              Department of Agriculture - Sri Lanka
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
