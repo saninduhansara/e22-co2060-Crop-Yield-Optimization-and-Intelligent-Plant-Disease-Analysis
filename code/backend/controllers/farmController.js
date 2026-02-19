@@ -125,3 +125,81 @@ export const addHarvestAndPoints = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+// Get all farms with farmer details
+export const getAllFarms = async (req, res) => {
+  try {
+    // Populate farmer details from users collection
+    const farms = await Farm.find()
+      .populate('farmer', 'firstName lastName nic phone division district points')
+      .select('farmId farmName location district sizeInAcres crop status createdDate harvests farmer')
+      .lean();
+
+    // Format the response with all required fields
+    const formattedFarms = farms.map(farm => ({
+      farmId: farm.farmId,
+      farmName: farm.farmName,
+      farmerName: farm.farmer ? `${farm.farmer.firstName} ${farm.farmer.lastName}` : 'Unknown',
+      farmerNIC: farm.farmer?.nic || 'N/A',
+      phone: farm.farmer?.phone || 'N/A',
+      division: farm.farmer?.division || farm.division || 'N/A',
+      district: farm.district || 'N/A',
+      farmSize: farm.sizeInAcres,
+      crop: farm.crop,
+      status: farm.status,
+      points: farm.farmer?.points || 0,
+      createdDate: farm.createdDate,
+      harvests: farm.harvests || []
+    }));
+
+    res.json({
+      message: "Farms retrieved successfully",
+      count: formattedFarms.length,
+      farms: formattedFarms
+    });
+  } catch (error) {
+    console.error("Error retrieving farms", error);
+    res.status(500).json({ message: "Failed to retrieve farms", error: error.message });
+  }
+};
+
+// Get single farm by ID with farmer details
+export const getFarmById = async (req, res) => {
+  try {
+    const { farmId } = req.params;
+
+    const farm = await Farm.findOne({ farmId: farmId })
+      .populate('farmer', 'firstName lastName nic phone division district points address image')
+      .lean();
+
+    if (!farm) {
+      return res.status(404).json({ message: "Farm not found" });
+    }
+
+    const formattedFarm = {
+      farmId: farm.farmId,
+      farmName: farm.farmName,
+      location: farm.location,
+      farmerName: farm.farmer ? `${farm.farmer.firstName} ${farm.farmer.lastName}` : 'Unknown',
+      farmerNIC: farm.farmer?.nic || 'N/A',
+      phone: farm.farmer?.phone || 'N/A',
+      division: farm.farmer?.division || farm.location || 'N/A',
+      district: farm.district || 'N/A',
+      farmSize: farm.sizeInAcres,
+      crop: farm.crop,
+      status: farm.status,
+      points: farm.farmer?.points || 0,
+      createdDate: farm.createdDate,
+      harvests: farm.harvests || [],
+      farmerDetails: farm.farmer
+    };
+
+    res.json({
+      message: "Farm retrieved successfully",
+      farm: formattedFarm
+    });
+  } catch (error) {
+    console.error("Error retrieving farm", error);
+    res.status(500).json({ message: "Failed to retrieve farm", error: error.message });
+  }
+};
