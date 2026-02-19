@@ -90,6 +90,23 @@ export const farmAPI = {
     return response.data;
   },
 
+  updateFarm: async (farmId: string, farmData: {
+    farmName?: string;
+    location?: string;
+    crop?: string;
+    sizeInAcres?: number;
+    district?: string;
+    status?: string;
+  }) => {
+    const response = await api.put(`/api/farms/${farmId}`, farmData);
+    return response.data;
+  },
+
+  deleteFarm: async (farmId: string) => {
+    const response = await api.delete(`/api/farms/${farmId}`);
+    return response.data;
+  },
+
   addHarvestAndPoints: async (harvestData: {
     farmId: string;
     crop: string;

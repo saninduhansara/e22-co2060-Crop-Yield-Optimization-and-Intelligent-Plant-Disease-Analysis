@@ -1,6 +1,8 @@
 import { Search, Filter, Eye, Edit, Trash2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { FarmerDetails } from './FarmerDetails';
+import { EditFarmModal } from './EditFarmModal';
+import { DeleteConfirmationModal } from './DeleteConfirmationModal';
 import { farmAPI } from '../../services/api';
 
 interface Farm {
@@ -20,28 +22,30 @@ interface Farm {
 export function AllFarmers() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFarmer, setSelectedFarmer] = useState<Farm | null>(null);
+  const [farmToEdit, setFarmToEdit] = useState<Farm | null>(null);
+  const [farmToDelete, setFarmToDelete] = useState<Farm | null>(null);
   const [farms, setFarms] = useState<Farm[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Fetch farms on component mount
   useEffect(() => {
-    const fetchFarms = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const data = await farmAPI.getAllFarms();
-        setFarms(data.farms || []);
-      } catch (err: any) {
-        console.error('Error fetching farms:', err);
-        setError('Failed to load farms. Please try again later.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchFarms();
   }, []);
+
+  const fetchFarms = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await farmAPI.getAllFarms();
+      setFarms(data.farms || []);
+    } catch (err: any) {
+      console.error('Error fetching farms:', err);
+      setError('Failed to load farms. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Filter farms based on search term
   const filteredFarms = farms.filter((farm) => {
@@ -214,10 +218,10 @@ export function AllFarmers() {
                               <button className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors" title="View" onClick={() => setSelectedFarmer(farm)}>
                                 <Eye className="w-4 h-4 text-gray-600" />
                               </button>
-                              <button className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors" title="Edit">
+                              <button className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors" title="Edit" onClick={() => setFarmToEdit(farm)}>
                                 <Edit className="w-4 h-4 text-gray-600" />
                               </button>
-                              <button className="p-1.5 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
+                              <button className="p-1.5 hover:bg-red-50 rounded-lg transition-colors" title="Delete" onClick={() => setFarmToDelete(farm)}>
                                 <Trash2 className="w-4 h-4 text-red-600" />
                               </button>
                             </div>
@@ -288,10 +292,10 @@ export function AllFarmers() {
                         <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="View" onClick={() => setSelectedFarmer(farm)}>
                           <Eye className="w-4 h-4 text-gray-600" />
                         </button>
-                        <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Edit">
+                        <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Edit" onClick={() => setFarmToEdit(farm)}>
                           <Edit className="w-4 h-4 text-gray-600" />
                         </button>
-                        <button className="p-2 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
+                        <button className="p-2 hover:bg-red-50 rounded-lg transition-colors" title="Delete" onClick={() => setFarmToDelete(farm)}>
                           <Trash2 className="w-4 h-4 text-red-600" />
                         </button>
                       </div>
@@ -312,6 +316,31 @@ export function AllFarmers() {
       {/* Farmer Details Modal */}
       {selectedFarmer && (
         <FarmerDetails farmer={selectedFarmer as any} onClose={() => setSelectedFarmer(null)} />
+      )}
+
+      {/* Edit Farm Modal */}
+      {farmToEdit && (
+        <EditFarmModal 
+          farm={farmToEdit} 
+          onClose={() => setFarmToEdit(null)}
+          onSuccess={() => {
+            fetchFarms();
+            setSearchTerm('');
+          }}
+        />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {farmToDelete && (
+        <DeleteConfirmationModal
+          farmId={farmToDelete.farmId}
+          farmName={farmToDelete.farmName}
+          onClose={() => setFarmToDelete(null)}
+          onSuccess={() => {
+            fetchFarms();
+            setSearchTerm('');
+          }}
+        />
       )}
     </div>
   );

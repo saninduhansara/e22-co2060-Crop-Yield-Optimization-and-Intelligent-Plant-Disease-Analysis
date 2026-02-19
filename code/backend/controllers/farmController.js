@@ -203,3 +203,65 @@ export const getFarmById = async (req, res) => {
     res.status(500).json({ message: "Failed to retrieve farm", error: error.message });
   }
 };
+
+// Update farm details
+export async function updateFarm(req, res) {
+  if (!isAdmin(req)) {
+    return res.status(403).json({ message: "Access denied. Admins only" });
+  }
+
+  try {
+    const { farmId } = req.params;
+    const { farmName, location, crop, sizeInAcres, district, status } = req.body;
+
+    // Find and update farm
+    const farm = await Farm.findOne({ farmId: farmId });
+    if (!farm) {
+      return res.status(404).json({ message: "Farm not found" });
+    }
+
+    // Update only provided fields
+    if (farmName) farm.farmName = farmName;
+    if (location) farm.location = location;
+    if (crop) farm.crop = crop;
+    if (sizeInAcres !== undefined) farm.sizeInAcres = sizeInAcres;
+    if (district) farm.district = district;
+    if (status) farm.status = status;
+
+    const updatedFarm = await farm.save();
+
+    res.json({
+      message: "Farm updated successfully",
+      farm: updatedFarm
+    });
+  } catch (error) {
+    console.error("Error updating farm", error);
+    res.status(500).json({ message: "Failed to update farm", error: error.message });
+  }
+}
+
+// Delete farm
+export async function deleteFarm(req, res) {
+  if (!isAdmin(req)) {
+    return res.status(403).json({ message: "Access denied. Admins only" });
+  }
+
+  try {
+    const { farmId } = req.params;
+
+    const farm = await Farm.findOne({ farmId: farmId });
+    if (!farm) {
+      return res.status(404).json({ message: "Farm not found" });
+    }
+
+    await Farm.deleteOne({ farmId: farmId });
+
+    res.json({
+      message: "Farm deleted successfully",
+      deletedFarmId: farmId
+    });
+  } catch (error) {
+    console.error("Error deleting farm", error);
+    res.status(500).json({ message: "Failed to delete farm", error: error.message });
+  }
+}
