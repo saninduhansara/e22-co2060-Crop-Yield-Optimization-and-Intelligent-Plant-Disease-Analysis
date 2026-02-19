@@ -1,7 +1,6 @@
 import AvgYield from "../models/avgYield.js";
 import { isAdmin } from "./userController.js";
 
-
 export async function createAvgYield(req, res) {
 
    if (!isAdmin(req)) {
