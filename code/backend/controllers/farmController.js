@@ -8,7 +8,6 @@ export async function createFarm(req, res) {
         return res.status(403).json({ message: "Access denied. Admins only" });
     }
 
-
     let farmId = "FAM00202"
     const latestid = await Farm.find().sort({ createdDate: -1 }).limit(1);
 
