@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { Lock, Mail, ChevronDown } from 'lucide-react';
+import { useNavigate } from 'react-router';
 
 interface LoginPageProps {
-  onLogin: (userType: 'farmer' | 'admin') => void;
+  onLogin?: (userType: 'farmer' | 'admin') => void;
 }
 
 export function LoginPage({ onLogin }: LoginPageProps) {
+  const navigate = useNavigate();
   const [userType, setUserType] = useState<'farmer' | 'admin'>('farmer');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -14,7 +16,26 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (email && password) {
-      onLogin(userType);
+      // Store auth in localStorage (simulated JWT)
+      const authData = {
+        userType,
+        email,
+        isAuthenticated: true,
+        timestamp: new Date().toISOString(),
+      };
+      localStorage.setItem('agriconnect_auth', JSON.stringify(authData));
+      
+      // Navigate based on user type
+      if (userType === 'farmer') {
+        navigate('/farmer/home');
+      } else {
+        navigate('/admin/dashboard');
+      }
+      
+      // Call legacy onLogin if provided (for backwards compatibility)
+      if (onLogin) {
+        onLogin(userType);
+      }
     }
   };
 

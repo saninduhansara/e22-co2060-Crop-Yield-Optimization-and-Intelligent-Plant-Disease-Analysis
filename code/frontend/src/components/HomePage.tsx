@@ -1,13 +1,16 @@
 import { Star, HandIcon, SearchIcon, FileText, Bot, AlertTriangle, MapPin } from 'lucide-react';
 import { useState } from 'react';
+import { useOutletContext } from 'react-router';
 import farmerImage from 'figma:asset/8d18ad2077654c1f65710d650ff192f7ba499f8c.png';
 
 interface HomePageProps {
-  onNavigate: (page: string) => void;
+  onNavigate?: (page: string) => void;
 }
 
-export function HomePage({ onNavigate }: HomePageProps) {
+export function HomePage({ onNavigate: onNavigateProp }: HomePageProps) {
   const [showChatbot, setShowChatbot] = useState(false);
+  const outletContext = useOutletContext<{ onNavigate: (page: string) => void }>();
+  const onNavigate = onNavigateProp || outletContext?.onNavigate || (() => {});
 
   return (
     <div className="space-y-4 md:space-y-6 pb-20">
