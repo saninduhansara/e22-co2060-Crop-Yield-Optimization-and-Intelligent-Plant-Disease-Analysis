@@ -126,6 +126,11 @@ export const farmAPI = {
     const response = await api.get(`/api/farms/${farmId}`);
     return response.data;
   },
+
+  getHarvestHistory: async () => {
+    const response = await api.get('/api/farms/harvests');
+    return response.data;
+  },
 };
 
 // Average Yield API endpoints

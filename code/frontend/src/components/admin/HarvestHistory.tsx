@@ -1,96 +1,74 @@
-import { Search, Filter, Calendar, Download } from 'lucide-react';
-import { useState } from 'react';
+import { Search, Filter, Calendar, Download, Loader } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { farmAPI } from '../../services/api';
+
+interface Harvest {
+  harvestId: string;
+  farmId: string;
+  farmName: string;
+  farmerName: string;
+  farmerNIC: string;
+  season: string;
+  year: number;
+  crop: string;
+  location: string;
+  district: string;
+  acres: number;
+  harvestQty: number;
+  yieldPerAcre: number;
+  harvestDate: string;
+}
 
 export function HarvestHistory() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [harvests, setHarvests] = useState([] as Harvest[]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null as string | null);
 
-  const harvests = [
-    {
-      id: 1,
-      farmer: 'Ahmed Hassan',
-      nic: '198512345V',
-      season: 'Maha 2025/26',
-      plot: 'Plot A - Attanagalla',
-      acres: 3.5,
-      variety: 'BG 300',
-      plantDate: '2025-10-15',
-      harvestDate: '2026-02-10',
-      expectedYield: 4.2,
-      actualYield: 4.5,
-      yieldPerAcre: 1.29,
-      quality: 'Excellent',
-      points: 65,
-      status: 'Verified'
-    },
-    {
-      id: 2,
-      farmer: 'Priya Fernando',
-      nic: '199023456V',
-      season: 'Maha 2025/26',
-      plot: 'Plot B - Wariyapola',
-      acres: 4.0,
-      variety: 'BG 352',
-      plantDate: '2025-10-20',
-      harvestDate: '2026-02-15',
-      expectedYield: 4.8,
-      actualYield: 4.8,
-      yieldPerAcre: 1.20,
-      quality: 'Good',
-      points: 60,
-      status: 'Verified'
-    },
-    {
-      id: 3,
-      farmer: 'Ruwan Silva',
-      nic: '198834567V',
-      season: 'Yala 2024',
-      plot: 'Plot C - Medawachchiya',
-      acres: 2.5,
-      variety: 'AT 362',
-      plantDate: '2024-05-10',
-      harvestDate: '2024-08-20',
-      expectedYield: 2.5,
-      actualYield: 2.8,
-      yieldPerAcre: 1.12,
-      quality: 'Good',
-      points: 56,
-      status: 'Verified'
-    },
-    {
-      id: 4,
-      farmer: 'Nimal Perera',
-      nic: '199245678V',
-      season: 'Maha 2024/25',
-      plot: 'Plot A - Hingurakgoda',
-      acres: 5.0,
-      variety: 'BG 300',
-      plantDate: '2024-10-12',
-      harvestDate: '2025-02-18',
-      expectedYield: 6.0,
-      actualYield: 6.5,
-      yieldPerAcre: 1.30,
-      quality: 'Excellent',
-      points: 65,
-      status: 'Verified'
-    },
-    {
-      id: 5,
-      farmer: 'Kamala Dissanayake',
-      nic: '198956789V',
-      season: 'Maha 2025/26',
-      plot: 'Plot A - Uhana',
-      acres: 3.0,
-      variety: 'BG 366',
-      plantDate: '2025-11-01',
-      harvestDate: '2026-02-12',
-      expectedYield: 3.6,
-      actualYield: 3.3,
-      yieldPerAcre: 1.10,
-      quality: 'Average',
-      points: 55,
-      status: 'Pending'
-    },
-  ];
+  useEffect(() => {
+    fetchHarvestHistory();
+  }, []);
+
+  const fetchHarvestHistory = async () => {
+    try {
+      setLoading(true);
+      const data = await farmAPI.getHarvestHistory();
+      setHarvests(data.harvests || []);
+    } catch (err: any) {
+      console.error('Error fetching harvest history:', err);
+      setError('Failed to load harvest history');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredHarvests = harvests.filter((harvest: Harvest) =>
+    harvest.farmerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    harvest.farmerNIC.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    harvest.farmName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    harvest.location.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const totalYield = filteredHarvests.reduce((sum, h) => sum + h.harvestQty, 0) / 1000; // Convert to tons
+  const avgYieldPerAcre = filteredHarvests.length > 0
+    ? filteredHarvests.reduce((sum, h) => sum + h.yieldPerAcre, 0) / filteredHarvests.length
+    : 0;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader className="w-8 h-8 animate-spin text-green-600" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <p className="text-red-600">{error}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-full overflow-x-hidden">
@@ -133,27 +111,21 @@ export function HarvestHistory() {
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
         <div className="bg-white rounded-xl p-4 border border-gray-200">
           <p className="text-xs md:text-sm text-gray-600 mb-1">Total Records</p>
-          <p className="text-2xl md:text-3xl font-bold text-gray-900">{harvests.length}</p>
+          <p className="text-2xl md:text-3xl font-bold text-gray-900">{filteredHarvests.length}</p>
         </div>
         <div className="bg-white rounded-xl p-4 border border-gray-200">
           <p className="text-xs md:text-sm text-gray-600 mb-1">Total Yield</p>
           <p className="text-2xl md:text-3xl font-bold text-gray-900">
-            {harvests.reduce((sum, h) => sum + h.actualYield, 0).toFixed(1)} <span className="text-sm md:text-lg font-normal text-gray-600">tons</span>
+            {totalYield.toFixed(1)} <span className="text-sm md:text-lg font-normal text-gray-600">tons</span>
           </p>
         </div>
         <div className="bg-white rounded-xl p-4 border border-gray-200">
           <p className="text-xs md:text-sm text-gray-600 mb-1">Avg Yield/Acre</p>
           <p className="text-2xl md:text-3xl font-bold text-gray-900">
-            {(harvests.reduce((sum, h) => sum + h.yieldPerAcre, 0) / harvests.length).toFixed(2)} <span className="text-sm md:text-lg font-normal text-gray-600">tons</span>
-          </p>
-        </div>
-        <div className="bg-white rounded-xl p-4 border border-gray-200">
-          <p className="text-xs md:text-sm text-gray-600 mb-1">Total Points Awarded</p>
-          <p className="text-2xl md:text-3xl font-bold text-green-700">
-            {harvests.reduce((sum, h) => sum + h.points, 0)}
+            {avgYieldPerAcre.toFixed(2)} <span className="text-sm md:text-lg font-normal text-gray-600">kg</span>
           </p>
         </div>
       </div>
@@ -168,69 +140,53 @@ export function HarvestHistory() {
                   Farmer
                 </th>
                 <th className="px-3 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider whitespace-nowrap">
+                  Farm Name
+                </th>
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider whitespace-nowrap">
+                  Location
+                </th>
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider whitespace-nowrap">
                   Season
                 </th>
                 <th className="px-3 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider whitespace-nowrap">
-                  Plot
+                  Year
                 </th>
                 <th className="px-3 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider whitespace-nowrap">
-                  Variety
+                  Crop
                 </th>
                 <th className="px-3 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider whitespace-nowrap">
                   Acres
                 </th>
                 <th className="px-3 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider whitespace-nowrap">
-                  Actual Yield
+                  Harvest Qty
                 </th>
                 <th className="px-3 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider whitespace-nowrap">
                   Yield/Acre
                 </th>
                 <th className="px-3 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider whitespace-nowrap">
-                  Quality
-                </th>
-                <th className="px-3 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider whitespace-nowrap">
-                  Points
-                </th>
-                <th className="px-3 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider whitespace-nowrap">
-                  Status
+                  Date
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {harvests.map((harvest) => (
-                <tr key={harvest.id} className="hover:bg-gray-50 transition-colors">
+              {filteredHarvests.map((harvest) => (
+                <tr key={harvest.harvestId} className="hover:bg-gray-50 transition-colors">
                   <td className="px-3 py-3">
                     <div>
-                      <p className="font-medium text-gray-800 text-sm whitespace-nowrap">{harvest.farmer}</p>
-                      <p className="text-xs text-gray-600 whitespace-nowrap">{harvest.nic}</p>
+                      <p className="font-medium text-gray-800 text-sm whitespace-nowrap">{harvest.farmerName}</p>
+                      <p className="text-xs text-gray-600 whitespace-nowrap">{harvest.farmerNIC}</p>
                     </div>
                   </td>
+                  <td className="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">{harvest.farmName}</td>
+                  <td className="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">{harvest.location}</td>
                   <td className="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">{harvest.season}</td>
-                  <td className="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">{harvest.plot}</td>
-                  <td className="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">{harvest.variety}</td>
+                  <td className="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">{harvest.year}</td>
+                  <td className="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">{harvest.crop}</td>
                   <td className="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">{harvest.acres}</td>
-                  <td className="px-3 py-3 text-xs font-medium text-gray-800 whitespace-nowrap">{harvest.actualYield} tons</td>
-                  <td className="px-3 py-3 text-xs font-medium text-gray-800 whitespace-nowrap">{harvest.yieldPerAcre} tons</td>
-                  <td className="px-3 py-3">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
-                      harvest.quality === 'Excellent' 
-                        ? 'bg-green-100 text-green-700'
-                        : harvest.quality === 'Good'
-                        ? 'bg-blue-100 text-blue-700'
-                        : 'bg-yellow-100 text-yellow-700'
-                    }`}>
-                      {harvest.quality}
-                    </span>
-                  </td>
-                  <td className="px-3 py-3 text-sm font-semibold text-green-700 whitespace-nowrap">{harvest.points}</td>
-                  <td className="px-3 py-3">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
-                      harvest.status === 'Verified' 
-                        ? 'bg-green-100 text-green-700' 
-                        : 'bg-yellow-100 text-yellow-700'
-                    }`}>
-                      {harvest.status}
-                    </span>
+                  <td className="px-3 py-3 text-xs font-medium text-gray-800 whitespace-nowrap">{harvest.harvestQty} kg</td>
+                  <td className="px-3 py-3 text-xs font-medium text-gray-800 whitespace-nowrap">{harvest.yieldPerAcre.toFixed(2)} kg</td>
+                  <td className="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">
+                    {new Date(harvest.harvestDate).toLocaleDateString()}
                   </td>
                 </tr>
               ))}

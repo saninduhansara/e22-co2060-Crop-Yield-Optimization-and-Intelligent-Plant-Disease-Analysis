@@ -265,3 +265,48 @@ export async function deleteFarm(req, res) {
     res.status(500).json({ message: "Failed to delete farm", error: error.message });
   }
 }
+
+// Get all harvest history with farmer details
+export const getHarvestHistory = async (req, res) => {
+  try {
+    const farms = await Farm.find().populate('farmer', 'firstName lastName nic');
+    
+    const harvestHistory = [];
+    
+    farms.forEach(farm => {
+      if (farm.harvests && farm.harvests.length > 0) {
+        farm.harvests.forEach(harvest => {
+          const yieldPerAcre = harvest.harvestQty / farm.sizeInAcres;
+          
+          harvestHistory.push({
+            harvestId: harvest._id,
+            farmId: farm.farmId,
+            farmName: farm.farmName,
+            farmerName: farm.farmer ? `${farm.farmer.firstName} ${farm.farmer.lastName}` : 'Unknown',
+            farmerNIC: farm.farmer ? farm.farmer.nic : 'N/A',
+            season: harvest.season,
+            year: harvest.year,
+            crop: farm.crop,
+            location: farm.location,
+            district: farm.district,
+            acres: farm.sizeInAcres,
+            harvestQty: harvest.harvestQty,
+            yieldPerAcre: parseFloat(yieldPerAcre.toFixed(2)),
+            harvestDate: harvest.createdDate
+          });
+        });
+      }
+    });
+    
+    // Sort by harvest date (most recent first)
+    harvestHistory.sort((a, b) => new Date(b.harvestDate) - new Date(a.harvestDate));
+    
+    res.json({
+      harvests: harvestHistory,
+      total: harvestHistory.length
+    });
+  } catch (error) {
+    console.error("Error fetching harvest history:", error);
+    res.status(500).json({ message: "Failed to fetch harvest history", error: error.message });
+  }
+};

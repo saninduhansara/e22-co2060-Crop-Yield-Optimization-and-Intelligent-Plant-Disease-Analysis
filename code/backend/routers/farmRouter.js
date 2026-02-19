@@ -1,10 +1,11 @@
 import express from "express";
-import { addHarvestAndPoints, createFarm, getAllFarms, getFarmById, updateFarm, deleteFarm } from "../controllers/farmController.js";
+import { addHarvestAndPoints, createFarm, getAllFarms, getFarmById, updateFarm, deleteFarm, getHarvestHistory } from "../controllers/farmController.js";
 
 const farmRouter = express.Router()
 
 // GET endpoints
 farmRouter.get("/", getAllFarms)
+farmRouter.get("/harvests", getHarvestHistory)
 farmRouter.get("/:farmId", getFarmById)
 
 // POST endpoints
