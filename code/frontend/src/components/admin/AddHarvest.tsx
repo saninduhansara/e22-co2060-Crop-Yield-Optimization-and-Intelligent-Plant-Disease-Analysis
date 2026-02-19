@@ -1,5 +1,23 @@
-import { useState } from 'react';
-import { Search, Calendar, Wheat, TrendingUp, Save, ChevronDown } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Search, Calendar, Wheat, TrendingUp, Save, ChevronDown, Loader, CheckCircle, AlertCircle } from 'lucide-react';
+import { farmAPI } from '../../services/api';
+
+interface Farm {
+  farmId: string;
+  farmName: string;
+  farmerName: string;
+  farmerNIC: string;
+  farmSize: number;
+  crop: string;
+  district: string;
+}
+
+interface HarvestResult {
+  farmYield: number;
+  averageYield: number;
+  maxYieldAcrossDistricts: number;
+  pointsEarned: number;
+}
 
 export function AddHarvest() {
   const [formData, setFormData] = useState({
@@ -16,37 +34,86 @@ export function AddHarvest() {
   const [isSeasonOpen, setIsSeasonOpen] = useState(false);
   const [isFarmIdOpen, setIsFarmIdOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [farms, setFarms] = useState([] as Farm[]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState(null as string | null);
+  const [result, setResult] = useState(null as HarvestResult | null);
+  const [showResult, setShowResult] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Calculate points based on yield per acre
-    const yieldInTons = parseFloat(formData.harvestQuantity) / 1000; // Convert kg to tons
-    const pointsPerAcre = formData.harvestQuantity && formData.acres 
-      ? Math.round((yieldInTons / parseFloat(formData.acres)) * 50)
-      : 0;
-    alert(`Harvest recorded successfully! Farmer earned ${pointsPerAcre} points per acre.`);
+  useEffect(() => {
+    fetchFarms();
+  }, []);
+
+  const fetchFarms = async () => {
+    try {
+      setLoading(true);
+      const data = await farmAPI.getAllFarms();
+      setFarms(data.farms || []);
+    } catch (err: any) {
+      console.error('Error fetching farms:', err);
+      setError('Failed to load farms');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const years = ['2024/25', '2025/26', '2026/27', '2027/28'];
-  const seasons = ['Maha', 'Yala'];
-  
-  const farmers = [
-    { id: 'F001', name: 'Ahmed Hassan', nic: '198512345V', acres: '10' },
-    { id: 'F002', name: 'Priya Fernando', nic: '199023456V', acres: '7' },
-    { id: 'F003', name: 'Ruwan Silva', nic: '198834567V', acres: '15' },
-    { id: 'F004', name: 'Nimal Perera', nic: '199245678V', acres: '12' },
-    { id: 'F005', name: 'Kamala Dissanayake', nic: '198956789V', acres: '8' },
-    { id: 'F006', name: 'Sunil Wickramasinghe', nic: '199167890V', acres: '18' },
-  ];
+  const handleSubmit = async (e: any) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setError(null);
+    setResult(null);
+    setShowResult(false);
 
-  const filteredFarmers = farmers.filter(farmer => 
-    farmer.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    farmer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    farmer.nic.toLowerCase().includes(searchTerm.toLowerCase())
+    try {
+      const response = await farmAPI.addHarvestAndPoints({
+        farmId: formData.farmId,
+        season: formData.season,
+        year: formData.year,
+        harvestQty: parseFloat(formData.harvestQuantity),
+      });
+
+      setResult({
+        farmYield: response.farmYield,
+        averageYield: response.averageYield,
+        maxYieldAcrossDistricts: response.maxYieldAcrossDistricts,
+        pointsEarned: response.pointsEarned,
+      });
+      setShowResult(true);
+
+      // Reset form after 3 seconds
+      setTimeout(() => {
+        setFormData({
+          year: '',
+          season: '',
+          farmId: '',
+          farmerName: '',
+          harvestQuantity: '',
+          acres: '',
+          notes: '',
+        });
+        setShowResult(false);
+        setResult(null);
+      }, 5000);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to record harvest. Please try again.');
+      console.error('Error recording harvest:', err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const years = ['2024', '2025', '2026', '2027', '2028'];
+  const seasons = ['Maha', 'Yala'];
+
+  const filteredFarmers = farms.filter((farm: Farm) => 
+    farm.farmId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    farm.farmerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    farm.farmerNIC.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleFarmerSelect = (farmer: typeof farmers[0]) => {
-    setFormData({...formData, farmId: farmer.id, farmerName: farmer.name, acres: farmer.acres});
+  const handleFarmerSelect = (farm: Farm) => {
+    setFormData({...formData, farmId: farm.farmId, farmerName: farm.farmerName, acres: farm.farmSize.toString()});
     setIsFarmIdOpen(false);
     setSearchTerm('');
   };
@@ -55,9 +122,46 @@ export function AddHarvest() {
     <div className="space-y-6 max-w-full overflow-hidden">
       {/* Header */}
       <div>
-        
         <p className="text-sm md:text-base text-gray-600">Record harvest data and calculate farmer points</p>
       </div>
+
+      {/* Success Result Modal */}
+      {showResult && result && (
+        <div className="bg-green-50 border-2 border-green-500 rounded-xl p-6 shadow-lg">
+          <div className="flex items-start gap-4">
+            <CheckCircle className="w-8 h-8 text-green-600 flex-shrink-0 mt-1" />
+            <div className="flex-1">
+              <h3 className="text-xl font-bold text-green-900 mb-4">Harvest Recorded Successfully!</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-white rounded-lg p-4 border border-green-200">
+                  <p className="text-sm text-gray-600 mb-1">Farm Yield per Acre</p>
+                  <p className="text-2xl font-bold text-gray-900">{result.farmYield.toFixed(2)} kg</p>
+                </div>
+                <div className="bg-white rounded-lg p-4 border border-green-200">
+                  <p className="text-sm text-gray-600 mb-1">District Average Yield</p>
+                  <p className="text-2xl font-bold text-gray-900">{result.averageYield.toFixed(2)} kg</p>
+                </div>
+                <div className="bg-white rounded-lg p-4 border border-green-200">
+                  <p className="text-sm text-gray-600 mb-1">Maximum Yield (All Districts)</p>
+                  <p className="text-2xl font-bold text-gray-900">{result.maxYieldAcrossDistricts.toFixed(2)} kg</p>
+                </div>
+                <div className="bg-gradient-to-br from-green-100 to-green-200 rounded-lg p-4 border-2 border-green-400">
+                  <p className="text-sm text-green-800 mb-1 font-semibold">Points Earned</p>
+                  <p className="text-3xl font-bold text-green-900">{result.pointsEarned} pts</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+          <p className="text-red-600 text-sm">{error}</p>
+        </div>
+      )}
 
       {/* Add Harvest Form */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
@@ -180,22 +284,27 @@ export function AddHarvest() {
                       
                       {/* Farmer List */}
                       <div className="max-h-60 overflow-y-auto">
-                        {filteredFarmers.length > 0 ? (
-                          filteredFarmers.map((farmer) => (
+                        {loading ? (
+                          <div className="px-4 py-8 text-center">
+                            <Loader className="w-5 h-5 animate-spin text-green-600 mx-auto mb-2" />
+                            <p className="text-sm text-gray-500">Loading farms...</p>
+                          </div>
+                        ) : filteredFarmers.length > 0 ? (
+                          filteredFarmers.map((farm: Farm) => (
                             <button
-                              key={farmer.id}
+                              key={farm.farmId}
                               type="button"
-                              onClick={() => handleFarmerSelect(farmer)}
+                              onClick={() => handleFarmerSelect(farm)}
                               className={`w-full px-4 py-3 text-left hover:bg-green-50 transition-colors border-b border-gray-100 last:border-0 ${
-                                formData.farmId === farmer.id ? 'bg-green-100 text-green-700' : 'text-gray-800'
+                                formData.farmId === farm.farmId ? 'bg-green-100 text-green-700' : 'text-gray-800'
                               }`}
                             >
-                              <div className="font-medium">{farmer.id} - {farmer.name}</div>
-                              <div className="text-xs text-gray-600">{farmer.nic}</div>
+                              <div className="font-medium">{farm.farmId} - {farm.farmerName}</div>
+                              <div className="text-xs text-gray-600">{farm.farmerNIC} | {farm.farmSize} acres | {farm.crop}</div>
                             </button>
                           ))
                         ) : (
-                          <div className="px-4 py-3 text-sm text-gray-500">No farmers found</div>
+                          <div className="px-4 py-3 text-sm text-gray-500">No farms found</div>
                         )}
                       </div>
                     </div>
@@ -228,70 +337,84 @@ export function AddHarvest() {
                     type="number"
                     step="0.01"
                     value={formData.harvestQuantity}
-                    onChange={(e) => setFormData({...formData, harvestQuantity: e.target.value})}
+                    onChange={(e: any) => setFormData({...formData, harvestQuantity: e.target.value})}
                     placeholder="e.g., 4500"
                     className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     required
                   />
                 </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  Total harvest in kilograms for this season
+                </p>
               </div>
             </div>
           </div>
 
-          {/* Points Calculation Preview */}
+          {/* Yield Preview */}
           {formData.harvestQuantity && formData.acres && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-700 mb-1">Estimated Points</p>
-                  <p className="text-2xl font-bold text-green-700">
-                    {Math.round((parseFloat(formData.harvestQuantity) / 1000 / parseFloat(formData.acres)) * 50)} points
+                  <p className="text-sm text-gray-700 mb-1">Yield per Acre</p>
+                  <p className="text-2xl font-bold text-blue-700">
+                    {(parseFloat(formData.harvestQuantity) / parseFloat(formData.acres)).toFixed(2)} kg/acre
                   </p>
                   <p className="text-xs text-gray-600 mt-1">
-                    ({(parseFloat(formData.harvestQuantity) / 1000 / parseFloat(formData.acres)).toFixed(2)} tons per acre × 50)
+                    Total harvest: {parseFloat(formData.harvestQuantity).toFixed(2)} kg
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm text-gray-700">Yield per Acre</p>
+                  <p className="text-sm text-gray-700">Farm Size</p>
                   <p className="text-xl font-semibold text-gray-800">
-                    {(parseFloat(formData.harvestQuantity) / 1000 / parseFloat(formData.acres)).toFixed(2)} tons
+                    {formData.acres} acres
                   </p>
                   <p className="text-xs text-gray-600 mt-1">
-                    Total: {(parseFloat(formData.harvestQuantity) / 1000).toFixed(2)} tons
+                    Points will be calculated based on district average
                   </p>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Additional Notes */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Additional Notes
-            </label>
-            <textarea
-              value={formData.notes}
-              onChange={(e) => setFormData({...formData, notes: e.target.value})}
-              placeholder="Any additional observations or notes..."
-              rows={4}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
-            />
-          </div>
-
           {/* Action Buttons */}
           <div className="flex gap-4 pt-4 border-t border-gray-200">
             <button
               type="submit"
-              className="flex-1 py-3 bg-green-700 hover:bg-green-800 text-white font-medium rounded-lg flex items-center justify-center gap-2 transition-all"
+              disabled={submitting || !formData.farmId || !formData.season || !formData.year || !formData.harvestQuantity}
+              className="flex-1 py-3 bg-green-700 hover:bg-green-800 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium rounded-lg flex items-center justify-center gap-2 transition-all"
             >
-              <Save className="w-5 h-5" />
-              Record Harvest & Award Points
+              {submitting ? (
+                <>
+                  <Loader className="w-5 h-5 animate-spin" />
+                  Recording Harvest...
+                </>
+              ) : (
+                <>
+                  <Save className="w-5 h-5" />
+                  Record Harvest & Award Points
+                </>
+              )}
             </button>
             <button
               type="button"
-              className="px-8 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-all"
+              onClick={() => {
+                setFormData({
+                  year: '',
+                  season: '',
+                  farmId: '',
+                  farmerName: '',
+                  harvestQuantity: '',
+                  acres: '',
+                  notes: '',
+                });
+                setError(null);
+                setResult(null);
+                setShowResult(false);
+              }}
+              disabled={submitting}
+              className="px-8 py-3 bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 disabled:cursor-not-allowed text-gray-700 font-medium rounded-lg transition-all"
             >
-              Cancel
+              Clear
             </button>
           </div>
         </form>

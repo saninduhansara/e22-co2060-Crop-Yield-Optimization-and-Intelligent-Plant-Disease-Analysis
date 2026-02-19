@@ -109,9 +109,9 @@ export const farmAPI = {
 
   addHarvestAndPoints: async (harvestData: {
     farmId: string;
-    crop: string;
-    yield: number;
-    date: string;
+    season: string;
+    year: string;
+    harvestQty: number;
   }) => {
     const response = await api.post('/api/farms/addharvestandpoints', harvestData);
     return response.data;
