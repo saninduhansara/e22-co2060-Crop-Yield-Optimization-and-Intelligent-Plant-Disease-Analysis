@@ -311,3 +311,21 @@ export const getHarvestHistory = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch harvest history", error: error.message });
   }
 };
+// Get all unique crops
+export const getAllCrops = async (req, res) => {
+  try {
+    const crops = await Farm.distinct('crop');
+    
+    // Sort crops alphabetically
+    crops.sort();
+    
+    res.json({
+      message: "Crops retrieved successfully",
+      crops: crops,
+      total: crops.length
+    });
+  } catch (error) {
+    console.error("Error fetching crops:", error);
+    res.status(500).json({ message: "Failed to fetch crops", error: error.message });
+  }
+};
