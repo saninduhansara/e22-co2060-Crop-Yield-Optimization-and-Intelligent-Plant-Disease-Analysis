@@ -73,6 +73,11 @@ export const userAPI = {
       throw error;
     }
   },
+
+  fetchProfile: async () => {
+    const response = await api.get('/api/users/profile');
+    return response.data;
+  },
 };
 
 // Farm API endpoints
