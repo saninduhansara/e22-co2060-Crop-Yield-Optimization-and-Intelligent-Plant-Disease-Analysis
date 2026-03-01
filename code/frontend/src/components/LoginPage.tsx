@@ -22,14 +22,18 @@ export function LoginPage({ onLogin }: LoginPageProps) {
     setIsLoading(true);
 
     try {
-      // Call the backend API to login
-      const response = await userAPI.login({ email, password });
-      
+      // Call the backend API to login, explicitly passing the selected userType
+      const response = await userAPI.login({
+        email,
+        password,
+        intendedRole: userType
+      });
+
       // Store auth data in localStorage
-      // Map 'user' role to 'farmer' for compatibility
-      const userRole = response.user?.type || response.user?.role || userType;
-      const mappedUserType = (userRole === 'user') ? 'farmer' : userRole;
-      
+      // We no longer need to fallback since the backend strictly validates the role
+      const actualRole = response.user?.type || response.user?.role || userType;
+      const mappedUserType = (actualRole === 'user') ? 'farmer' : actualRole;
+
       const authData = {
         userType: mappedUserType,
         email: response.user?.email || email,
@@ -41,14 +45,14 @@ export function LoginPage({ onLogin }: LoginPageProps) {
         lastName: response.user?.lastName,
       };
       localStorage.setItem('agriconnect_auth', JSON.stringify(authData));
-      
+
       // Navigate based on user type
-      if (mappedUserType === 'farmer' || mappedUserType === 'user') {
+      if (mappedUserType === 'farmer') {
         navigate('/farmer/home');
       } else {
         navigate('/admin/dashboard');
       }
-      
+
       // Call legacy onLogin if provided (for backwards compatibility)
       if (onLogin) {
         onLogin(mappedUserType as 'farmer' | 'admin');
@@ -60,9 +64,9 @@ export function LoginPage({ onLogin }: LoginPageProps) {
         status: err.response?.status,
         fullError: err
       });
-      
+
       let errorMessage = 'Failed to login. Please check your credentials and try again.';
-      
+
       if (err.response?.data?.message) {
         errorMessage = err.response.data.message;
       } else if (err.message === 'Network Error') {
@@ -70,7 +74,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
       } else if (err.code === 'ECONNABORTED') {
         errorMessage = 'Request timeout. Please try again.';
       }
-      
+
       setError(errorMessage);
     } finally {
       setIsLoading(false);
@@ -84,13 +88,13 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   return (
     <div className="min-h-screen flex">
       {/* Left Side - Background Image with Overlay */}
-      <div 
+      <div
         className="hidden lg:flex flex-1 relative bg-cover bg-center"
         style={{ backgroundImage: `url(https://images.unsplash.com/photo-1701461497603-92d693136b00?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxyaWNlJTIwZmllbGQlMjBwYWRkeSUyMGZhcm0lMjBhZ3JpY3VsdHVyZXxlbnwxfHx8fDE3NzE0MzQxNzN8MA&ixlib=rb-4.1.0&q=80&w=1080)` }}
       >
         {/* Dark overlay */}
         <div className="absolute inset-0 bg-green-900/60"></div>
-        
+
         {/* Content */}
         <div className="relative z-10 flex flex-col justify-center px-16 text-white">
           <h1 className="text-5xl font-bold mb-6 leading-tight">
@@ -131,7 +135,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                     </span>
                     <ChevronDown className={`w-5 h-5 text-gray-600 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
                   </button>
-                  
+
                   {/* Dropdown Menu */}
                   {isDropdownOpen && (
                     <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
@@ -141,9 +145,8 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                           setUserType('farmer');
                           setIsDropdownOpen(false);
                         }}
-                        className={`w-full px-4 py-3 text-left hover:bg-green-50 transition-colors ${
-                          userType === 'farmer' ? 'bg-green-100 text-green-700 font-medium' : 'text-gray-800'
-                        }`}
+                        className={`w-full px-4 py-3 text-left hover:bg-green-50 transition-colors ${userType === 'farmer' ? 'bg-green-100 text-green-700 font-medium' : 'text-gray-800'
+                          }`}
                       >
                         Farmer
                       </button>
@@ -153,9 +156,8 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                           setUserType('admin');
                           setIsDropdownOpen(false);
                         }}
-                        className={`w-full px-4 py-3 text-left hover:bg-green-50 transition-colors ${
-                          userType === 'admin' ? 'bg-green-100 text-green-700 font-medium' : 'text-gray-800'
-                        }`}
+                        className={`w-full px-4 py-3 text-left hover:bg-green-50 transition-colors ${userType === 'admin' ? 'bg-green-100 text-green-700 font-medium' : 'text-gray-800'
+                          }`}
                       >
                         Admin / District Officer
                       </button>

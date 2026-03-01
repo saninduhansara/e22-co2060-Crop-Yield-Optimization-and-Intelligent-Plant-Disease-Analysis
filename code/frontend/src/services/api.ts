@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Base API URL - use relative path in development to work with Vite proxy
 // In production, use the full API URL from environment variable
-const API_BASE_URL = import.meta.env.PROD 
+const API_BASE_URL = import.meta.env.PROD
   ? ((import.meta as any).env?.VITE_API_URL || 'http://localhost:5000')
   : ''; // Empty string means use relative paths in dev mode
 
@@ -37,9 +37,9 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 403) {
-      // Token expired or invalid - clear auth and redirect to login
+      // Token expired or invalid - clear auth and redirect to root login page
       localStorage.removeItem('agriconnect_auth');
-      window.location.href = '/login';
+      window.location.href = '/';
     }
     return Promise.reject(error);
   }
@@ -64,7 +64,7 @@ export const userAPI = {
     return response.data;
   },
 
-  login: async (credentials: { email: string; password: string }) => {
+  login: async (credentials: { email: string; password: string; intendedRole?: string }) => {
     try {
       const response = await api.post('/api/users/login', credentials);
       return response.data;
