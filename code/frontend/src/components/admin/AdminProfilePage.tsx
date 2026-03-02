@@ -1,5 +1,6 @@
 import { User, Mail, Phone, MapPin, Calendar, Save, Edit2, Shield } from 'lucide-react';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 export function AdminProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
@@ -17,7 +18,7 @@ export function AdminProfilePage() {
   const handleSave = () => {
     // Save logic here
     setIsEditing(false);
-    alert('Profile updated successfully!');
+    toast.success('Profile updated successfully!');
   };
 
   return (
@@ -115,10 +116,10 @@ export function AdminProfilePage() {
               Member Since
             </label>
             <p className="text-gray-800 font-medium">
-              {new Date(formData.joinDate).toLocaleDateString('en-US', { 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
+              {new Date(formData.joinDate).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
               })}
             </p>
           </div>
@@ -189,7 +190,7 @@ export function AdminProfilePage() {
           </div>
           <div className="p-4 bg-green-50 rounded-lg border border-green-100">
             <p className="text-green-800 text-sm">
-              <strong>Access Level:</strong> Full administrative access to manage farmers, 
+              <strong>Access Level:</strong> Full administrative access to manage farmers,
               harvest data, reports, and system settings.
             </p>
           </div>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Send, Upload, FileText, Trash2, AlertCircle, CheckCircle2, Clock } from 'lucide-react';
+import { toast } from 'sonner';
 
 export function MessagesPage() {
   const [subject, setSubject] = useState('');
@@ -69,6 +70,7 @@ export function MessagesPage() {
       setCategory('');
       setMessage('');
       setUploadedFile(null);
+      toast.success('Message submitted successfully!');
     }
   };
 
@@ -110,7 +112,7 @@ export function MessagesPage() {
       {/* Submit New Message */}
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 md:p-6">
         <h3 className="text-base md:text-lg font-semibold text-gray-800 mb-4">Contact Admin</h3>
-        
+
         <div className="space-y-4">
           {/* Subject */}
           <div>

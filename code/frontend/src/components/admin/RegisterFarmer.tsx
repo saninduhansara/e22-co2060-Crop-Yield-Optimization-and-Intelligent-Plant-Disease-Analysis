@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { User, MapPin, Phone, IdCard, Save, Plus, Trash2, AlertCircle, CheckCircle, Upload, Camera } from 'lucide-react';
 import { userAPI, farmAPI } from '../../services/api';
 import uploadfile from '../../utils/mediaUpload';
+import { toast } from 'sonner';
 
 interface FarmData {
   farmName: string;
@@ -31,7 +32,7 @@ export function RegisterFarmer() {
   const [profileImage, setProfileImage] = useState(null as File | null);
   const [profileImagePreview, setProfileImagePreview] = useState(null as string | null);
   const [uploadingImage, setUploadingImage] = useState(false);
-  
+
   const [farmerData, setFarmerData] = useState({
     firstName: '',
     lastName: '',
@@ -56,9 +57,10 @@ export function RegisterFarmer() {
   // Step 1: Register Farmer
   const handleRegisterFarmer = async (e: any) => {
     e.preventDefault();
-    
+
     if (!farmerData.firstName || !farmerData.lastName || !farmerData.email) {
       setError('Please fill in all required farmer information');
+      toast.error('Please fill in all required farmer information');
       return;
     }
 
@@ -83,7 +85,7 @@ export function RegisterFarmer() {
 
       // Generate a temporary password if not provided
       const password = farmerData.password || `${farmerData.nic.slice(-4)}@2026`;
-      
+
       // Store generated password if it was auto-generated
       if (!farmerData.password) {
         setGeneratedPassword(password);
@@ -105,18 +107,22 @@ export function RegisterFarmer() {
       };
 
       const response = await userAPI.register(userData);
-      
+
       if (response.message === 'User Created Successfully') {
+        toast.success('Farmer personal details registered successfully!');
         setRegisteredFarmerId(farmerData.nic);
         setStep(2);
         setSuccess(true);
         setTimeout(() => setSuccess(false), 3000);
       } else {
+        toast.error('Failed to register farmer. Please try again.');
         setError('Failed to register farmer. Please try again.');
       }
     } catch (err: any) {
       console.error('Error registering farmer:', err);
-      setError(err.response?.data?.message || 'Failed to register farmer. Please try again.');
+      const errMessage = err.response?.data?.message || 'Failed to register farmer. Please try again.';
+      setError(errMessage);
+      toast.error(errMessage);
     } finally {
       setLoading(false);
     }
@@ -145,12 +151,13 @@ export function RegisterFarmer() {
   const handleSubmitFarms = async (e: any) => {
     e.preventDefault();
 
-    const validFarms = farms.filter((farm: FarmData) => 
+    const validFarms = farms.filter((farm: FarmData) =>
       farm.farmName && farm.crop && farm.sizeInAcres && farm.location
     );
 
     if (validFarms.length === 0) {
       setError('Please fill in at least one complete farm entry');
+      toast.error('Please fill in at least one complete farm entry');
       return;
     }
 
@@ -170,6 +177,7 @@ export function RegisterFarmer() {
         });
       }
 
+      toast.success('Farmer and farms registered successfully!');
       setSuccess(true);
       setTimeout(() => {
         setFarmerData({
@@ -186,7 +194,9 @@ export function RegisterFarmer() {
       }, 2000);
     } catch (err: any) {
       console.error('Error creating farms:', err);
-      setError(err.response?.data?.message || 'Failed to create farms. Please try again.');
+      const errMessage = err.response?.data?.message || 'Failed to create farms. Please try again.';
+      setError(errMessage);
+      toast.error(errMessage);
     } finally {
       setLoading(false);
     }
@@ -234,15 +244,13 @@ export function RegisterFarmer() {
 
       {/* Step Indicators */}
       <div className="flex items-center gap-4">
-        <div className={`flex items-center justify-center w-10 h-10 rounded-full font-medium ${
-          step >= 1 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'
-        }`}>
+        <div className={`flex items-center justify-center w-10 h-10 rounded-full font-medium ${step >= 1 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'
+          }`}>
           1
         </div>
         <div className={`flex-1 h-1 ${step >= 2 ? 'bg-green-600' : 'bg-gray-200'}`}></div>
-        <div className={`flex items-center justify-center w-10 h-10 rounded-full font-medium ${
-          step >= 2 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'
-        }`}>
+        <div className={`flex items-center justify-center w-10 h-10 rounded-full font-medium ${step >= 2 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'
+          }`}>
           2
         </div>
       </div>
@@ -320,7 +328,7 @@ export function RegisterFarmer() {
                     <input
                       type="text"
                       value={farmerData.firstName}
-                      onChange={(e) => setFarmerData({...farmerData, firstName: e.target.value})}
+                      onChange={(e) => setFarmerData({ ...farmerData, firstName: e.target.value })}
                       placeholder="Enter first name"
                       className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                       required
@@ -335,7 +343,7 @@ export function RegisterFarmer() {
                   <input
                     type="text"
                     value={farmerData.lastName}
-                    onChange={(e) => setFarmerData({...farmerData, lastName: e.target.value})}
+                    onChange={(e) => setFarmerData({ ...farmerData, lastName: e.target.value })}
                     placeholder="Enter last name"
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                     required
@@ -351,7 +359,7 @@ export function RegisterFarmer() {
                     <input
                       type="text"
                       value={farmerData.nic}
-                      onChange={(e) => setFarmerData({...farmerData, nic: e.target.value})}
+                      onChange={(e) => setFarmerData({ ...farmerData, nic: e.target.value })}
                       placeholder="e.g., 199512345678"
                       className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                       required
@@ -368,7 +376,7 @@ export function RegisterFarmer() {
                     <input
                       type="tel"
                       value={farmerData.phone}
-                      onChange={(e) => setFarmerData({...farmerData, phone: e.target.value})}
+                      onChange={(e) => setFarmerData({ ...farmerData, phone: e.target.value })}
                       placeholder="077-1234567"
                       className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                       required
@@ -383,7 +391,7 @@ export function RegisterFarmer() {
                   <input
                     type="email"
                     value={farmerData.email}
-                    onChange={(e) => setFarmerData({...farmerData, email: e.target.value})}
+                    onChange={(e) => setFarmerData({ ...farmerData, email: e.target.value })}
                     placeholder="farmer@example.com"
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                     required
@@ -397,7 +405,7 @@ export function RegisterFarmer() {
                   <input
                     type="password"
                     value={farmerData.password}
-                    onChange={(e) => setFarmerData({...farmerData, password: e.target.value})}
+                    onChange={(e) => setFarmerData({ ...farmerData, password: e.target.value })}
                     placeholder="Leave empty for auto-generated"
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                   />
@@ -415,7 +423,7 @@ export function RegisterFarmer() {
                   </label>
                   <select
                     value={farmerData.district}
-                    onChange={(e) => setFarmerData({...farmerData, district: e.target.value})}
+                    onChange={(e) => setFarmerData({ ...farmerData, district: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                     required
                   >
@@ -433,7 +441,7 @@ export function RegisterFarmer() {
                   <input
                     type="text"
                     value={farmerData.division}
-                    onChange={(e) => setFarmerData({...farmerData, division: e.target.value})}
+                    onChange={(e) => setFarmerData({ ...farmerData, division: e.target.value })}
                     placeholder="e.g., Attanagalla"
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                     required
@@ -448,7 +456,7 @@ export function RegisterFarmer() {
                     <MapPin className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
                     <textarea
                       value={farmerData.address}
-                      onChange={(e) => setFarmerData({...farmerData, address: e.target.value})}
+                      onChange={(e) => setFarmerData({ ...farmerData, address: e.target.value })}
                       placeholder="Enter full address"
                       rows={3}
                       className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"

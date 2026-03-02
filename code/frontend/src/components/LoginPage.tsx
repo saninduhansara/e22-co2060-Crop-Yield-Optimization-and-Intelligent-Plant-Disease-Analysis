@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { Lock, Mail, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { userAPI } from '../services/api';
@@ -46,6 +47,8 @@ export function LoginPage({ onLogin }: LoginPageProps) {
       };
       localStorage.setItem('agriconnect_auth', JSON.stringify(authData));
 
+      toast.success('Login successful! Welcome back.');
+
       // Navigate based on user type
       if (mappedUserType === 'farmer') {
         navigate('/farmer/home');
@@ -76,6 +79,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
       }
 
       setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
