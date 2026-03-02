@@ -1,5 +1,10 @@
+/**
+ * Farmer Home Dashboard
+ * Displays a personalized greeting, points summary, disease heat map,
+ * and a floating AI chatbot interface.
+ */
 import { Star, HandIcon, SearchIcon, FileText, Bot, AlertTriangle, MapPin } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router';
 import { userAPI } from '../services/api';
 
@@ -300,8 +305,8 @@ export function HomePage({ onNavigate: onNavigateProp }: HomePageProps) {
                 type="text"
                 placeholder="Ask me anything..."
                 value={chatMessage}
-                onChange={(e) => setChatMessage(e.target.value)}
-                onKeyDown={(e) => {
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setChatMessage(e.target.value)}
+                onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
                   if (e.key === 'Enter' && chatMessage.trim()) {
                     setChatMessage(''); // Reset state for now
                     // TODO: dispatch message to AI backend

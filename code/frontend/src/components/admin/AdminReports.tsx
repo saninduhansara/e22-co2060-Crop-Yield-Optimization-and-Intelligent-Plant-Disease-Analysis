@@ -1,7 +1,72 @@
 import { Download, TrendingUp, Users, Wheat, FileText } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
+import { useState, useEffect } from 'react';
+import { farmAPI } from '../../services/api';
 
 export function AdminReports() {
+  const [topFarmers, setTopFarmers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchReportsData = async () => {
+      try {
+        setLoading(true);
+        const harvestData = await farmAPI.getHarvestHistory();
+        const harvests = harvestData.harvests || [];
+
+        const farmerYields = new Map();
+        harvests.forEach((h: any) => {
+          const nic = h.farmerNIC || h.farmerName;
+          if (!nic) return;
+
+          if (!farmerYields.has(nic)) {
+            farmerYields.set(nic, {
+              name: h.farmerName || 'Unknown',
+              district: h.district || 'Unknown',
+              totalYield: 0,
+              totalAcres: 0,
+            });
+          }
+
+          const data = farmerYields.get(nic);
+
+          let qty = 0;
+          if (typeof h.harvestQty === 'number') qty = h.harvestQty;
+          else if (typeof h.harvestQty === 'string') qty = Number(h.harvestQty.replace(/,/g, '').replace(/[^\d.-]/g, '')) || 0;
+
+          let acres = 0;
+          if (typeof h.acres === 'number') acres = h.acres;
+          else if (typeof h.acres === 'string') acres = Number(h.acres.replace(/,/g, '').replace(/[^\d.-]/g, '')) || 0;
+
+          data.totalYield += qty;
+          data.totalAcres += acres;
+        });
+
+        const performers = Array.from(farmerYields.values())
+          .map((data) => {
+            const avgYield = data.totalAcres > 0 ? (data.totalYield / data.totalAcres) : 0;
+            return {
+              name: data.name,
+              district: data.district,
+              yield: Number(data.totalYield.toFixed(2)),
+              avgYield: Number(avgYield.toFixed(2)),
+              points: Math.floor(data.totalYield * 50)
+            };
+          })
+          .sort((a, b) => b.yield - a.yield)
+          .map((p, index) => ({ ...p, rank: index + 1 }))
+          .slice(0, 5); // top 5
+
+        setTopFarmers(performers);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchReportsData();
+  }, []);
+
   const seasonData = [
     { season: 'Maha 24/25', yield: 1650, farmers: 235, points: 12500 },
     { season: 'Yala 2024', yield: 1200, farmers: 198, points: 9800 },
@@ -32,7 +97,7 @@ export function AdminReports() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          
+
           <p className="text-gray-600">Comprehensive insights and data analysis</p>
         </div>
         <button className="px-6 py-3 bg-green-700 hover:bg-green-800 text-white rounded-lg flex items-center gap-2 transition-colors">
@@ -195,21 +260,22 @@ export function AdminReports() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {[
-                { rank: 1, name: 'Nimal Perera', district: 'Polonnaruwa', yield: 6.5, avgYield: 1.30, points: 325 },
-                { rank: 2, name: 'Ahmed Hassan', district: 'Gampaha', yield: 4.5, avgYield: 1.29, points: 227 },
-                { rank: 3, name: 'Priya Fernando', district: 'Kurunegala', yield: 4.8, avgYield: 1.20, points: 240 },
-                { rank: 4, name: 'Ruwan Silva', district: 'Anuradhapura', yield: 3.9, avgYield: 1.18, points: 196 },
-                { rank: 5, name: 'Kamala Dissanayake', district: 'Ampara', yield: 3.3, avgYield: 1.10, points: 165 },
-              ].map((farmer) => (
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">Loading top performers...</td>
+                </tr>
+              ) : topFarmers.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">No dynamic data available</td>
+                </tr>
+              ) : topFarmers.map((farmer: any) => (
                 <tr key={farmer.rank} className="hover:bg-gray-50">
                   <td className="px-6 py-4">
-                    <span className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${
-                      farmer.rank === 1 ? 'bg-yellow-100 text-yellow-700' :
+                    <span className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${farmer.rank === 1 ? 'bg-yellow-100 text-yellow-700' :
                       farmer.rank === 2 ? 'bg-gray-100 text-gray-700' :
-                      farmer.rank === 3 ? 'bg-orange-100 text-orange-700' :
-                      'bg-gray-50 text-gray-600'
-                    }`}>
+                        farmer.rank === 3 ? 'bg-orange-100 text-orange-700' :
+                          'bg-gray-50 text-gray-600'
+                      }`}>
                       {farmer.rank}
                     </span>
                   </td>
