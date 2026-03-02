@@ -1,3 +1,8 @@
+/**
+ * Frontend API Service Layer
+ * Configures the Axios instance, HTTP interceptors for JWT auth/error handling,
+ * and exports organized objects for User, Farm, and Yield endpoints.
+ */
 import axios from 'axios';
 
 // Base API URL - use relative path in development to work with Vite proxy

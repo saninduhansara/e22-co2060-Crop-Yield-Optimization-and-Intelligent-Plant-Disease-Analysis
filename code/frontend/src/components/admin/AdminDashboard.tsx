@@ -1,3 +1,9 @@
+/**
+ * Admin Dashboard Component
+ * Displays system-wide statistics including total farmers,
+ * active plots, total farmland, and harvest yields.
+ * Fetches and aggregates real-time data from the backend.
+ */
 import { Users, TrendingUp, Wheat, AlertTriangle, BarChart3, MapPin, Layers, Scale, Link2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { farmAPI, userAPI } from '../../services/api';
@@ -59,11 +65,11 @@ export function AdminDashboard() {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      
+
       // Fetch farms data for farmer count and active farms
       const farmsData = await farmAPI.getAllFarms();
       let farms = farmsData.farms || [];
-      
+
       // Filter by selected crop if one is selected (case-insensitive)
       if (selectedCrop) {
         farms = farms.filter((farm: any) => {
@@ -74,7 +80,7 @@ export function AdminDashboard() {
       }
 
       setFarmsForProfile(farms);
-      
+
       const uniqueFarmers = new Set(farms.map((farm: any) => farm.farmerNIC));
       setTotalFarmers(uniqueFarmers.size);
 
@@ -103,23 +109,23 @@ export function AdminDashboard() {
           : (uniqueFarmers.size / farmers30DaysAgo) * 100;
 
       setFarmersLastMonthPercentage(calculatedPercentage);
-      
+
       // Calculate active farms (status === 'Active')
-      const activeFarmsCount = farms.filter((farm: any) => 
+      const activeFarmsCount = farms.filter((farm: any) =>
         farm.status && farm.status.toLowerCase() === 'active'
       ).length;
       setActiveFarms(activeFarmsCount);
-      
+
       // Calculate total farmland in acres
       const totalAcres = farms.reduce((sum: number, farm: any) => {
         return sum + (farm.farmSize || farm.sizeInAcres || 0);
       }, 0);
       setTotalFarmland(totalAcres);
-      
+
       // Fetch harvest data for total harvest
       const harvestData = await farmAPI.getHarvestHistory();
       let harvests = harvestData.harvests || [];
-      
+
       // Filter by selected crop if one is selected (case-insensitive)
       if (selectedCrop) {
         harvests = harvests.filter((harvest: any) => {
@@ -128,7 +134,7 @@ export function AdminDashboard() {
           return harvestCrop === selectedCropNormalized;
         });
       }
-      
+
       const totalHarvestQty = harvests.reduce((sum: number, harvest: any) => {
         return sum + (harvest.harvestQty || 0);
       }, 0);
@@ -337,7 +343,7 @@ export function AdminDashboard() {
   // Helper functions to determine font size based on formatted string length
   const getFontSizeForFormatted = (formattedStr: string): string => {
     const length = formattedStr.length;
-    
+
     if (length <= 4) return 'text-3xl md:text-4xl'; // e.g., "123" or "9.5K"
     if (length <= 6) return 'text-2xl md:text-3xl'; // e.g., "123.4K"
     if (length <= 8) return 'text-xl md:text-2xl';  // e.g., "123.4M"
@@ -349,13 +355,13 @@ export function AdminDashboard() {
     if (!dateString) {
       return 'Unknown';
     }
-    
+
     const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
-    
+
     if (isNaN(date.getTime())) {
       return 'Unknown';
     }
-    
+
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
@@ -369,10 +375,10 @@ export function AdminDashboard() {
     } else if (dateOnly.getTime() === yesterdayOnly.getTime()) {
       return 'Yesterday';
     } else {
-      return date.toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'short', 
-        day: 'numeric' 
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
       });
     }
   };
@@ -598,7 +604,7 @@ export function AdminDashboard() {
                 const cropName = (harvest.crop || '').toLowerCase();
                 let cropBgColor = 'bg-blue-100';
                 let cropTextColor = 'text-blue-700';
-                
+
                 if (cropName.includes('paddy') || cropName.includes('rice')) {
                   cropBgColor = 'bg-yellow-100';
                   cropTextColor = 'text-yellow-700';
@@ -606,7 +612,7 @@ export function AdminDashboard() {
                   cropBgColor = 'bg-green-100';
                   cropTextColor = 'text-green-700';
                 }
-                
+
                 return (
                   <div
                     key={index}

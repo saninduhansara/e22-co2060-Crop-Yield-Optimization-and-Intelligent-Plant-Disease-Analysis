@@ -1,3 +1,8 @@
+/**
+ * Express Router: User Routes
+ * Handles user authentication, profile details, and role checks.
+ * Base path: /api/users
+ */
 import express from "express";
 import { createUser, loginUser, fetchUser, getRecentFarmers } from "../controllers/userController.js";
 

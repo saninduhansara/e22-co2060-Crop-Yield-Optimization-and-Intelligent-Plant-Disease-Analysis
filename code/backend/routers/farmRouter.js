@@ -1,3 +1,8 @@
+/**
+ * Express Router: Farm & Harvest Routes
+ * Handles farm profiles, harvest tracking, and points logic.
+ * Base path: /api/farms
+ */
 import express from "express";
 import { addHarvestAndPoints, createFarm, getAllFarms, getFarmById, updateFarm, deleteFarm, getHarvestHistory, getFarmerReport, getAllCrops } from "../controllers/farmController.js";
 
