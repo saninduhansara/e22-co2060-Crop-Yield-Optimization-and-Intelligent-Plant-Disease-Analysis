@@ -4,7 +4,7 @@ const inquirySchema = new mongoose.Schema(
     {
         farmer: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: "User",
+            ref: "users",
             required: true,
         },
         subject: {

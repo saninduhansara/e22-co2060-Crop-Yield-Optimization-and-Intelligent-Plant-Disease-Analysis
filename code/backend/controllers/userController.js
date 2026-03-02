@@ -84,6 +84,7 @@ export async function loginUser(req, res) {
             // Generate authentication token
             const token = jwt.sign(
                 {
+                    id: user._id,
                     email: user.email,
                     firstName: user.firstName,
                     lastName: user.lastName,

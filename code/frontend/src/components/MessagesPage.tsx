@@ -59,10 +59,14 @@ export function MessagesPage() {
     if (subject.trim() && category && message.trim()) {
       setSubmitting(true);
       try {
+        const authDataStr = localStorage.getItem('agriconnect_auth');
+        const authData = authDataStr ? JSON.parse(authDataStr) : null;
+
         const fullSubject = `[${category}] ${subject.trim()}`;
         const newInquiry = await inquiryAPI.createInquiry({
           subject: fullSubject,
           message: message.trim(),
+          farmerId: authData?.userId,
         });
 
         setSubmittedMessages([newInquiry, ...submittedMessages]);

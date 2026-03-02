@@ -182,6 +182,7 @@ export const inquiryAPI = {
   createInquiry: async (inquiryData: {
     subject: string;
     message: string;
+    farmerId?: string;
   }) => {
     const response = await api.post('/api/inquiries', inquiryData);
     return response.data;
