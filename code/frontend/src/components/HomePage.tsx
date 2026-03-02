@@ -1,7 +1,7 @@
 import { Star, HandIcon, SearchIcon, FileText, Bot, AlertTriangle, MapPin } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router';
-import farmerImage from 'figma:asset/8d18ad2077654c1f65710d650ff192f7ba499f8c.png';
+import { userAPI } from '../services/api';
 
 interface HomePageProps {
   onNavigate?: (page: string) => void;
@@ -9,8 +9,30 @@ interface HomePageProps {
 
 export function HomePage({ onNavigate: onNavigateProp }: HomePageProps) {
   const [showChatbot, setShowChatbot] = useState(false);
+  const [chatMessage, setChatMessage] = useState('');
+
+  // Dynamic User State
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
   const outletContext = useOutletContext<{ onNavigate: (page: string) => void }>();
-  const onNavigate = onNavigateProp || outletContext?.onNavigate || (() => {});
+  const onNavigate = onNavigateProp || outletContext?.onNavigate || (() => { });
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const data = await userAPI.fetchProfile();
+        if (data && data.user) {
+          setUserProfile(data.user);
+        }
+      } catch (error) {
+        console.error("Failed to load user profile:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadProfile();
+  }, []);
 
   return (
     <div className="space-y-4 md:space-y-6 pb-20">
@@ -20,20 +42,22 @@ export function HomePage({ onNavigate: onNavigateProp }: HomePageProps) {
         <div className="bg-white rounded-2xl p-4 md:p-6 border border-gray-200">
           <div className="flex items-start justify-between mb-4">
             <div>
-              <h2 className="text-xl md:text-2xl font-semibold text-gray-800 mb-2">Welcome, Ahmed</h2>
+              <h2 className="text-xl md:text-2xl font-semibold text-gray-800 mb-2">
+                Welcome, {loading ? '...' : (userProfile?.firstName || 'Farmer')}
+              </h2>
               <p className="text-xs md:text-sm text-gray-600">
                 Account Status: <span className="text-cyan-600 font-medium">Active</span>
               </p>
               <p className="text-xs md:text-sm text-gray-600 mt-1">
-                <span className="font-medium">Season:</span> Maha
+                <span className="font-medium">Season:</span> {loading ? '...' : 'Maha'}
               </p>
               <p className="text-xs md:text-sm text-gray-600 mt-1">
-                <span className="font-medium">Location:</span> Gampaha / Attanagalla
+                <span className="font-medium">Location:</span> {loading ? '...' : `${userProfile?.district || 'Unknown District'} / ${userProfile?.division || 'Unknown Division'}`}
               </p>
             </div>
             <img
-              src={farmerImage}
-              alt="Farmer"
+              src={userProfile?.image || 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png'}
+              alt="Farmer Profile"
               className="w-12 h-12 md:w-16 md:h-16 rounded-full object-cover border-2 border-gray-200"
             />
           </div>
@@ -46,13 +70,17 @@ export function HomePage({ onNavigate: onNavigateProp }: HomePageProps) {
             <Star className="w-10 h-10 md:w-12 md:h-12 text-yellow-400 fill-yellow-400" />
             <div>
               <p className="text-xs md:text-sm text-gray-600">Total Points:</p>
-              <p className="text-3xl md:text-4xl font-bold text-gray-800">1250</p>
+              <p className="text-3xl md:text-4xl font-bold text-gray-800">
+                {loading ? '...' : (userProfile?.points || 0)}
+              </p>
             </div>
           </div>
           <div className="text-right">
             <p className="text-xs md:text-sm text-gray-600">Season: Maha</p>
             <p className="text-xs md:text-sm text-gray-600 mt-1">Points This Season</p>
-            <p className="text-2xl md:text-3xl font-bold text-gray-800 mt-1">420</p>
+            <p className="text-2xl md:text-3xl font-bold text-gray-800 mt-1">
+              {loading ? '...' : Math.floor((userProfile?.points || 0) * 0.3)} {/* Mocking recent points */}
+            </p>
           </div>
         </div>
       </div>
@@ -141,23 +169,23 @@ export function HomePage({ onNavigate: onNavigateProp }: HomePageProps) {
                     <stop offset="100%" stopColor="#22c55e" stopOpacity="0.3" />
                   </radialGradient>
                 </defs>
-                
+
                 {/* Base land shape - Sri Lanka-like shape */}
                 <path
                   d="M 80 60 Q 150 40, 240 80 L 300 140 Q 310 200, 270 250 L 180 270 Q 100 260, 70 200 L 60 120 Z"
                   fill="#86efac"
                   opacity="0.7"
                 />
-                
+
                 {/* Additional land masses */}
                 <ellipse cx="320" cy="180" rx="30" ry="25" fill="#86efac" opacity="0.7" />
                 <ellipse cx="340" cy="220" rx="20" ry="18" fill="#86efac" opacity="0.7" />
-                
+
                 {/* Heat overlays - disease hotspots */}
                 <ellipse cx="220" cy="120" rx="50" ry="45" fill="url(#heatGradient)" />
                 <ellipse cx="160" cy="180" rx="40" ry="35" fill="#ef4444" opacity="0.6" />
                 <ellipse cx="260" cy="200" rx="35" ry="30" fill="#f97316" opacity="0.5" />
-                
+
                 {/* Disease markers - red dots */}
                 <circle cx="220" cy="110" r="6" fill="#ef4444" />
                 <circle cx="230" cy="130" r="5" fill="#ef4444" />
@@ -168,7 +196,7 @@ export function HomePage({ onNavigate: onNavigateProp }: HomePageProps) {
                 <circle cx="260" cy="200" r="5" fill="#f97316" />
                 <circle cx="270" cy="210" r="4" fill="#f97316" />
                 <circle cx="250" cy="195" r="4" fill="#eab308" />
-                
+
                 {/* Location markers - Plot A, B, C, D, E, F with circles */}
                 <g>
                   <circle cx="120" cy="100" r="10" fill="white" stroke="#22c55e" strokeWidth="2" />
@@ -271,9 +299,25 @@ export function HomePage({ onNavigate: onNavigateProp }: HomePageProps) {
               <input
                 type="text"
                 placeholder="Ask me anything..."
+                value={chatMessage}
+                onChange={(e) => setChatMessage(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && chatMessage.trim()) {
+                    setChatMessage(''); // Reset state for now
+                    // TODO: dispatch message to AI backend
+                  }
+                }}
                 className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
               />
-              <button className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors">
+              <button
+                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+                onClick={() => {
+                  if (chatMessage.trim()) {
+                    setChatMessage('');
+                    // TODO: dispatch message to AI backend
+                  }
+                }}
+              >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                 </svg>
