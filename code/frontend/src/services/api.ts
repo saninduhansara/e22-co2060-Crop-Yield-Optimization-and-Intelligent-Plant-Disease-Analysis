@@ -177,5 +177,26 @@ export const avgYieldAPI = {
   },
 };
 
+// Inquiry API endpoints
+export const inquiryAPI = {
+  createInquiry: async (inquiryData: {
+    subject: string;
+    message: string;
+  }) => {
+    const response = await api.post('/api/inquiries', inquiryData);
+    return response.data;
+  },
+
+  getAllInquiries: async () => {
+    const response = await api.get('/api/inquiries');
+    return response.data;
+  },
+
+  updateStatus: async (inquiryId: string, status: string) => {
+    const response = await api.put(`/api/inquiries/${inquiryId}/status`, { status });
+    return response.data;
+  }
+};
+
 // Export the axios instance for custom requests
 export default api;

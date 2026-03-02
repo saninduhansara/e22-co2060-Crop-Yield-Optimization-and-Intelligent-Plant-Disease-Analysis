@@ -128,28 +128,7 @@ export function ReportsPage() {
         </div>
       </div>
 
-      {/* Monthly Performance */}
-      <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-gray-800">Monthly Harvest Performance</h3>
-          <button className="text-green-600 hover:text-green-700 flex items-center gap-2 text-sm">
-            <Download className="w-4 h-4" />
-            Export
-          </button>
-        </div>
-        <ResponsiveContainer width="100%" height={350}>
-          <BarChart data={harvestData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-            <XAxis dataKey="month" stroke="#666" />
-            <YAxis stroke="#666" />
-            <Tooltip
-              contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px' }}
-            />
-            <Legend />
-            <Bar dataKey="qty" fill="#10b981" radius={[8, 8, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
+
 
       {/* Summary Tables */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

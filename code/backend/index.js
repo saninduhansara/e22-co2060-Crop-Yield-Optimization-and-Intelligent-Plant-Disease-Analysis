@@ -11,6 +11,7 @@ import userRouter from "./routers/userRouter.js"
 import farmRouter from "./routers/farmRouter.js"
 import jwt from "jsonwebtoken"
 import avgYieldRouter from "./routers/avgYieldRouter.js"
+import inquiryRouter from "./routers/inquiryRouter.js"
 dotenv.config()
 
 
@@ -77,6 +78,7 @@ mongoose.connect(connectionString).then(
 app.use("/api/users", userRouter)
 app.use("/api/farms", farmRouter)
 app.use("/api/avgYields", avgYieldRouter)
+app.use("/api/inquiries", inquiryRouter)
 
 
 

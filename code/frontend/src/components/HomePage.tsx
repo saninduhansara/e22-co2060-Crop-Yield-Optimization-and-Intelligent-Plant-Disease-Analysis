@@ -116,118 +116,56 @@ export function HomePage({ onNavigate: onNavigateProp }: HomePageProps) {
         <div className="bg-white rounded-2xl p-4 md:p-6 border border-gray-200 lg:col-span-2">
           <h3 className="text-base md:text-lg font-semibold text-gray-800 mb-4">Disease Heat Map</h3>
           <div className="flex gap-2 md:gap-4 overflow-x-auto">
-            {/* Temperature Scale */}
-            <div className="flex flex-col justify-between text-xs text-gray-600 w-16 md:w-20 flex-shrink-0">
+            {/* Activity Scale */}
+            <div className="flex flex-col justify-between text-xs text-gray-600 w-16 md:w-24 flex-shrink-0">
               <div>
-                <p className="text-gray-700 font-medium mb-2">Tends to Invert</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-3 bg-green-200 rounded"></div>
-                <span>2°C</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-3 bg-green-300 rounded"></div>
-                <span>27°C</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-3 bg-yellow-200 rounded"></div>
-                <span>13°C</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-3 bg-yellow-300 rounded"></div>
-                <span>73°C</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-3 bg-yellow-400 rounded"></div>
-                <span>8</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-3 bg-orange-400 rounded"></div>
-                <span>73°C</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-3 bg-orange-500 rounded"></div>
-                <span>7°C</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-3 bg-red-500 rounded"></div>
-                <span>7</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-3 bg-red-700 rounded"></div>
-                <span>13°C</span>
+                <p className="text-gray-700 font-medium mb-2">Report Frequency</p>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-6 h-3 bg-red-900 rounded"></div>
-                <span>23°C</span>
+                <span>Critical</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-3 bg-red-700 rounded"></div>
+                <span>Very High</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-3 bg-red-500 rounded"></div>
+                <span>High</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-3 bg-orange-500 rounded"></div>
+                <span>Elevated</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-3 bg-orange-400 rounded"></div>
+                <span>Moderate</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-3 bg-yellow-400 rounded"></div>
+                <span>Alert</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-3 bg-yellow-300 rounded"></div>
+                <span>Warning</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-3 bg-yellow-200 rounded"></div>
+                <span>Low</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-3 bg-green-300 rounded"></div>
+                <span>Very Low</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-3 bg-green-200 rounded"></div>
+                <span>None</span>
               </div>
             </div>
 
             {/* Map Visualization */}
-            <div className="flex-1 relative bg-gray-50 rounded-lg overflow-hidden min-h-[280px]">
-              <svg viewBox="0 0 400 280" className="w-full h-full">
-                <defs>
-                  <radialGradient id="heatGradient" cx="50%" cy="50%">
-                    <stop offset="0%" stopColor="#ef4444" stopOpacity="0.8" />
-                    <stop offset="40%" stopColor="#f97316" stopOpacity="0.6" />
-                    <stop offset="70%" stopColor="#eab308" stopOpacity="0.4" />
-                    <stop offset="100%" stopColor="#22c55e" stopOpacity="0.3" />
-                  </radialGradient>
-                </defs>
-
-                {/* Base land shape - Sri Lanka-like shape */}
-                <path
-                  d="M 80 60 Q 150 40, 240 80 L 300 140 Q 310 200, 270 250 L 180 270 Q 100 260, 70 200 L 60 120 Z"
-                  fill="#86efac"
-                  opacity="0.7"
-                />
-
-                {/* Additional land masses */}
-                <ellipse cx="320" cy="180" rx="30" ry="25" fill="#86efac" opacity="0.7" />
-                <ellipse cx="340" cy="220" rx="20" ry="18" fill="#86efac" opacity="0.7" />
-
-                {/* Heat overlays - disease hotspots */}
-                <ellipse cx="220" cy="120" rx="50" ry="45" fill="url(#heatGradient)" />
-                <ellipse cx="160" cy="180" rx="40" ry="35" fill="#ef4444" opacity="0.6" />
-                <ellipse cx="260" cy="200" rx="35" ry="30" fill="#f97316" opacity="0.5" />
-
-                {/* Disease markers - red dots */}
-                <circle cx="220" cy="110" r="6" fill="#ef4444" />
-                <circle cx="230" cy="130" r="5" fill="#ef4444" />
-                <circle cx="205" cy="125" r="5" fill="#ef4444" />
-                <circle cx="160" cy="180" r="6" fill="#ef4444" />
-                <circle cx="170" cy="195" r="5" fill="#ef4444" />
-                <circle cx="150" cy="190" r="4" fill="#f97316" />
-                <circle cx="260" cy="200" r="5" fill="#f97316" />
-                <circle cx="270" cy="210" r="4" fill="#f97316" />
-                <circle cx="250" cy="195" r="4" fill="#eab308" />
-
-                {/* Location markers - Plot A, B, C, D, E, F with circles */}
-                <g>
-                  <circle cx="120" cy="100" r="10" fill="white" stroke="#22c55e" strokeWidth="2" />
-                  <text x="120" y="105" textAnchor="middle" className="text-xs font-semibold" fill="#22c55e" fontSize="12">A</text>
-                </g>
-                <g>
-                  <circle cx="180" cy="130" r="10" fill="white" stroke="#22c55e" strokeWidth="2" />
-                  <text x="180" y="135" textAnchor="middle" className="text-xs font-semibold" fill="#22c55e" fontSize="12">B</text>
-                </g>
-                <g>
-                  <circle cx="240" cy="160" r="10" fill="white" stroke="#22c55e" strokeWidth="2" />
-                  <text x="240" y="165" textAnchor="middle" className="text-xs font-semibold" fill="#22c55e" fontSize="12">C</text>
-                </g>
-                <g>
-                  <circle cx="200" cy="200" r="10" fill="white" stroke="#22c55e" strokeWidth="2" />
-                  <text x="200" y="205" textAnchor="middle" className="text-xs font-semibold" fill="#22c55e" fontSize="12">D</text>
-                </g>
-                <g>
-                  <circle cx="140" cy="230" r="10" fill="white" stroke="#22c55e" strokeWidth="2" />
-                  <text x="140" y="235" textAnchor="middle" className="text-xs font-semibold" fill="#22c55e" fontSize="12">E</text>
-                </g>
-                <g>
-                  <circle cx="280" cy="180" r="10" fill="white" stroke="#22c55e" strokeWidth="2" />
-                  <text x="280" y="185" textAnchor="middle" className="text-xs font-semibold" fill="#22c55e" fontSize="12">F</text>
-                </g>
-              </svg>
+            <div className="flex-1 relative bg-gray-50 rounded-lg overflow-hidden min-h-[280px] flex items-center justify-center">
+              <img src="/src/assets/sri_lanka_heatmap.png" alt="Sri Lanka Disease Heatmap" className="w-full h-full object-contain mix-blend-multiply opacity-90" />
             </div>
 
             {/* Advisory */}

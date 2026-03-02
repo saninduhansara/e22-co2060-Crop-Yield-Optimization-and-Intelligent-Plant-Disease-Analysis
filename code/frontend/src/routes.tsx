@@ -22,6 +22,7 @@ import { AddHarvest } from "./components/admin/AddHarvest";
 import { HarvestHistory } from "./components/admin/HarvestHistory";
 import { AdminReports } from "./components/admin/AdminReports";
 import { AdminProfilePage } from "./components/admin/AdminProfilePage";
+import { AdminInquiries } from "./components/admin/AdminInquiries";
 import { NotFoundPage } from "./components/NotFoundPage";
 
 // Helper to get auth state from localStorage
@@ -196,6 +197,10 @@ export const router = createBrowserRouter([
       {
         path: "dashboard",
         element: <AdminDashboard />,
+      },
+      {
+        path: "inquiries",
+        element: <AdminInquiries />,
       },
       {
         path: "farmers",

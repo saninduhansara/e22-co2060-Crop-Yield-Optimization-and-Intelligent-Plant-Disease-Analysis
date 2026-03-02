@@ -1,4 +1,4 @@
-import { Home, Users, UserPlus, Wheat, History, FileText, Shield, LogOut, Menu, X } from 'lucide-react';
+import { Home, Users, UserPlus, Wheat, History, FileText, Shield, LogOut, Menu, X, Mail } from 'lucide-react';
 import { useState } from 'react';
 
 interface AdminSidebarProps {
@@ -9,9 +9,10 @@ interface AdminSidebarProps {
 
 export function AdminSidebar({ currentPage, onNavigate, onLogout }: AdminSidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
-  
+
   const menuItems = [
     { id: 'dashboard', label: 'Home', icon: Home },
+    { id: 'inquiries', label: 'Inquiries', icon: Mail },
     { id: 'farmers', label: 'All Farmers', icon: Users },
     { id: 'register', label: 'Register Farmer', icon: UserPlus },
     { id: 'harvest', label: 'Add Harvest', icon: Wheat },
@@ -67,16 +68,15 @@ export function AdminSidebar({ currentPage, onNavigate, onLogout }: AdminSidebar
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentPage === item.id;
-            
+
             return (
               <button
                 key={item.id}
                 onClick={() => handleNavigate(item.id)}
-                className={`w-full flex items-center gap-3 px-6 py-4 transition-all ${
-                  isActive
-                    ? 'bg-green-600/50 text-white border-r-4 border-white'
-                    : 'text-green-50 hover:bg-green-600/30'
-                }`}
+                className={`w-full flex items-center gap-3 px-6 py-4 transition-all ${isActive
+                  ? 'bg-green-600/50 text-white border-r-4 border-white'
+                  : 'text-green-50 hover:bg-green-600/30'
+                  }`}
               >
                 <Icon className="w-5 h-5" />
                 <span className="text-sm font-medium">{item.label}</span>
@@ -100,7 +100,7 @@ export function AdminSidebar({ currentPage, onNavigate, onLogout }: AdminSidebar
               <p className="text-xs text-green-200">admin@agriconnect.lk</p>
             </div>
           </button>
-          
+
           {/* Logout Button */}
           <button
             onClick={onLogout}
