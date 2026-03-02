@@ -143,3 +143,42 @@ export async function fetchUser(req, res) {
         res.status(500).json({ message: "Failed to fetch profile", error: error.message });
     }
 }
+
+// Get recently registered farmers
+export async function getRecentFarmers(req, res) {
+    try {
+        const limit = parseInt(req.query.limit) || 4; // Default to 4 recent farmers
+
+        // Fetch recently registered farmers (role = 'farmer'), sorted by creation date descending
+        const recentFarmers = await User.find({ role: 'farmer' })
+            .sort({ createdAt: -1 })
+            .limit(limit)
+            .select('firstName lastName division district image nic createdAt');
+
+        const formattedFarmers = recentFarmers.map(farmer => ({
+            _id: farmer._id,
+            name: `${farmer.firstName} ${farmer.lastName}`,
+            firstName: farmer.firstName,
+            lastName: farmer.lastName,
+            location: farmer.district || farmer.division || 'Unknown',
+            district: farmer.district,
+            division: farmer.division,
+            date: farmer.createdAt,
+            image: farmer.image,
+            nic: farmer.nic,
+            status: 'Active' // Default status; can be extended if needed
+        }));
+
+        res.json({
+            message: "Recent farmers retrieved successfully",
+            count: formattedFarmers.length,
+            farmers: formattedFarmers
+        });
+    } catch (error) {
+        console.error("Error retrieving recent farmers:", error);
+        res.status(500).json({
+            message: "Failed to retrieve recent farmers",
+            error: error.message
+        });
+    }
+}

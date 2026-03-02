@@ -78,6 +78,13 @@ export const userAPI = {
     const response = await api.get('/api/users/profile');
     return response.data;
   },
+
+  getRecentFarmers: async (limit?: number) => {
+    const response = await api.get(`/api/users/recent-farmers`, {
+      params: limit ? { limit } : {}
+    });
+    return response.data;
+  },
 };
 
 // Farm API endpoints
@@ -139,6 +146,11 @@ export const farmAPI = {
 
   getFarmerReport: async () => {
     const response = await api.get('/api/farms/my-report');
+    return response.data;
+  },
+
+  getAllCrops: async () => {
+    const response = await api.get('/api/farms/crops/list');
     return response.data;
   },
 };
