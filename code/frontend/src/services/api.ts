@@ -73,6 +73,13 @@ export const userAPI = {
       throw error;
     }
   },
+
+  getRecentFarmers: async (limit?: number) => {
+    const response = await api.get(`/api/users/recent-farmers`, {
+      params: limit ? { limit } : {}
+    });
+    return response.data;
+  },
 };
 
 // Farm API endpoints
@@ -129,6 +136,11 @@ export const farmAPI = {
 
   getHarvestHistory: async () => {
     const response = await api.get('/api/farms/harvests');
+    return response.data;
+  },
+
+  getAllCrops: async () => {
+    const response = await api.get('/api/farms/crops/list');
     return response.data;
   },
 };
