@@ -1,4 +1,11 @@
+/**
+ * Application Routing Configuration
+ * Defines all public and protected routes for the application.
+ * Uses React Router v6 and includes strict token validation guards.
+ */
 import { createBrowserRouter, Navigate } from "react-router";
+import { useEffect, useState } from "react";
+import { userAPI } from "./services/api";
 import { LoginPage } from "./components/LoginPage";
 import { FarmerLayout } from "./components/layouts/FarmerLayout";
 import { AdminLayout } from "./components/layouts/AdminLayout";
@@ -30,38 +37,104 @@ function getAuthState() {
 
 // Protected Route Component for Farmers
 function FarmerRoute({ children }: { children: React.ReactNode }) {
+  const [isValidating, setIsValidating] = useState(true);
+  const [isValid, setIsValid] = useState(false);
   const auth = getAuthState();
-  if (!auth || auth.userType !== 'farmer') {
+
+  useEffect(() => {
+    const validateToken = async () => {
+      if (!auth || auth.userType !== 'farmer') {
+        setIsValid(false);
+        setIsValidating(false);
+        return;
+      }
+      try {
+        await userAPI.fetchProfile();
+        setIsValid(true);
+      } catch (error) {
+        localStorage.removeItem('agriconnect_auth');
+        setIsValid(false);
+      } finally {
+        setIsValidating(false);
+      }
+    };
+    validateToken();
+  }, [auth]);
+
+  if (isValidating) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-green-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-green-600 mb-4"></div>
+        <p className="text-green-800 font-medium">Verifying Session...</p>
+      </div>
+    );
+  }
+
+  if (!isValid) {
     return <Navigate to="/" replace />;
   }
+
   return <>{children}</>;
 }
 
 // Protected Route Component for Admins
 function AdminRoute({ children }: { children: React.ReactNode }) {
+  const [isValidating, setIsValidating] = useState(true);
+  const [isValid, setIsValid] = useState(false);
   const auth = getAuthState();
-  if (!auth || auth.userType !== 'admin') {
+
+  useEffect(() => {
+    const validateToken = async () => {
+      if (!auth || auth.userType !== 'admin') {
+        setIsValid(false);
+        setIsValidating(false);
+        return;
+      }
+      try {
+        await userAPI.fetchProfile();
+        setIsValid(true);
+      } catch (error) {
+        localStorage.removeItem('agriconnect_auth');
+        setIsValid(false);
+      } finally {
+        setIsValidating(false);
+      }
+    };
+    validateToken();
+  }, [auth]);
+
+  if (isValidating) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-green-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-green-600 mb-4"></div>
+        <p className="text-green-800 font-medium">Verifying Admin Session...</p>
+      </div>
+    );
+  }
+
+  if (!isValid) {
     return <Navigate to="/" replace />;
   }
+
   return <>{children}</>;
 }
 
 // Root redirect based on auth state
 function RootRedirect() {
   const auth = getAuthState();
-  
+
   if (!auth) {
     return <LoginPage />;
   }
-  
+
   if (auth.userType === 'farmer') {
     return <Navigate to="/farmer/home" replace />;
   }
-  
+
   if (auth.userType === 'admin') {
     return <Navigate to="/admin/dashboard" replace />;
   }
-  
+
   return <LoginPage />;
 }
 

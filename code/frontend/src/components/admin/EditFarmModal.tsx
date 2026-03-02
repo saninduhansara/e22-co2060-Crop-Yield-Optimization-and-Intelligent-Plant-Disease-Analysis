@@ -1,5 +1,6 @@
 import { X, Save, AlertCircle } from 'lucide-react';
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { farmAPI } from '../../services/api';
 
 interface Farm {
@@ -49,11 +50,14 @@ export function EditFarmModal({ farm, onClose, onSuccess }: EditFarmModalProps) 
         status: formData.status,
       });
 
+      toast.success('Farm details updated successfully!');
       onSuccess();
       onClose();
     } catch (err: any) {
       console.error('Error updating farm:', err);
-      setError(err.response?.data?.message || 'Failed to update farm. Please try again.');
+      const errorMessage = err.response?.data?.message || 'Failed to update farm. Please try again.';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
