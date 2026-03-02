@@ -4,44 +4,44 @@ import { isAdmin } from "./userController.js";
 import AvgYield from "../models/avgYield.js";
 
 export async function createFarm(req, res) {
-    if (!isAdmin(req)) {
-        return res.status(403).json({ message: "Access denied. Admins only" });
-    }
+  if (!isAdmin(req)) {
+    return res.status(403).json({ message: "Access denied. Admins only" });
+  }
 
-    let farmId = "FAM00202"
-    const latestid = await Farm.find().sort({ createdDate: -1 }).limit(1);
+  let farmId = "FAM00202"
+  const latestid = await Farm.find().sort({ createdDate: -1 }).limit(1);
 
-    if(latestid.length > 0){
-        const lastfarmIdString = latestid[0].farmId
-        const lastfarmIdWithoutPrefix = lastfarmIdString.replace("FAM","")
-        const lastfarmIdInInteger = parseInt(lastfarmIdWithoutPrefix)
-        const newfarmIdInInteger = lastfarmIdInInteger + 1
-        const newfarmIdWithoutPrefix = newfarmIdInInteger.toString().padStart(5,"0")
-        farmId = "FAM" + newfarmIdWithoutPrefix
+  if (latestid.length > 0) {
+    const lastfarmIdString = latestid[0].farmId
+    const lastfarmIdWithoutPrefix = lastfarmIdString.replace("FAM", "")
+    const lastfarmIdInInteger = parseInt(lastfarmIdWithoutPrefix)
+    const newfarmIdInInteger = lastfarmIdInInteger + 1
+    const newfarmIdWithoutPrefix = newfarmIdInInteger.toString().padStart(5, "0")
+    farmId = "FAM" + newfarmIdWithoutPrefix
 
-    }
+  }
 
-    const { farmerNIC, ...farmData } = req.body;
+  const { farmerNIC, ...farmData } = req.body;
 
-    // Find the farmer by NIC
-    const farmer = await User.findOne({ nic: farmerNIC });
-    if (!farmer) {
-        return res.status(404).json({ message: "Farmer not found" });
-    }
+  // Find the farmer by NIC
+  const farmer = await User.findOne({ nic: farmerNIC });
+  if (!farmer) {
+    return res.status(404).json({ message: "Farmer not found" });
+  }
 
-    const farm = new Farm({
-        ...farmData,
-        farmer: farmer._id,
-        farmId: farmId
-    });
+  const farm = new Farm({
+    ...farmData,
+    farmer: farmer._id,
+    farmId: farmId
+  });
 
-    try {
-        const response = await farm.save();
-        res.json({ message: "Farm created successfully", farm: response });
-    } catch (error) {
-        console.error("Error creating farm", error);
-        return res.status(500).json({ message: "Failed", error: error.message });
-    }
+  try {
+    const response = await farm.save();
+    res.json({ message: "Farm created successfully", farm: response });
+  } catch (error) {
+    console.error("Error creating farm", error);
+    return res.status(500).json({ message: "Failed", error: error.message });
+  }
 }
 
 
@@ -50,9 +50,9 @@ export async function createFarm(req, res) {
 // points = P max * sqrt( max(0, farm yield - average yield) / (y max - average yield) )
 
 export const addHarvestAndPoints = async (req, res) => {
-    if (!isAdmin(req)) {
-        return res.status(403).json({ message: "Access denied. Admins only" });
-    }
+  if (!isAdmin(req)) {
+    return res.status(403).json({ message: "Access denied. Admins only" });
+  }
   const { farmId, season, year, harvestQty } = req.body;
 
   try {
@@ -270,14 +270,14 @@ export async function deleteFarm(req, res) {
 export const getHarvestHistory = async (req, res) => {
   try {
     const farms = await Farm.find().populate('farmer', 'firstName lastName nic');
-    
+
     const harvestHistory = [];
-    
+
     farms.forEach(farm => {
       if (farm.harvests && farm.harvests.length > 0) {
         farm.harvests.forEach(harvest => {
           const yieldPerAcre = harvest.harvestQty / farm.sizeInAcres;
-          
+
           harvestHistory.push({
             harvestId: harvest._id,
             farmId: farm.farmId,
@@ -297,10 +297,10 @@ export const getHarvestHistory = async (req, res) => {
         });
       }
     });
-    
+
     // Sort by harvest date (most recent first)
     harvestHistory.sort((a, b) => new Date(b.harvestDate) - new Date(a.harvestDate));
-    
+
     res.json({
       harvests: harvestHistory,
       total: harvestHistory.length
@@ -308,5 +308,49 @@ export const getHarvestHistory = async (req, res) => {
   } catch (error) {
     console.error("Error fetching harvest history:", error);
     res.status(500).json({ message: "Failed to fetch harvest history", error: error.message });
+  }
+};
+
+// Get farmer report (aggregation for logged in user)
+export const getFarmerReport = async (req, res) => {
+  try {
+    if (!req.user || !req.user.email) {
+      return res.status(401).json({ message: "Unauthorized. Please log in again." });
+    }
+
+    const user = await User.findOne({ email: req.user.email });
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    const farms = await Farm.find({ farmer: user._id });
+
+    let totalAcres = 0;
+    const cropMap = {};
+
+    farms.forEach(farm => {
+      totalAcres += farm.sizeInAcres;
+      if (cropMap[farm.crop]) {
+        cropMap[farm.crop] += farm.sizeInAcres;
+      } else {
+        cropMap[farm.crop] = farm.sizeInAcres;
+      }
+    });
+
+    const cropVarieties = Object.keys(cropMap).map(crop => ({
+      name: crop,
+      acres: cropMap[crop],
+      value: totalAcres > 0 ? parseFloat(((cropMap[crop] / totalAcres) * 100).toFixed(1)) : 0
+    }));
+
+    res.json({
+      message: "Report retrieved successfully",
+      totalPoints: user.points || 0,
+      totalAcres: parseFloat(totalAcres.toFixed(1)),
+      cropVarieties: cropVarieties
+    });
+  } catch (error) {
+    console.error("Error retrieving farmer report", error);
+    res.status(500).json({ message: "Failed to retrieve report", error: error.message });
   }
 };
