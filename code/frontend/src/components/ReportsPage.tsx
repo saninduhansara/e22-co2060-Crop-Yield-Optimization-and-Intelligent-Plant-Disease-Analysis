@@ -2,6 +2,10 @@ import { useEffect, useState } from 'react';
 import { Download, TrendingUp, BarChart3, PieChart } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart as RePieChart, Pie, Cell } from 'recharts';
 import { farmAPI } from '../services/api';
+import { useHomeDashboardData } from './HomePage';
+import { SummaryCard } from './SummaryCard';
+
+
 
 export function ReportsPage() {
   const [reportData, setReportData] = useState<{
@@ -10,6 +14,7 @@ export function ReportsPage() {
     cropVarieties: { name: string; acres: number; value: number }[];
   } | null>(null);
   const [loading, setLoading] = useState(true);
+  const { totalFarmers, totalHarvest, yieldPerAcre, loading: metricsLoading, error: metricsError } = useHomeDashboardData();
 
   useEffect(() => {
     const fetchReport = async () => {
@@ -50,33 +55,84 @@ export function ReportsPage() {
     return <div className="p-8 text-center text-gray-500">Loading reports...</div>;
   }
 
+  // show any metrics loading or error states above summary cards
+  const renderMetricsSection = () => {
+    if (metricsLoading) {
+      return <div className="p-4 text-center text-gray-500">Loading metrics...</div>;
+    }
+    if (metricsError) {
+      return <div className="p-4 text-center text-red-600">Error loading metrics: {metricsError}</div>;
+    }
+
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+        <SummaryCard
+          title="Total Farmers"
+          value={totalFarmers.toLocaleString()}
+          hoverable={false}
+        />
+        <SummaryCard
+          title="Total Harvest"
+          value={totalHarvest.toLocaleString()}
+          unit="tons"
+          hoverable={false}
+        />
+        <SummaryCard
+          title="Yield per Acre"
+          value={yieldPerAcre.toFixed(2)}
+          hoverable={false}
+        />
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
+      {/* Metrics pulled from home dashboard logic */}
+      {renderMetricsSection()}
+
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white shadow-lg">
-          <TrendingUp className="w-8 h-8 mb-3 opacity-80" />
-          <p className="text-green-100 text-sm mb-1">Total Points</p>
-          <p className="text-3xl font-bold">{reportData?.totalPoints?.toLocaleString() || 0}</p>
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+        {/* Total Points Card */}
+        <SummaryCard
+          title="Total Points"
+          value={reportData?.totalPoints?.toLocaleString() || 0}
+          subtext={<span className="text-xs text-teal-600 flex items-center gap-1">This season</span>}
+          icon={<TrendingUp className="w-5 h-5 md:w-6 md:h-6 text-green-600" />}
+          iconBgClass="bg-green-50 group-hover:bg-green-100"
+          hoverable={true}
+        />
 
-        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg">
-          <BarChart3 className="w-8 h-8 mb-3 opacity-80" />
-          <p className="text-blue-100 text-sm mb-1">Total Acres</p>
-          <p className="text-3xl font-bold">{reportData?.totalAcres || 0}</p>
-        </div>
+        {/* Total Acres Card */}
+        <SummaryCard
+          title="Total Acres"
+          value={reportData?.totalAcres || 0}
+          unit="acres"
+          subtext="Under cultivation"
+          icon={<BarChart3 className="w-5 h-5 md:w-6 md:h-6 text-blue-600" />}
+          iconBgClass="bg-blue-50 group-hover:bg-blue-100"
+          hoverable={true}
+        />
 
-        <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl p-6 text-white shadow-lg">
-          <PieChart className="w-8 h-8 mb-3 opacity-80" />
-          <p className="text-amber-100 text-sm mb-1">Crop Varieties</p>
-          <p className="text-3xl font-bold">{reportData?.cropVarieties?.length || 0}</p>
-        </div>
+        {/* Crop Varieties Card */}
+        <SummaryCard
+          title="Crop Varieties"
+          value={reportData?.cropVarieties?.length || 0}
+          subtext="Total varieties"
+          icon={<PieChart className="w-5 h-5 md:w-6 md:h-6 text-amber-600" />}
+          iconBgClass="bg-amber-50 group-hover:bg-amber-100"
+          hoverable={true}
+        />
 
-        <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-6 text-white shadow-lg">
-          <BarChart3 className="w-8 h-8 mb-3 opacity-80" />
-          <p className="text-red-100 text-sm mb-1">Disease Reports</p>
-          <p className="text-3xl font-bold">12</p>
-        </div>
+        {/* Disease Reports Card */}
+        <SummaryCard
+          title="Disease Reports"
+          value={12}
+          subtext={<span className="text-xs text-red-600 font-medium">Requires attention</span>}
+          icon={<BarChart3 className="w-5 h-5 md:w-6 md:h-6 text-red-600" />}
+          iconBgClass="bg-red-50 group-hover:bg-red-100"
+          hoverable={true}
+        />
       </div>
 
       {/* Charts Row */}
