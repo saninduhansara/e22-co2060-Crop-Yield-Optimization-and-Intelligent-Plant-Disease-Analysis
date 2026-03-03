@@ -1,7 +1,99 @@
-import { Download, TrendingUp, Users, Wheat, FileText } from 'lucide-react';
+import { Download, TrendingUp, Users, Wheat, FileText, BarChart3 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
+import { useState } from 'react';
+// hook shared with home dashboard for loading summary metrics (total farmers, harvest, yield)
+import { useHomeDashboardData } from '../HomePage';
+import { FarmerProfile } from './FarmerProfile';
 
 export function AdminReports() {
+  // fetch latest metrics used on home page as well
+  const { totalFarmers, totalHarvest, yieldPerAcre, loading: metricsLoading, error: metricsError } = useHomeDashboardData();
+  const [selectedFarmer, setSelectedFarmer] = useState<any | null>(null);
+
+  // Mock top performers data (can be replaced with actual API data)
+  const topPerformersData = [
+    { 
+      rank: 1, 
+      farmId: 'F001',
+      farmName: 'Perera Farm',
+      name: 'Nimal Perera', 
+      farmerNIC: 'XX1234567V',
+      phone: '0701234567',
+      division: 'Central',
+      district: 'Polonnaruwa', 
+      farmSize: 5,
+      crop: 'Paddy',
+      status: 'active',
+      yield: 6.5, 
+      avgYield: 1.30, 
+      points: 325 
+    },
+    { 
+      rank: 2, 
+      farmId: 'F002',
+      farmName: 'Hassan Farm',
+      name: 'Ahmed Hassan', 
+      farmerNIC: 'XX2234567V',
+      phone: '0712234567',
+      division: 'Western',
+      district: 'Gampaha', 
+      farmSize: 3.5,
+      crop: 'Paddy',
+      status: 'active',
+      yield: 4.5, 
+      avgYield: 1.29, 
+      points: 227 
+    },
+    { 
+      rank: 3, 
+      farmId: 'F003',
+      farmName: 'Fernando Farm',
+      name: 'Priya Fernando', 
+      farmerNIC: 'XX3234567V',
+      phone: '0713234567',
+      division: 'North Central',
+      district: 'Kurunegala', 
+      farmSize: 4,
+      crop: 'Paddy',
+      status: 'active',
+      yield: 4.8, 
+      avgYield: 1.20, 
+      points: 240 
+    },
+    { 
+      rank: 4, 
+      farmId: 'F004',
+      farmName: 'Silva Farm',
+      name: 'Ruwan Silva', 
+      farmerNIC: 'XX4234567V',
+      phone: '0714234567',
+      division: 'North Central',
+      district: 'Anuradhapura', 
+      farmSize: 3.3,
+      crop: 'Paddy',
+      status: 'active',
+      yield: 3.9, 
+      avgYield: 1.18, 
+      points: 196 
+    },
+    { 
+      rank: 5, 
+      farmId: 'F005',
+      farmName: 'Dissanayake Farm',
+      name: 'Kamala Dissanayake', 
+      farmerNIC: 'XX5234567V',
+      phone: '0715234567',
+      division: 'Eastern',
+      district: 'Ampara', 
+      farmSize: 3,
+      crop: 'Paddy',
+      status: 'active',
+      yield: 3.3, 
+      avgYield: 1.10, 
+      points: 165 
+    },
+  ];
+
   const seasonData = [
     { season: 'Maha 24/25', yield: 1650, farmers: 235, points: 12500 },
     { season: 'Yala 2024', yield: 1200, farmers: 198, points: 9800 },
@@ -41,64 +133,78 @@ export function AdminReports() {
         </button>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <p className="text-gray-600 text-sm mb-1">Total Farmers</p>
-              <p className="text-4xl font-bold text-gray-900">247</p>
+      {/* Summary Cards - matching AdminDashboard styling */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+        {/* Total Farmers Card */}
+        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-5 sm:p-6 shadow-md border-l-4 border-l-green-500 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group">
+          <div className="flex flex-col">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">Total Farmers</p>
+              <Users className="w-5 h-5 text-green-600 opacity-70 group-hover:opacity-100 transition-opacity" />
             </div>
-            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-              <Users className="w-6 h-6 text-green-700" />
-            </div>
+            <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 my-2 break-words min-w-0">
+              {metricsLoading ? '...' : metricsError ? 'Error' : totalFarmers.toLocaleString()}
+            </p>
+            <p className="text-xs sm:text-sm text-green-700 flex items-center gap-1 mt-2">
+              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4" />
+              {metricsLoading ? '...' : '+12% this season'}
+            </p>
           </div>
-          <p className="text-sm text-green-600 flex items-center gap-1">
-            <TrendingUp className="w-4 h-4" />
-            +12% this season
-          </p>
         </div>
 
-        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <p className="text-gray-600 text-sm mb-1">Total Yield</p>
-              <p className="text-4xl font-bold text-gray-900">1,840 <span className="text-lg font-normal text-gray-600">tons</span></p>
+        {/* Total Harvest Card */}
+        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-5 sm:p-6 shadow-md border-l-4 border-l-green-500 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group">
+          <div className="flex flex-col">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">Total Harvest</p>
+              <Wheat className="w-5 h-5 text-green-600 opacity-70 group-hover:opacity-100 transition-opacity" />
             </div>
-            <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-              <Wheat className="w-6 h-6 text-orange-700" />
+            <div className="flex min-w-0 flex-wrap items-baseline gap-1 sm:gap-2 my-2">
+              <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 break-words min-w-0">
+                {metricsLoading ? '...' : totalHarvest.toLocaleString()}
+              </p>
+              <span className="text-xs sm:text-sm font-medium text-gray-600 break-words">tons</span>
             </div>
+            <p className="text-xs sm:text-sm text-green-700 flex items-center gap-1 mt-2">
+              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4" />
+              {metricsLoading ? '...' : '+16% from last season'}
+            </p>
           </div>
-          <p className="text-sm text-green-600 flex items-center gap-1">
-            <TrendingUp className="w-4 h-4" />
-            +16% from last season
-          </p>
         </div>
 
-        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <p className="text-gray-600 text-sm mb-1">Avg Yield/Acre</p>
-              <p className="text-4xl font-bold text-gray-900">1.24 <span className="text-lg font-normal text-gray-600">tons</span></p>
+        {/* Avg Yield/Acre Card */}
+        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-5 sm:p-6 shadow-md border-l-4 border-l-green-500 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group">
+          <div className="flex flex-col">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">Avg Yield/Acre</p>
+              <TrendingUp className="w-5 h-5 text-green-600 opacity-70 group-hover:opacity-100 transition-opacity" />
             </div>
-            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-              <TrendingUp className="w-6 h-6 text-blue-700" />
+            <div className="flex min-w-0 flex-wrap items-baseline gap-1 sm:gap-2 my-2">
+              <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 break-words min-w-0">
+                {metricsLoading ? '...' : yieldPerAcre.toFixed(2)}
+              </p>
+              <span className="text-xs sm:text-sm font-medium text-gray-600 break-words">tons</span>
             </div>
+            <p className="text-xs sm:text-sm text-green-700 mt-2">
+              {metricsLoading ? '...' : 'Above target'}
+            </p>
           </div>
-          <p className="text-sm text-gray-600">Above target</p>
         </div>
 
-        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <p className="text-gray-600 text-sm mb-1">Total Points</p>
-              <p className="text-4xl font-bold text-green-700">14,800</p>
+        {/* Total Points Card */}
+        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-5 sm:p-6 shadow-md border-l-4 border-l-green-500 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group">
+          <div className="flex flex-col">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">Total Points</p>
+              <FileText className="w-5 h-5 text-green-600 opacity-70 group-hover:opacity-100 transition-opacity" />
             </div>
-            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-              <FileText className="w-6 h-6 text-green-700" />
-            </div>
+            <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 my-2 break-words min-w-0">
+              {metricsLoading ? '...' : '14,800'}
+            </p>
+            <p className="text-xs sm:text-sm text-green-700 mt-2">
+              {metricsLoading ? '...' : 'This season'}
+            </p>
           </div>
-          <p className="text-sm text-green-600">This season</p>
         </div>
       </div>
 
@@ -195,14 +301,12 @@ export function AdminReports() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {[
-                { rank: 1, name: 'Nimal Perera', district: 'Polonnaruwa', yield: 6.5, avgYield: 1.30, points: 325 },
-                { rank: 2, name: 'Ahmed Hassan', district: 'Gampaha', yield: 4.5, avgYield: 1.29, points: 227 },
-                { rank: 3, name: 'Priya Fernando', district: 'Kurunegala', yield: 4.8, avgYield: 1.20, points: 240 },
-                { rank: 4, name: 'Ruwan Silva', district: 'Anuradhapura', yield: 3.9, avgYield: 1.18, points: 196 },
-                { rank: 5, name: 'Kamala Dissanayake', district: 'Ampara', yield: 3.3, avgYield: 1.10, points: 165 },
-              ].map((farmer) => (
-                <tr key={farmer.rank} className="hover:bg-gray-50">
+              {topPerformersData.map((farmer) => (
+                <tr 
+                  key={farmer.rank} 
+                  className="hover:bg-gray-50 transition-colors cursor-pointer"
+                  onClick={() => setSelectedFarmer(farmer)}
+                >
                   <td className="px-6 py-4">
                     <span className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${
                       farmer.rank === 1 ? 'bg-yellow-100 text-yellow-700' :
@@ -224,6 +328,26 @@ export function AdminReports() {
           </table>
         </div>
       </div>
+
+      {/* Farmer Details Modal */}
+      {selectedFarmer && (
+        <FarmerProfile 
+          farm={{
+            farmId: selectedFarmer.farmId,
+            farmName: selectedFarmer.farmName,
+            farmerName: selectedFarmer.name,
+            farmerNIC: selectedFarmer.farmerNIC,
+            phone: selectedFarmer.phone,
+            division: selectedFarmer.division,
+            district: selectedFarmer.district,
+            farmSize: selectedFarmer.farmSize,
+            crop: selectedFarmer.crop,
+            status: selectedFarmer.status,
+            points: selectedFarmer.points,
+          }} 
+          onClose={() => setSelectedFarmer(null)} 
+        />
+      )}
     </div>
   );
 }
