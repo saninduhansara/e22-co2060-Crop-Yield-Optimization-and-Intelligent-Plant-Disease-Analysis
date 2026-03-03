@@ -133,13 +133,46 @@ export function AdminReports() {
     { season: 'Maha 25/26', yield: 1840, farmers: 247, points: 14800 },
   ];
 
-  const varietyData = [
-    { name: 'BG 300', value: 35, color: '#16a34a' },
-    { name: 'BG 352', value: 25, color: '#22c55e' },
-    { name: 'BG 366', value: 18, color: '#4ade80' },
-    { name: 'AT 362', value: 15, color: '#86efac' },
-    { name: 'Others', value: 7, color: '#bbf7d0' },
-  ];
+  // Filter by year and season only (NOT crop) for variety distribution
+  const filteredHarvestsForVariety = harvests.filter((h) => {
+    const yearMatch = selectedYear ? String(h.year) === selectedYear : true;
+    const seasonMatch = selectedSeason ? (String(h.season || '').toLowerCase() === selectedSeason.toLowerCase()) : true;
+    return yearMatch && seasonMatch;
+  });
+
+  // Compute crop variety distribution
+  const totalHarvestForVariety = filteredHarvestsForVariety.reduce((s, h) => s + (Number(h.harvestQty) || 0), 0);
+  const cropVarietyMap: Record<string, number> = {};
+  filteredHarvestsForVariety.forEach((h) => {
+    const crop = h.crop || 'Unknown';
+    if (!cropVarietyMap[crop]) {
+      cropVarietyMap[crop] = 0;
+    }
+    cropVarietyMap[crop] += Number(h.harvestQty) || 0;
+  });
+
+  // Define colors for crops
+  const cropColors: Record<string, string> = {
+    'Paddy': '#16a34a',
+    'Corn': '#22c55e',
+    'Wheat': '#4ade80',
+    'Cabbage': '#86efac',
+    'Tomatoes': '#fbbf24',
+    'Onion': '#f97316',
+    'Carrots': '#fb923c',
+    'Potatoes': '#f87171',
+  };
+
+  const varietyData = Object.entries(cropVarietyMap)
+    .map(([name, qty]) => {
+      const percentage = totalHarvestForVariety > 0 ? ((qty / totalHarvestForVariety) * 100) : 0;
+      return {
+        name,
+        value: Math.round(percentage),
+        color: cropColors[name] || '#bbf7d0',
+      };
+    })
+    .sort((a, b) => b.value - a.value);
 
   const districtData = [
     { district: 'Gampaha', farmers: 52, yield: 380 },
@@ -329,7 +362,7 @@ export function AdminReports() {
 
         {/* Variety Distribution */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Paddy Variety Distribution</h3>
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Crop Variety Distribution</h3>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
