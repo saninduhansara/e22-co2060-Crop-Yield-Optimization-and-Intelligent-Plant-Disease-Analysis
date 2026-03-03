@@ -1,6 +1,7 @@
 import { Download, TrendingUp, Users, Wheat, FileText, BarChart3 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { farmAPI } from '../../services/api';
 // hook shared with home dashboard for loading summary metrics (total farmers, harvest, yield)
 import { useHomeDashboardData } from '../HomePage';
 import { FarmerProfile } from './FarmerProfile';
@@ -9,90 +10,120 @@ export function AdminReports() {
   // fetch latest metrics used on home page as well
   const { totalFarmers, totalHarvest, yieldPerAcre, loading: metricsLoading, error: metricsError } = useHomeDashboardData();
   const [selectedFarmer, setSelectedFarmer] = useState<any | null>(null);
+  const [loadingFarmerDetails, setLoadingFarmerDetails] = useState<boolean>(false);
 
-  // Mock top performers data (can be replaced with actual API data)
-  const topPerformersData = [
-    { 
-      rank: 1, 
-      farmId: 'F001',
-      farmName: 'Perera Farm',
-      name: 'Nimal Perera', 
-      farmerNIC: 'XX1234567V',
-      phone: '0701234567',
-      division: 'Central',
-      district: 'Polonnaruwa', 
-      farmSize: 5,
-      crop: 'Paddy',
-      status: 'active',
-      yield: 6.5, 
-      avgYield: 1.30, 
-      points: 325 
-    },
-    { 
-      rank: 2, 
-      farmId: 'F002',
-      farmName: 'Hassan Farm',
-      name: 'Ahmed Hassan', 
-      farmerNIC: 'XX2234567V',
-      phone: '0712234567',
-      division: 'Western',
-      district: 'Gampaha', 
-      farmSize: 3.5,
-      crop: 'Paddy',
-      status: 'active',
-      yield: 4.5, 
-      avgYield: 1.29, 
-      points: 227 
-    },
-    { 
-      rank: 3, 
-      farmId: 'F003',
-      farmName: 'Fernando Farm',
-      name: 'Priya Fernando', 
-      farmerNIC: 'XX3234567V',
-      phone: '0713234567',
-      division: 'North Central',
-      district: 'Kurunegala', 
-      farmSize: 4,
-      crop: 'Paddy',
-      status: 'active',
-      yield: 4.8, 
-      avgYield: 1.20, 
-      points: 240 
-    },
-    { 
-      rank: 4, 
-      farmId: 'F004',
-      farmName: 'Silva Farm',
-      name: 'Ruwan Silva', 
-      farmerNIC: 'XX4234567V',
-      phone: '0714234567',
-      division: 'North Central',
-      district: 'Anuradhapura', 
-      farmSize: 3.3,
-      crop: 'Paddy',
-      status: 'active',
-      yield: 3.9, 
-      avgYield: 1.18, 
-      points: 196 
-    },
-    { 
-      rank: 5, 
-      farmId: 'F005',
-      farmName: 'Dissanayake Farm',
-      name: 'Kamala Dissanayake', 
-      farmerNIC: 'XX5234567V',
-      phone: '0715234567',
-      division: 'Eastern',
-      district: 'Ampara', 
-      farmSize: 3,
-      crop: 'Paddy',
-      status: 'active',
-      yield: 3.3, 
-      avgYield: 1.10, 
-      points: 165 
-    },
-  ];
+  const handleSelectPerformer = async (perf: any) => {
+    if (!perf.farmId) {
+      setSelectedFarmer(perf);
+      return;
+    }
+    try {
+      setLoadingFarmerDetails(true);
+      const data = await farmAPI.getFarmById(perf.farmId);
+      const farm = data.farm || data;
+      setSelectedFarmer({
+        ...perf,
+        phone: farm.phone,
+        division: farm.division,
+        farmerName: farm.farmerName || perf.name,
+        farmerNIC: farm.farmerNIC || perf.farmerNIC,
+        crop: farm.crop || perf.crop,
+        status: farm.status || perf.status,
+        farmSize: farm.farmSize || farm.sizeInAcres || perf.totalAcres,
+      });
+    } catch (err) {
+      console.error('Error loading farmer info', err);
+      setSelectedFarmer(perf);
+    } finally {
+      setLoadingFarmerDetails(false);
+    }
+  };
+  // state for harvests and filters
+  const [harvests, setHarvests] = useState<any[]>([]);
+  const [loadingHarvests, setLoadingHarvests] = useState<boolean>(true);
+  const [selectedYear, setSelectedYear] = useState<string>('');
+  const [selectedSeason, setSelectedSeason] = useState<string>('');
+  const [selectedCrop, setSelectedCrop] = useState<string>('');
+
+  // dropdown toggles (reuse patterns from AddHarvest)
+  const [isYearOpen, setIsYearOpen] = useState(false);
+  const [isSeasonOpen, setIsSeasonOpen] = useState(false);
+  const [isCropOpen, setIsCropOpen] = useState(false);
+
+  const years = ['2024', '2025', '2026', '2027', '2028'];
+  const seasons = ['Maha', 'Yala'];
+  const crops = ['Paddy','Corn','Wheat','Cabbage','Tomatoes','Onion','Carrots','Potatoes'];
+
+  useEffect(() => {
+    const fetchHarvests = async () => {
+      try {
+        setLoadingHarvests(true);
+        const data = await farmAPI.getHarvestHistory();
+        setHarvests(data.harvests || []);
+      } catch (err) {
+        console.error('Failed to load harvests', err);
+        setHarvests([]);
+      } finally {
+        setLoadingHarvests(false);
+      }
+    };
+    fetchHarvests();
+  }, []);
+
+  // compute filtered harvests when filters change
+  const filteredHarvests = harvests.filter((h) => {
+    const yearMatch = selectedYear ? String(h.year) === selectedYear : true;
+    const seasonMatch = selectedSeason ? (String(h.season || '').toLowerCase() === selectedSeason.toLowerCase()) : true;
+    const cropMatch = selectedCrop ? (String(h.crop || '').toLowerCase() === selectedCrop.toLowerCase()) : true;
+    return yearMatch && seasonMatch && cropMatch;
+  });
+
+  // Total harvest (tons) and average yield per acre (tons/acre) based on filtered harvests
+  const totalHarvestKg = filteredHarvests.reduce((s, h) => s + (Number(h.harvestQty) || 0), 0);
+  const totalAcres = filteredHarvests.reduce((s, h) => s + (Number(h.acres || h.farmSize || 0) || 0), 0);
+  const totalHarvestTons = totalHarvestKg / 1000;
+  const avgYieldPerAcre = totalAcres > 0 ? (totalHarvestTons / totalAcres) : 0;
+  const totalPoints = filteredHarvests.reduce((s, h) => s + (Number(h.points) || 0), 0);
+
+  // Top performers aggregated by farmer (based on filtered harvests)
+  const performersMap: Record<string, any> = {};
+  filteredHarvests.forEach((h) => {
+    const key = h.farmerNIC || h.farmerName || h.farmId || h.farmName;
+    if (!performersMap[key]) {
+      performersMap[key] = {
+        farmerName: h.farmerName || h.name || 'Unknown',
+        farmerNIC: h.farmerNIC,
+        farmId: h.farmId,
+        farmName: h.farmName,
+        district: h.district,
+        status: h.status || 'active',
+        crop: h.crop || '',
+        totalHarvestKg: 0,
+        totalAcres: 0,
+        points: 0,
+      };
+    }
+    performersMap[key].totalHarvestKg += Number(h.harvestQty) || 0;
+    performersMap[key].totalAcres += Number(h.acres || h.farmSize || 0) || 0;
+    performersMap[key].points += Number(h.points || 0) || 0;
+  });
+
+  const topPerformers = Object.values(performersMap)
+    .map((p: any, idx) => ({
+      rank: idx + 1,
+      name: p.farmerName,
+      farmerNIC: p.farmerNIC,
+      farmId: p.farmId,
+      farmName: p.farmName,
+      district: p.district,
+      yield: +(p.totalHarvestKg / 1000).toFixed(2),
+      avgYield: p.totalAcres > 0 ? +( (p.totalHarvestKg/1000) / p.totalAcres ).toFixed(2) : 0,
+      totalAcres: p.totalAcres,
+      points: p.points,
+    }))
+    .sort((a: any, b: any) => (b.yield || 0) - (a.yield || 0))
+    .map((p: any, i: number) => ({ ...p, rank: i + 1 }))
+    .slice(0, 10);
 
   const seasonData = [
     { season: 'Maha 24/25', yield: 1650, farmers: 235, points: 12500 },
@@ -132,6 +163,77 @@ export function AdminReports() {
           Export All Reports
         </button>
       </div>
+      {/* Filters - Year / Season / Crop (matching AddHarvest style) */}
+      <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <div>
+          <h4 className="text-sm md:text-md font-semibold text-gray-800 mb-3">Primary Information</h4>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Year */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Year</label>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsYearOpen(!isYearOpen)}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-left flex items-center justify-between hover:bg-gray-100 transition-colors"
+                >
+                  <span className={selectedYear ? 'text-gray-800' : 'text-gray-400'}>{selectedYear || 'Select Year'}</span>
+                  <svg className={`w-4 h-4 text-gray-600 transition-transform ${isYearOpen ? 'rotate-180' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6" /></svg>
+                </button>
+                {isYearOpen && (
+                  <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
+                    {years.map((y) => (
+                      <button key={y} type="button" onClick={() => { setSelectedYear(y); setIsYearOpen(false); }} className={`w-full px-4 py-3 text-left hover:bg-green-50 ${selectedYear === y ? 'bg-green-100 text-green-700 font-medium' : 'text-gray-800'}`}>
+                        {y}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Season */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Harvest Season</label>
+              <div className="relative">
+                <button type="button" onClick={() => setIsSeasonOpen(!isSeasonOpen)} className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-left flex items-center justify-between hover:bg-gray-100 transition-colors">
+                  <span className={selectedSeason ? 'text-gray-800' : 'text-gray-400'}>{selectedSeason || 'Select Season'}</span>
+                  <svg className={`w-4 h-4 text-gray-600 transition-transform ${isSeasonOpen ? 'rotate-180' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6" /></svg>
+                </button>
+                {isSeasonOpen && (
+                  <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
+                    {seasons.map((s) => (
+                      <button key={s} type="button" onClick={() => { setSelectedSeason(s); setIsSeasonOpen(false); }} className={`w-full px-4 py-3 text-left hover:bg-green-50 ${selectedSeason === s ? 'bg-green-100 text-green-700 font-medium' : 'text-gray-800'}`}>
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Crop */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Crop</label>
+              <div className="relative">
+                <button type="button" onClick={() => setIsCropOpen(!isCropOpen)} className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-left flex items-center justify-between hover:bg-gray-100 transition-colors">
+                  <span className={selectedCrop ? 'text-gray-800' : 'text-gray-400'}>{selectedCrop || 'Select Crop'}</span>
+                  <svg className={`w-4 h-4 text-gray-600 transition-transform ${isCropOpen ? 'rotate-180' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6" /></svg>
+                </button>
+                {isCropOpen && (
+                  <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
+                    {crops.map((c) => (
+                      <button key={c} type="button" onClick={() => { setSelectedCrop(c); setIsCropOpen(false); }} className={`w-full px-4 py-3 text-left hover:bg-green-50 ${selectedCrop === c ? 'bg-green-100 text-green-700 font-medium' : 'text-gray-800'}`}>
+                        {c}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Summary Cards - matching AdminDashboard styling */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
@@ -161,7 +263,7 @@ export function AdminReports() {
             </div>
             <div className="flex min-w-0 flex-wrap items-baseline gap-1 sm:gap-2 my-2">
               <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 break-words min-w-0">
-                {metricsLoading ? '...' : totalHarvest.toLocaleString()}
+                {metricsLoading || loadingHarvests ? '...' : (selectedYear || selectedSeason || selectedCrop) ? totalHarvestTons.toFixed(1).toLocaleString() : totalHarvest.toLocaleString()}
               </p>
               <span className="text-xs sm:text-sm font-medium text-gray-600 break-words">tons</span>
             </div>
@@ -181,7 +283,7 @@ export function AdminReports() {
             </div>
             <div className="flex min-w-0 flex-wrap items-baseline gap-1 sm:gap-2 my-2">
               <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 break-words min-w-0">
-                {metricsLoading ? '...' : yieldPerAcre.toFixed(2)}
+                {metricsLoading || loadingHarvests ? '...' : (selectedYear || selectedSeason || selectedCrop) ? avgYieldPerAcre.toFixed(2) : yieldPerAcre.toFixed(2)}
               </p>
               <span className="text-xs sm:text-sm font-medium text-gray-600 break-words">tons</span>
             </div>
@@ -199,10 +301,10 @@ export function AdminReports() {
               <FileText className="w-5 h-5 text-green-600 opacity-70 group-hover:opacity-100 transition-opacity" />
             </div>
             <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 my-2 break-words min-w-0">
-              {metricsLoading ? '...' : '14,800'}
+              {metricsLoading || loadingHarvests ? '...' : (selectedYear || selectedSeason || selectedCrop) ? totalPoints.toLocaleString() : '14,800'}
             </p>
             <p className="text-xs sm:text-sm text-green-700 mt-2">
-              {metricsLoading ? '...' : 'This season'}
+              {metricsLoading || loadingHarvests ? '...' : 'This season'}
             </p>
           </div>
         </div>
@@ -286,9 +388,9 @@ export function AdminReports() {
       {/* Top Performers */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
         <div className="p-6 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-800">Top Performing Farmers (Current Season)</h3>
+          <h3 className="text-lg font-semibold text-gray-800">Top Performing Farmers</h3>
         </div>
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto relative">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
@@ -301,11 +403,11 @@ export function AdminReports() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {topPerformersData.map((farmer) => (
+              {topPerformers.map((farmer) => (
                 <tr 
                   key={farmer.rank} 
                   className="hover:bg-gray-50 transition-colors cursor-pointer"
-                  onClick={() => setSelectedFarmer(farmer)}
+                  onClick={() => handleSelectPerformer(farmer)}
                 >
                   <td className="px-6 py-4">
                     <span className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${
@@ -326,6 +428,11 @@ export function AdminReports() {
               ))}
             </tbody>
           </table>
+          {loadingFarmerDetails && (
+            <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 z-10">
+              <span className="text-lg font-semibold">Loading farmer details...</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -340,7 +447,7 @@ export function AdminReports() {
             phone: selectedFarmer.phone,
             division: selectedFarmer.division,
             district: selectedFarmer.district,
-            farmSize: selectedFarmer.farmSize,
+            farmSize: selectedFarmer.totalAcres || selectedFarmer.farmSize || 0,
             crop: selectedFarmer.crop,
             status: selectedFarmer.status,
             points: selectedFarmer.points,
