@@ -4,6 +4,7 @@ import { SummaryCard } from './SummaryCard';
 import { useOutletContext } from 'react-router';
 import farmerImage from 'figma:asset/8d18ad2077654c1f65710d650ff192f7ba499f8c.png';
 import { farmAPI } from '../services/api';
+import { formatNumber } from '../utils/numberUtils';
 
 // Hook used by Home dashboard (and others) to load summary metrics.
 export function useHomeDashboardData() {
@@ -49,7 +50,12 @@ export function useHomeDashboardData() {
     fetchMetrics();
   }, []);
 
-  return { totalFarmers, totalHarvest, yieldPerAcre, loading, error };
+  const formattedTotalFarmers = formatNumber(totalFarmers);
+  const formattedTotalHarvest = formatNumber(totalHarvest);
+  const formattedYieldPerAcre = formatNumber(yieldPerAcre);
+
+  return { totalFarmers, totalHarvest, yieldPerAcre, loading, error,
+           formattedTotalFarmers, formattedTotalHarvest, formattedYieldPerAcre };
 }
 
 interface HomePageProps {

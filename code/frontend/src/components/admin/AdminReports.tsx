@@ -5,6 +5,7 @@ import { farmAPI } from '../../services/api';
 // hook shared with home dashboard for loading summary metrics (total farmers, harvest, yield)
 import { useHomeDashboardData } from '../HomePage';
 import { FarmerProfile } from './FarmerProfile';
+import { formatNumber } from '../../utils/numberUtils';
 
 export function AdminReports() {
   // fetch latest metrics used on home page as well
@@ -85,6 +86,58 @@ export function AdminReports() {
   const avgYieldPerAcre = totalAcres > 0 ? (totalHarvestTons / totalAcres) : 0;
   const totalPoints = filteredHarvests.reduce((s, h) => s + (Number(h.points) || 0), 0);
 
+  // growth rate calculations based on previous season
+  const smartPrevFilters = () => {
+    if (!selectedYear || !selectedSeason) return null;
+    let y = Number(selectedYear);
+    let s = selectedSeason.toLowerCase();
+    if (s === 'maha') {
+      s = 'yala';
+    } else if (s === 'yala') {
+      s = 'maha';
+      y = y - 1;
+    } else {
+      return null;
+    }
+    return { year: String(y), season: s };
+  };
+  const prevFilt = smartPrevFilters();
+  const prevHarvests = prevFilt
+    ? harvests.filter((h) => {
+        const yearMatch = String(h.year) === prevFilt.year;
+        const seasonMatch = String(h.season || '').toLowerCase() === prevFilt.season;
+        const cropMatch = selectedCrop
+          ? String(h.crop || '').toLowerCase() === selectedCrop.toLowerCase()
+          : true;
+        return yearMatch && seasonMatch && cropMatch;
+      })
+    : [];
+  const prevFarmers = prevFilt ? new Set(prevHarvests.map((h) => h.farmerNIC)).size : 0;
+  const prevHarvestKg = prevFilt
+    ? prevHarvests.reduce((s, h) => s + (Number(h.harvestQty) || 0), 0)
+    : 0;
+  const prevAcres = prevFilt
+    ? prevHarvests.reduce((s, h) => s + (Number(h.acres || h.farmSize || 0) || 0), 0)
+    : 0;
+
+  const farmerGrowth = prevFarmers > 0 ? ((totalFarmers - prevFarmers) / prevFarmers) * 100 : null;
+  const harvestGrowth = prevHarvestKg > 0 ? ((totalHarvestKg - prevHarvestKg) / prevHarvestKg) * 100 : null;
+  const yieldGrowth = prevAcres > 0 && prevHarvestKg > 0
+    ? ((avgYieldPerAcre - (prevHarvestKg / 1000 / prevAcres)) /
+        (prevHarvestKg / 1000 / prevAcres)) * 100
+    : null;
+
+  // formatted versions for summary cards
+  const formattedTotalFarmers = formatNumber(totalFarmers);
+  const formattedTotalHarvest = formatNumber((selectedYear || selectedSeason || selectedCrop) ? totalHarvestTons : totalHarvest);
+  const formattedAvgYield = formatNumber((selectedYear || selectedSeason || selectedCrop) ? avgYieldPerAcre : yieldPerAcre);
+  const formattedTotalPoints = formatNumber(totalPoints);
+
+  const farmersGrowthText = farmerGrowth !== null ? `${farmerGrowth.toFixed(1)}% from last season` : '';
+  const harvestGrowthText = harvestGrowth !== null ? `${harvestGrowth.toFixed(1)}% from last season` : '';
+  const yieldGrowthText = yieldGrowth !== null ? `${yieldGrowth.toFixed(1)}% from last season` : '';
+
+
   // Top performers aggregated by farmer (based on filtered harvests)
   const performersMap: Record<string, any> = {};
   filteredHarvests.forEach((h) => {
@@ -125,13 +178,39 @@ export function AdminReports() {
     .map((p: any, i: number) => ({ ...p, rank: i + 1 }))
     .slice(0, 10);
 
-  const seasonData = [
-    { season: 'Maha 24/25', yield: 1650, farmers: 235, points: 12500 },
-    { season: 'Yala 2024', yield: 1200, farmers: 198, points: 9800 },
-    { season: 'Maha 23/24', yield: 1580, farmers: 220, points: 11200 },
-    { season: 'Yala 2023', yield: 1150, farmers: 185, points: 9200 },
-    { season: 'Maha 25/26', yield: 1840, farmers: 247, points: 14800 },
-  ];
+  // Filter by crop only (NOT year or season) for yield by season chart
+  const filteredHarvestsForSeasonChart = harvests.filter((h) => {
+    const cropMatch = selectedCrop ? (String(h.crop || '').toLowerCase() === selectedCrop.toLowerCase()) : true;
+    return cropMatch;
+  });
+
+  // Group by year and season to create season comparison data
+  const yearSeasonMap: Record<string, { maha: number; yala: number }> = {};
+  filteredHarvestsForSeasonChart.forEach((h) => {
+    const year = h.year || 'Unknown';
+    const season = String(h.season || '').toLowerCase();
+    if (!yearSeasonMap[year]) {
+      yearSeasonMap[year] = { maha: 0, yala: 0 };
+    }
+    const harvestTons = (Number(h.harvestQty) || 0) / 1000; // convert kg to tons
+    if (season === 'maha') {
+      yearSeasonMap[year].maha += harvestTons;
+    } else if (season === 'yala') {
+      yearSeasonMap[year].yala += harvestTons;
+    }
+  });
+
+  const seasonData = Object.entries(yearSeasonMap)
+    .map(([year, data]) => ({
+      year,
+      'Maha': Math.round(data.maha),
+      'Yala': Math.round(data.yala),
+    }))
+    .sort((a, b) => {
+      const yearA = Number(a.year);
+      const yearB = Number(b.year);
+      return yearA - yearB;
+    });
 
   // Filter by year and season only (NOT crop) for variety distribution
   const filteredHarvestsForVariety = harvests.filter((h) => {
@@ -174,14 +253,17 @@ export function AdminReports() {
     })
     .sort((a, b) => b.value - a.value);
 
-  const districtData = [
-    { district: 'Gampaha', farmers: 52, yield: 380 },
-    { district: 'Kurunegala', farmers: 48, yield: 365 },
-    { district: 'Anuradhapura', farmers: 65, yield: 520 },
-    { district: 'Polonnaruwa', farmers: 38, yield: 295 },
-    { district: 'Ampara', farmers: 28, yield: 190 },
-    { district: 'Hambantota', farmers: 16, yield: 90 },
-  ];
+  // Aggregate yield by district based on all active filters (year, season, crop)
+  const districtMap: Record<string, number> = {};
+  filteredHarvests.forEach((h) => {
+    const district = h.district || 'Unknown';
+    const qty = Number(h.harvestQty) || 0; // keep original units (kg)
+    if (!districtMap[district]) districtMap[district] = 0;
+    districtMap[district] += qty;
+  });
+  const districtData = Object.entries(districtMap)
+    .map(([district, yieldVal]) => ({ district, yield: yieldVal }))
+    .sort((a, b) => b.yield - a.yield);
 
   return (
     <div className="space-y-6">
@@ -278,11 +360,11 @@ export function AdminReports() {
               <Users className="w-5 h-5 text-green-600 opacity-70 group-hover:opacity-100 transition-opacity" />
             </div>
             <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 my-2 break-words min-w-0">
-              {metricsLoading ? '...' : metricsError ? 'Error' : totalFarmers.toLocaleString()}
+              {metricsLoading ? '...' : metricsError ? 'Error' : formattedTotalFarmers}
             </p>
             <p className="text-xs sm:text-sm text-green-700 flex items-center gap-1 mt-2">
               <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4" />
-              {metricsLoading ? '...' : '+12% this season'}
+              {metricsLoading ? '...' : farmersGrowthText || '+0%'}
             </p>
           </div>
         </div>
@@ -296,13 +378,17 @@ export function AdminReports() {
             </div>
             <div className="flex min-w-0 flex-wrap items-baseline gap-1 sm:gap-2 my-2">
               <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 break-words min-w-0">
-                {metricsLoading || loadingHarvests ? '...' : (selectedYear || selectedSeason || selectedCrop) ? totalHarvestTons.toFixed(1).toLocaleString() : totalHarvest.toLocaleString()}
+                {metricsLoading || loadingHarvests
+                  ? '...'
+                  : (selectedYear || selectedSeason || selectedCrop)
+                  ? formattedTotalHarvest
+                  : formattedTotalHarvest}
               </p>
               <span className="text-xs sm:text-sm font-medium text-gray-600 break-words">tons</span>
             </div>
             <p className="text-xs sm:text-sm text-green-700 flex items-center gap-1 mt-2">
               <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4" />
-              {metricsLoading ? '...' : '+16% from last season'}
+              {metricsLoading ? '...' : harvestGrowthText || '+0%'}
             </p>
           </div>
         </div>
@@ -316,12 +402,16 @@ export function AdminReports() {
             </div>
             <div className="flex min-w-0 flex-wrap items-baseline gap-1 sm:gap-2 my-2">
               <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 break-words min-w-0">
-                {metricsLoading || loadingHarvests ? '...' : (selectedYear || selectedSeason || selectedCrop) ? avgYieldPerAcre.toFixed(2) : yieldPerAcre.toFixed(2)}
+                {metricsLoading || loadingHarvests
+                  ? '...'
+                  : (selectedYear || selectedSeason || selectedCrop)
+                  ? formattedAvgYield
+                  : formattedAvgYield}
               </p>
               <span className="text-xs sm:text-sm font-medium text-gray-600 break-words">tons</span>
             </div>
             <p className="text-xs sm:text-sm text-green-700 mt-2">
-              {metricsLoading ? '...' : 'Above target'}
+              {metricsLoading ? '...' : yieldGrowthText || 'Above target'}
             </p>
           </div>
         </div>
@@ -334,7 +424,7 @@ export function AdminReports() {
               <FileText className="w-5 h-5 text-green-600 opacity-70 group-hover:opacity-100 transition-opacity" />
             </div>
             <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 my-2 break-words min-w-0">
-              {metricsLoading || loadingHarvests ? '...' : (selectedYear || selectedSeason || selectedCrop) ? totalPoints.toLocaleString() : '14,800'}
+              {metricsLoading || loadingHarvests ? '...' : (selectedYear || selectedSeason || selectedCrop) ? formattedTotalPoints : formattedTotalPoints}
             </p>
             <p className="text-xs sm:text-sm text-green-700 mt-2">
               {metricsLoading || loadingHarvests ? '...' : 'This season'}
@@ -347,15 +437,16 @@ export function AdminReports() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Season Comparison */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Yield by Season</h3>
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Yield by Season {selectedCrop && `- ${selectedCrop}`}</h3>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={seasonData}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="season" />
+              <XAxis dataKey="year" />
               <YAxis />
               <Tooltip />
               <Legend />
-              <Bar dataKey="yield" fill="#16a34a" name="Yield (tons)" />
+              <Bar dataKey="Maha" fill="#16a34a" name="Maha (tons)" />
+              <Bar dataKey="Yala" fill="#60a5fa" name="Yala (tons)" />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -406,13 +497,14 @@ export function AdminReports() {
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Yield by District</h3>
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={districtData} layout="horizontal">
+            {/* same format as yield-by-season chart */}
+            <BarChart data={districtData}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis type="number" />
-              <YAxis dataKey="district" type="category" width={100} />
+              <XAxis dataKey="district" />
+              <YAxis />
               <Tooltip />
               <Legend />
-              <Bar dataKey="yield" fill="#f97316" name="Yield (tons)" />
+              <Bar dataKey="yield" fill="#16a34a" name="Yield (kg)" />
             </BarChart>
           </ResponsiveContainer>
         </div>

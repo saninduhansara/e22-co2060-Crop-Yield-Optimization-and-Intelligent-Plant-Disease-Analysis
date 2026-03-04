@@ -2,6 +2,7 @@ import { Users, TrendingUp, Wheat, AlertTriangle, BarChart3, MapPin, Layers, Sca
 import { useState, useEffect } from 'react';
 import { farmAPI, userAPI } from '../../services/api';
 import { FarmerProfile } from './FarmerProfile';
+import { formatNumber } from '../../utils/numberUtils';
 
 export function AdminDashboard() {
   const defaultCropOptions = [
@@ -316,23 +317,7 @@ export function AdminDashboard() {
     }
   };
 
-  // Format number based on magnitude
-  const formatNumber = (num: number): string => {
-    if (num < 10000) {
-      // Display with one decimal place if necessary
-      return num % 1 === 0 ? num.toString() : num.toFixed(1);
-    } else if (num < 1000000) {
-      // Round to nearest 100, divide by 1000, show with K
-      const rounded = Math.round(num / 100) * 100;
-      const inK = rounded / 1000;
-      return inK % 1 === 0 ? `${inK}K` : `${inK.toFixed(1)}K`;
-    } else {
-      // Round to nearest lakh (100,000), divide by 1,000,000, show with M
-      const rounded = Math.round(num / 100000) * 100000;
-      const inM = rounded / 1000000;
-      return inM % 1 === 0 ? `${inM}M` : `${inM.toFixed(1)}M`;
-    }
-  };
+
 
   // Helper functions to determine font size based on formatted string length
   const getFontSizeForFormatted = (formattedStr: string): string => {
