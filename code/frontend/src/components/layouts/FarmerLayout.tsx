@@ -31,8 +31,6 @@ export function FarmerLayout() {
   });
 
   // Warning dialog before auto-logout
-  const warningTimerRef = useRef<NodeJS.Timeout | null>(null);
-
   const resetWarningTimer = useCallback(() => {
     // Hide warning when activity detected
     setShowWarning(false);
