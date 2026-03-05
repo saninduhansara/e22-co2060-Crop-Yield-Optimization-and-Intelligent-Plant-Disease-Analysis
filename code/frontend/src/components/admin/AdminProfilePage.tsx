@@ -176,7 +176,7 @@ export function AdminProfilePage() {
           <div className="p-4 bg-green-50 rounded-lg border border-green-100">
             <p className="text-green-800 text-sm">
               <strong>Access Level:</strong> Full administrative access to manage farmers, 
-              harvest data, reports, and system settings.
+              harvest data and reports.
             </p>
           </div>
         </div>
