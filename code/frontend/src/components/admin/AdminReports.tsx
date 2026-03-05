@@ -1,4 +1,4 @@
-import { Download, TrendingUp, Users, Wheat, FileText, BarChart3 } from 'lucide-react';
+import { Download, TrendingUp, Users, Wheat, FileText, BarChart3, Link2 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import { useState, useEffect } from 'react';
 import { farmAPI } from '../../services/api';
@@ -12,6 +12,8 @@ export function AdminReports() {
   const { totalFarmers, totalHarvest, yieldPerAcre, loading: metricsLoading, error: metricsError } = useHomeDashboardData();
   const [selectedFarmer, setSelectedFarmer] = useState<any | null>(null);
   const [loadingFarmerDetails, setLoadingFarmerDetails] = useState<boolean>(false);
+  // control expansion of the top performers list (5 vs 10 entries)
+  const [showAllPerformers, setShowAllPerformers] = useState(false);
 
   const handleSelectPerformer = async (perf: any) => {
     if (!perf.farmId) {
@@ -41,36 +43,57 @@ export function AdminReports() {
   };
   // state for harvests and filters
   const [harvests, setHarvests] = useState<any[]>([]);
+  const [farms, setFarms] = useState<any[]>([]);
   const [loadingHarvests, setLoadingHarvests] = useState<boolean>(true);
   const [selectedYear, setSelectedYear] = useState<string>('');
   const [selectedSeason, setSelectedSeason] = useState<string>('');
-  const [selectedCrop, setSelectedCrop] = useState<string>('');
+  const [selectedCrop, setSelectedCrop] = useState<string | null>(null);
+  const [availableCrops, setAvailableCrops] = useState<string[]>([]);
   const [districtYear, setDistrictYear] = useState<string>('');
   const [districtSeason, setDistrictSeason] = useState<string>('');
 
   // dropdown toggles (reuse patterns from AddHarvest)
-  const [isYearOpen, setIsYearOpen] = useState(false);
-  const [isSeasonOpen, setIsSeasonOpen] = useState(false);
-  const [isCropOpen, setIsCropOpen] = useState(false);
+  // dropdown open state no longer needed; using native <select> elements for
+  // year and season to match the crop control appearance.
+  // const [isYearOpen, setIsYearOpen] = useState(false);
+  // const [isSeasonOpen, setIsSeasonOpen] = useState(false);
+
+  const defaultCropOptions = [
+    'Paddy',
+    'Corn',
+    'Wheat',
+    'Tomatoes',
+    'Onions',
+    'Carrots',
+    'Cabbage',
+    'Potatoes'
+  ];
 
   const years = ['2024', '2025', '2026', '2027', '2028'];
   const seasons = ['Maha', 'Yala'];
-  const crops = ['Paddy', 'Corn', 'Wheat', 'Cabbage', 'Tomatoes', 'Onion', 'Carrots', 'Potatoes'];
 
   useEffect(() => {
-    const fetchHarvests = async () => {
+    const fetchData = async () => {
       try {
         setLoadingHarvests(true);
-        const data = await farmAPI.getHarvestHistory();
-        setHarvests(data.harvests || []);
+        const harvestData = await farmAPI.getHarvestHistory();
+        setHarvests(harvestData.harvests || []);
+        
+        const farmsData = await farmAPI.getAllFarms();
+        setFarms(farmsData.farms || []);
+        
+        const cropsData = await farmAPI.getAllCrops();
+        setAvailableCrops(cropsData.crops || []);
       } catch (err) {
-        console.error('Failed to load harvests', err);
+        console.error('Failed to load data', err);
         setHarvests([]);
+        setFarms([]);
+        setAvailableCrops([]);
       } finally {
         setLoadingHarvests(false);
       }
     };
-    fetchHarvests();
+    fetchData();
   }, []);
 
   // compute filtered harvests when filters change
@@ -81,12 +104,50 @@ export function AdminReports() {
     return yearMatch && seasonMatch && cropMatch;
   });
 
+  // Count unique farmers from farms data (matching AdminDashboard logic)
+  let farmersForCrop = farms;
+  if (selectedCrop) {
+    farmersForCrop = farms.filter((farm: any) => {
+      const farmCrop = (farm.crop || '').trim().toLowerCase();
+      const selectedCropNormalized = selectedCrop.trim().toLowerCase();
+      return farmCrop === selectedCropNormalized;
+    });
+  }
+  const filteredFarmersCount = new Set(farmersForCrop.map((farm: any) => farm.farmerNIC)).size;
+
   // Total harvest (tons) and average yield per acre (tons/acre) based on filtered harvests
   const totalHarvestKg = filteredHarvests.reduce((s, h) => s + (Number(h.harvestQty) || 0), 0);
   const totalAcres = filteredHarvests.reduce((s, h) => s + (Number(h.acres || h.farmSize || 0) || 0), 0);
   const totalHarvestTons = totalHarvestKg / 1000;
   const avgYieldPerAcre = totalAcres > 0 ? (totalHarvestTons / totalAcres) : 0;
-  const totalPoints = filteredHarvests.reduce((s, h) => s + (Number(h.points) || 0), 0);
+  // totalPoints is derived from the values stored on each farm record in the
+  // "All Farms" table.  When a crop filter is selected we only include farms
+  // that match, and when year/season filters are active we further restrict to
+  // farms that actually have harvest entries for that period (using the
+  // existing `filteredHarvests` array).  This makes the summary card react to
+  // every dropdown while still reading the point value from the farm object.
+  const farmsWithFilteredHarvests = new Set(
+    filteredHarvests.map((h) => h.farmId || h.farmerNIC)
+  );
+
+  const totalPoints = farms
+    .filter((f: any) => {
+      // crop-based filtering mirrors the farmers count logic above
+      if (selectedCrop) {
+        const farmCrop = String(f.crop || '').toLowerCase();
+        if (farmCrop !== selectedCrop.toLowerCase()) return false;
+      }
+
+      // when year or season is selected, only include farms that appear in the
+      // harvests that satisfy those same filters
+      if (selectedYear || selectedSeason) {
+        const key = f.farmId || f.farmerNIC;
+        if (!farmsWithFilteredHarvests.has(key)) return false;
+      }
+
+      return true;
+    })
+    .reduce((s, f) => s + (Number(f.points) || 0), 0);
 
   // growth rate calculations based on previous season
   const smartPrevFilters = () => {
@@ -130,7 +191,8 @@ export function AdminReports() {
     : null;
 
   // formatted versions for summary cards
-  const formattedTotalFarmers = formatNumber(totalFarmers);
+  const displayFarmersCount = selectedCrop ? filteredFarmersCount : totalFarmers;
+  const formattedTotalFarmers = formatNumber(displayFarmersCount);
   const formattedTotalHarvest = formatNumber((selectedYear || selectedSeason || selectedCrop) ? totalHarvestTons : totalHarvest);
   const formattedAvgYield = formatNumber((selectedYear || selectedSeason || selectedCrop) ? avgYieldPerAcre : yieldPerAcre);
   const formattedTotalPoints = formatNumber(totalPoints);
@@ -176,9 +238,10 @@ export function AdminReports() {
       totalAcres: p.totalAcres,
       points: p.points,
     }))
-    .sort((a: any, b: any) => (b.yield || 0) - (a.yield || 0))
+    // sort by average yield per acre instead of total yield
+    .sort((a: any, b: any) => (b.avgYield || 0) - (a.avgYield || 0))
     .map((p: any, i: number) => ({ ...p, rank: i + 1 }))
-    .slice(0, 10);
+    .slice(0, 10); // keep at most 10 for the view-more behaviour
 
   // Filter by crop only (NOT year or season) for yield by season chart
   const filteredHarvestsForSeasonChart = harvests.filter((h) => {
@@ -288,65 +351,48 @@ export function AdminReports() {
             {/* Year */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Year</label>
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setIsYearOpen(!isYearOpen)}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-left flex items-center justify-between hover:bg-gray-100 transition-colors"
-                >
-                  <span className={selectedYear ? 'text-gray-800' : 'text-gray-400'}>{selectedYear || 'Select Year'}</span>
-                  <svg className={`w-4 h-4 text-gray-600 transition-transform ${isYearOpen ? 'rotate-180' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6" /></svg>
-                </button>
-                {isYearOpen && (
-                  <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
-                    {years.map((y) => (
-                      <button key={y} type="button" onClick={() => { setSelectedYear(y); setIsYearOpen(false); }} className={`w-full px-4 py-3 text-left hover:bg-green-50 ${selectedYear === y ? 'bg-green-100 text-green-700 font-medium' : 'text-gray-800'}`}>
-                        {y}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(e.target.value)}
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-left hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              >
+                <option value="">All Years</option>
+                {years.map((y) => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
             </div>
 
             {/* Season */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Harvest Season</label>
-              <div className="relative">
-                <button type="button" onClick={() => setIsSeasonOpen(!isSeasonOpen)} className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-left flex items-center justify-between hover:bg-gray-100 transition-colors">
-                  <span className={selectedSeason ? 'text-gray-800' : 'text-gray-400'}>{selectedSeason || 'Select Season'}</span>
-                  <svg className={`w-4 h-4 text-gray-600 transition-transform ${isSeasonOpen ? 'rotate-180' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6" /></svg>
-                </button>
-                {isSeasonOpen && (
-                  <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
-                    {seasons.map((s) => (
-                      <button key={s} type="button" onClick={() => { setSelectedSeason(s); setIsSeasonOpen(false); }} className={`w-full px-4 py-3 text-left hover:bg-green-50 ${selectedSeason === s ? 'bg-green-100 text-green-700 font-medium' : 'text-gray-800'}`}>
-                        {s}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <select
+                value={selectedSeason}
+                onChange={(e) => setSelectedSeason(e.target.value)}
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-left hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              >
+                <option value="">All Seasons</option>
+                {seasons.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
             </div>
 
-            {/* Crop */}
+            {/* Crop - Using select like AdminDashboard */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Crop</label>
-              <div className="relative">
-                <button type="button" onClick={() => setIsCropOpen(!isCropOpen)} className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-left flex items-center justify-between hover:bg-gray-100 transition-colors">
-                  <span className={selectedCrop ? 'text-gray-800' : 'text-gray-400'}>{selectedCrop || 'Select Crop'}</span>
-                  <svg className={`w-4 h-4 text-gray-600 transition-transform ${isCropOpen ? 'rotate-180' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6" /></svg>
-                </button>
-                {isCropOpen && (
-                  <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
-                    {crops.map((c) => (
-                      <button key={c} type="button" onClick={() => { setSelectedCrop(c); setIsCropOpen(false); }} className={`w-full px-4 py-3 text-left hover:bg-green-50 ${selectedCrop === c ? 'bg-green-100 text-green-700 font-medium' : 'text-gray-800'}`}>
-                        {c}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <select
+                value={selectedCrop || ''}
+                onChange={(e) => setSelectedCrop(e.target.value || null)}
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-left hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              >
+                <option value="">All Crops</option>
+                {Array.from(new Set([...defaultCropOptions, ...availableCrops])).map((crop) => (
+                  <option key={crop} value={crop}>
+                    {crop}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
         </div>
@@ -553,7 +599,7 @@ export function AdminReports() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {topPerformers.map((farmer) => (
+              {topPerformers.slice(0, showAllPerformers ? 10 : 5).map((farmer) => (
                 <tr
                   key={farmer.rank}
                   className="hover:bg-gray-50 transition-colors cursor-pointer"
@@ -580,6 +626,19 @@ export function AdminReports() {
           {loadingFarmerDetails && (
             <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 z-10">
               <span className="text-lg font-semibold">Loading farmer details...</span>
+            </div>
+          )}
+          {/* toggle button for expanding/collapsing list */}
+          {topPerformers.length > 5 && (
+            <div className="p-4 border-t border-gray-200 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowAllPerformers((prev) => !prev)}
+                className="text-green-600 hover:text-green-700 text-xs font-medium flex items-center gap-1"
+              >
+                {showAllPerformers ? 'View Less' : 'View More'}
+                <Link2 className="w-3 h-3" />
+              </button>
             </div>
           )}
         </div>
