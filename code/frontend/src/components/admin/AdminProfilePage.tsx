@@ -1,4 +1,4 @@
-import { User, Mail, Phone, MapPin, Calendar, Save, Edit2, Shield, Loader } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Calendar, Save, Edit2, Shield, Loader, AlertCircle } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { userAPI } from '../../services/api';
 import { toast } from 'sonner';
@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 export function AdminProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -33,6 +34,7 @@ export function AdminProfilePage() {
   const loadProfile = async () => {
     try {
       setLoading(true);
+      setError(null);
       const data = await userAPI.fetchProfile();
       if (data && data.user) {
         setFormData({
@@ -50,6 +52,7 @@ export function AdminProfilePage() {
       }
     } catch (error) {
       console.error("Failed to load admin profile:", error);
+      setError('Failed to load profile data');
       toast.error('Failed to load profile data');
     } finally {
       setLoading(false);
@@ -103,6 +106,14 @@ export function AdminProfilePage() {
 
   return (
     <div className="max-w-4xl space-y-6">
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+          <p className="text-red-700 font-medium">{error}</p>
+        </div>
+      )}
+
       {/* Profile Header */}
       <div className="bg-gradient-to-r from-green-600 to-green-700 rounded-2xl p-8 text-white shadow-lg">
         <div className="flex items-start gap-6">
@@ -122,17 +133,6 @@ export function AdminProfilePage() {
           </div>
         </div>
       </div>
-
-      {/* Edit Button */}
-      {!isEditing && (
-        <button
-          onClick={() => setIsEditing(true)}
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-white hover:bg-gray-50 text-green-700 font-medium rounded-xl transition-colors shadow-sm border border-gray-200"
-        >
-          <Edit2 className="w-5 h-5" />
-          Edit Profile
-        </button>
-      )}
 
       {/* Personal Information */}
       <div className="bg-white rounded-2xl shadow-sm p-8 border border-gray-100">
@@ -174,16 +174,7 @@ export function AdminProfilePage() {
               <Mail className="w-4 h-4" />
               Email Address
             </label>
-            {isEditing ? (
-              <input
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              />
-            ) : (
-              <p className="text-gray-800 font-medium">{formData.email}</p>
-            )}
+            <p className="text-gray-800 font-medium">{formData.email}</p>
           </div>
 
           <div>
@@ -191,16 +182,7 @@ export function AdminProfilePage() {
               <Phone className="w-4 h-4" />
               Phone Number
             </label>
-            {isEditing ? (
-              <input
-                type="tel"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              />
-            ) : (
-              <p className="text-gray-800 font-medium">{formData.phone}</p>
-            )}
+            <p className="text-gray-800 font-medium">{formData.phone}</p>
           </div>
 
           <div>
@@ -226,7 +208,7 @@ export function AdminProfilePage() {
           Location Details
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
+          <div className="md:col-span-2">
             <label className="text-sm text-gray-600 mb-1 block">Address</label>
             {isEditing ? (
               <input
@@ -259,7 +241,7 @@ export function AdminProfilePage() {
           </div>
 
           <div>
-            <label className="text-sm text-gray-600 mb-1 block">Division</label>
+            <label className="text-sm text-gray-600 mb-1 block">DS Division</label>
             {isEditing ? (
               <input
                 type="text"
@@ -293,25 +275,6 @@ export function AdminProfilePage() {
           </div>
         </div>
       </div>
-
-      {/* Action Buttons */}
-      {isEditing && (
-        <div className="flex gap-3">
-          <button
-            onClick={handleSave}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-700 hover:bg-green-800 text-white font-medium rounded-xl transition-colors"
-          >
-            <Save className="w-5 h-5" />
-            Save Changes
-          </button>
-          <button
-            onClick={() => setIsEditing(false)}
-            className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-xl transition-colors"
-          >
-            Cancel
-          </button>
-        </div>
-      )}
-    </div>
+    </div >
   );
 }

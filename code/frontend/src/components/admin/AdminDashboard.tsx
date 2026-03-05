@@ -419,7 +419,6 @@ export function AdminDashboard() {
   const exactHarvest = (totalHarvest / 1000).toLocaleString(undefined, { maximumFractionDigits: 1 });
   // Yield per acre is in kg/acre
   const exactYield = getYieldPerAcre().toLocaleString(undefined, { maximumFractionDigits: 0 });
-
   const cropOptions = Array.from(new Set([...defaultCropOptions, ...availableCrops]));
   const visibleRecentFarmers = recentFarmers.slice(0, showMoreFarmers ? 10 : 5);
   const visibleRecentHarvests = recentHarvests.slice(0, showMoreHarvests ? 10 : 4);
@@ -672,7 +671,7 @@ export function AdminDashboard() {
                       <p className="text-xs text-gray-400 mt-1">{formatDate(harvest.harvestDate)}</p>
                     </div>
                     <div className="flex items-center gap-1 font-bold text-sm text-green-700 whitespace-nowrap ml-2 flex-shrink-0">
-                      {harvest.harvestQty} tons
+                      {harvest.harvestQty} kg
                     </div>
                   </div>
                 );

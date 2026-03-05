@@ -46,6 +46,9 @@ export function LoginPage({ onLogin }: LoginPageProps) {
         lastName: response.user?.lastName,
       };
       localStorage.setItem('agriconnect_auth', JSON.stringify(authData));
+      
+      // Initialize activity timestamp for inactivity timeout
+      localStorage.setItem('lastActivityTime', Date.now().toString());
 
       toast.success('Login successful! Welcome back.');
 

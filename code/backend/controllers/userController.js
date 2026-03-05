@@ -95,6 +95,7 @@ export async function loginUser(req, res) {
                     points: user.points
                 },
                 process.env.JWT_SECRET,
+                { expiresIn: '24h' } // Token expires in 24 hours
             )
 
             res.json({
@@ -228,6 +229,7 @@ export async function updateProfile(req, res) {
             address: req.body.address,
             district: req.body.district,
             division: req.body.division,
+            image: req.body.image,
         };
 
         // Remove undefined fields so we don't accidentally overwrite with null
@@ -246,7 +248,6 @@ export async function updateProfile(req, res) {
         if (!updatedUser) {
             return res.status(404).json({ message: "User not found." });
         }
-
         res.json({
             message: "Profile updated successfully",
             user: updatedUser

@@ -8,6 +8,13 @@ interface AdminSidebarProps {
   onLogout: () => void;
 }
 
+interface AdminProfile {
+  firstName: string;
+  lastName: string;
+  email: string;
+  image?: string;
+}
+
 export function AdminSidebar({ currentPage, onNavigate, onLogout }: AdminSidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [adminUser, setAdminUser] = useState<any>(null);
@@ -63,6 +70,8 @@ export function AdminSidebar({ currentPage, onNavigate, onLogout }: AdminSidebar
     { id: 'history', label: 'Harvest History', icon: History },
     { id: 'reports', label: 'Reports', icon: FileText },
   ];
+
+
 
   const handleNavigate = (page: string) => {
     onNavigate(page);
