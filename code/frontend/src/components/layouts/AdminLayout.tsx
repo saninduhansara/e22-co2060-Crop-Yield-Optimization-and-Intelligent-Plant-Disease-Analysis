@@ -132,7 +132,7 @@ export function AdminLayout() {
                 </h3>
                 <p className="text-gray-600 mb-4">
                   Your session will expire in <span className="font-bold text-red-600">{countdown}</span> seconds due to inactivity. 
-                  Move your mouse or press any key to stay logged in.
+                  Click stay logged in.
                 </p>
                 <div className="flex gap-3">
                   <button
