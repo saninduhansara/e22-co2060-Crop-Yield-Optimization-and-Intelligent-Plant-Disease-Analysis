@@ -22,7 +22,18 @@ interface FarmerFormData {
   password: string;
 }
 
+interface ExistingFarmer {
+  _id: string;
+  firstName?: string;
+  lastName?: string;
+  nic?: string;
+  email?: string;
+  district?: string;
+  division?: string;
+}
+
 export function RegisterFarmer() {
+  const [mode, setMode] = useState<'new' | 'existing'>('new'); // new: Register new farmer, existing: Add farms to existing
   const [step, setStep] = useState(1); // 1: Farmer info, 2: Farm details
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null as string | null);
@@ -31,6 +42,13 @@ export function RegisterFarmer() {
   const [profileImage, setProfileImage] = useState(null as File | null);
   const [profileImagePreview, setProfileImagePreview] = useState(null as string | null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  
+  // For existing farmer mode
+  const [existingFarmers, setExistingFarmers] = useState<ExistingFarmer[]>([]);
+  const [selectedFarmer, setSelectedFarmer] = useState<ExistingFarmer | null>(null);
+  const [farmerSearchTerm, setFarmerSearchTerm] = useState('');
+  const [showFarmerDropdown, setShowFarmerDropdown] = useState(false);
+  const [loadingFarmers, setLoadingFarmers] = useState(false);
   
   const [farmerData, setFarmerData] = useState({
     firstName: '',
@@ -87,6 +105,56 @@ export function RegisterFarmer() {
   } as Record<string, string[]>;
 
   const crops = ['Paddy', 'Corn', 'Wheat', 'Tomatoes', 'Onions', 'Carrots', 'Cabbage', 'Potatoes'];
+
+  // Fetch existing farmers when mode changes to 'existing'
+  const fetchExistingFarmers = async () => {
+    try {
+      setLoadingFarmers(true);
+      const response = await userAPI.getRecentFarmers(100); // Get up to 100 recent farmers
+      setExistingFarmers(response.farmers || []);
+    } catch (err) {
+      console.error('Error fetching farmers:', err);
+      setError('Failed to load farmers list');
+    } finally {
+      setLoadingFarmers(false);
+    }
+  };
+
+  // Handle mode change
+  const handleModeChange = (newMode: 'new' | 'existing') => {
+    setMode(newMode);
+    setError(null);
+    setSuccess(false);
+    
+    if (newMode === 'existing') {
+      fetchExistingFarmers();
+      setStep(2); // Skip to farm details step
+    } else {
+      setStep(1); // Start from farmer registration
+      setSelectedFarmer(null);
+    }
+  };
+
+  // Filter farmers based on search term
+  const filteredFarmers = existingFarmers.filter(farmer => {
+    const searchLower = farmerSearchTerm.toLowerCase();
+    return (
+      farmer.firstName?.toLowerCase().includes(searchLower) ||
+      farmer.lastName?.toLowerCase().includes(searchLower) ||
+      farmer.nic?.toLowerCase().includes(searchLower) ||
+      farmer.email?.toLowerCase().includes(searchLower)
+    );
+  });
+
+  // Select existing farmer
+  const handleSelectFarmer = (farmer: ExistingFarmer) => {
+    setSelectedFarmer(farmer);
+    setFarmerSearchTerm(`${farmer.firstName || ''} ${farmer.lastName || ''} (${farmer.nic || 'N/A'})`);
+    setShowFarmerDropdown(false);
+    setRegisteredFarmerId(farmer.nic || '');
+    // Set district and division from selected farmer
+    setFarmerData({ ...farmerData, district: farmer.district || '', division: farmer.division || '' });
+  };
 
   // Step 1: Register Farmer
   const handleRegisterFarmer = async (e: any) => {
@@ -180,6 +248,12 @@ export function RegisterFarmer() {
   const handleSubmitFarms = async (e: any) => {
     e.preventDefault();
 
+    // Check if a farmer is selected in existing mode
+    if (mode === 'existing' && !selectedFarmer) {
+      setError('Please select a farmer first');
+      return;
+    }
+
     const validFarms = farms.filter((farm: FarmData) => 
       farm.farmName && farm.crop && farm.sizeInAcres && farm.location
     );
@@ -193,31 +267,48 @@ export function RegisterFarmer() {
     setError(null);
 
     try {
+      const farmerNIC = mode === 'existing' 
+        ? (selectedFarmer?.nic || '')
+        : (registeredFarmerId || farmerData.nic);
+      
+      const district = mode === 'existing' 
+        ? (selectedFarmer?.district || '')
+        : farmerData.district;
+
       for (const farm of validFarms) {
         await farmAPI.createFarm({
           farmName: farm.farmName,
           crop: farm.crop,
           sizeInAcres: Number(farm.sizeInAcres),
           location: farm.location,
-          farmerNIC: registeredFarmerId || farmerData.nic,
-          district: farmerData.district,
+          farmerNIC: farmerNIC,
+          district: district,
           status: 'active',
         });
       }
 
       setSuccess(true);
       setTimeout(() => {
-        setFarmerData({
-          firstName: '', lastName: '', nic: '', address: '',
-          district: '', division: '', phone: '', email: '', password: ''
-        });
+        // Reset form based on mode
         setFarms([{ farmName: '', crop: '', sizeInAcres: '', location: '' }]);
-        setStep(1);
-        setRegisteredFarmerId(null);
-        setGeneratedPassword(null);
-        setProfileImage(null);
-        setProfileImagePreview(null);
         setSuccess(false);
+        setError(null);
+        
+        if (mode === 'new') {
+          setFarmerData({
+            firstName: '', lastName: '', nic: '', address: '',
+            district: '', division: '', phone: '', email: '', password: ''
+          });
+          setStep(1);
+          setRegisteredFarmerId(null);
+          setGeneratedPassword(null);
+          setProfileImage(null);
+          setProfileImagePreview(null);
+        } else {
+          // In existing mode, reset selection to allow adding more farms
+          setSelectedFarmer(null);
+          setFarmerSearchTerm('');
+        }
       }, 2000);
     } catch (err: any) {
       console.error('Error creating farms:', err);
@@ -231,9 +322,121 @@ export function RegisterFarmer() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Register Farmer</h2>
-        <p className="text-gray-600">Register a new farmer and add their farm details</p>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">
+          {mode === 'new' ? 'Register Farmer' : 'Add Farm to Existing Farmer'}
+        </h2>
+        <p className="text-gray-600">
+          {mode === 'new' ? 'Register a new farmer and add their farm details' : 'Add new farms to an existing farmer'}
+        </p>
       </div>
+
+      {/* Mode Selector */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+        <h3 className="text-md font-semibold text-gray-800 mb-4">Select Action</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <button
+            type="button"
+            onClick={() => handleModeChange('new')}
+            className={`p-4 rounded-lg border-2 transition-all ${
+              mode === 'new'
+                ? 'border-green-600 bg-green-50 text-green-700'
+                : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <User className="w-5 h-5" />
+              <div className="text-left">
+                <div className="font-semibold">Register New Farmer</div>
+                <div className="text-sm opacity-75">Create new farmer account with farms</div>
+              </div>
+            </div>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleModeChange('existing')}
+            className={`p-4 rounded-lg border-2 transition-all ${
+              mode === 'existing'
+                ? 'border-green-600 bg-green-50 text-green-700'
+                : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <Plus className="w-5 h-5" />
+              <div className="text-left">
+                <div className="font-semibold">Add Farm to Existing Farmer</div>
+                <div className="text-sm opacity-75">Add new farms for registered farmers</div>
+              </div>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      {/* Existing Farmer Selector */}
+      {mode === 'existing' && (
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+          <h3 className="text-md font-semibold text-gray-800 mb-4">Select Farmer</h3>
+          
+          {loadingFarmers ? (
+            <div className="text-center py-4">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+              <p className="text-gray-600 mt-2">Loading farmers...</p>
+            </div>
+          ) : (
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search farmer by name, NIC, or email..."
+                value={farmerSearchTerm}
+                onChange={(e) => {
+                  setFarmerSearchTerm(e.target.value);
+                  setShowFarmerDropdown(true);
+                }}
+                onFocus={() => setShowFarmerDropdown(true)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              />
+              
+              {showFarmerDropdown && filteredFarmers.length > 0 && (
+                <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto">
+                  {filteredFarmers.map((farmer) => (
+                    <button
+                      key={farmer._id}
+                      type="button"
+                      onClick={() => handleSelectFarmer(farmer)}
+                      className="w-full px-4 py-3 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+                    >
+                      <div className="font-medium text-gray-900">
+                        {farmer.firstName || ''} {farmer.lastName || ''}
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        NIC: {farmer.nic || 'N/A'} | {farmer.email || 'N/A'}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {farmer.division || 'N/A'}, {farmer.district || 'N/A'}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+              
+              {selectedFarmer && (
+                <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-green-900">
+                        Selected: {selectedFarmer.firstName || ''} {selectedFarmer.lastName || ''}
+                      </p>
+                      <p className="text-sm text-green-700">
+                        NIC: {selectedFarmer.nic || 'N/A'} | {selectedFarmer.division || 'N/A'}, {selectedFarmer.district || 'N/A'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Success Message */}
       {success && (
@@ -241,9 +444,11 @@ export function RegisterFarmer() {
           <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
           <div className="flex-1">
             <p className="text-green-700 font-medium">
-              {step === 2 ? 'Farmer registered successfully! Now add their farm details.' : 'Farm(s) registered successfully!'}
+              {mode === 'new' && step === 2 
+                ? 'Farmer registered successfully! Now add their farm details.' 
+                : 'Farm(s) registered successfully!'}
             </p>
-            {step === 2 && generatedPassword && (
+            {mode === 'new' && step === 2 && generatedPassword && (
               <div className="mt-3 bg-white border border-green-300 rounded-lg p-3">
                 <p className="text-sm text-gray-700 font-medium mb-1">Auto-generated Login Credentials:</p>
                 <div className="space-y-1">
@@ -267,20 +472,22 @@ export function RegisterFarmer() {
         </div>
       )}
 
-      {/* Step Indicators */}
-      <div className="flex items-center gap-4">
-        <div className={`flex items-center justify-center w-10 h-10 rounded-full font-medium ${
-          step >= 1 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'
-        }`}>
-          1
+      {/* Step Indicators - Only show for new farmer registration */}
+      {mode === 'new' && (
+        <div className="flex items-center gap-4">
+          <div className={`flex items-center justify-center w-10 h-10 rounded-full font-medium ${
+            step >= 1 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'
+          }`}>
+            1
+          </div>
+          <div className={`flex-1 h-1 ${step >= 2 ? 'bg-green-600' : 'bg-gray-200'}`}></div>
+          <div className={`flex items-center justify-center w-10 h-10 rounded-full font-medium ${
+            step >= 2 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'
+          }`}>
+            2
+          </div>
         </div>
-        <div className={`flex-1 h-1 ${step >= 2 ? 'bg-green-600' : 'bg-gray-200'}`}></div>
-        <div className={`flex items-center justify-center w-10 h-10 rounded-full font-medium ${
-          step >= 2 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'
-        }`}>
-          2
-        </div>
-      </div>
+      )}
 
       {/* Step 1: Farmer Registration */}
       {step === 1 && (
@@ -530,10 +737,15 @@ export function RegisterFarmer() {
       )}
 
       {/* Step 2: Farm Details */}
-      {step === 2 && (
+      {step === 2 && (mode === 'new' || (mode === 'existing' && selectedFarmer)) && (
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
           <div className="p-6 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-800">Step 2: Farm Details for {farmerData.firstName} {farmerData.lastName}</h3>
+            <h3 className="text-lg font-semibold text-gray-800">
+              {mode === 'new' 
+                ? `Step 2: Farm Details for ${farmerData.firstName} ${farmerData.lastName}`
+                : `Farm Details for ${selectedFarmer ? `${selectedFarmer.firstName || ''} ${selectedFarmer.lastName || ''}` : 'Selected Farmer'}`
+              }
+            </h3>
             <p className="text-sm text-gray-600 mt-1">Add one or more farms for this farmer</p>
           </div>
 
