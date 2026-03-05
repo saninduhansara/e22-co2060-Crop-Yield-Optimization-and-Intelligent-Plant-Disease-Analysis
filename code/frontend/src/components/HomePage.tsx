@@ -4,9 +4,66 @@
  * and a floating AI chatbot interface.
  */
 import { Star, HandIcon, SearchIcon, FileText, Bot, AlertTriangle, MapPin } from 'lucide-react';
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router';
-import { userAPI } from '../services/api';
+import { userAPI, farmAPI } from '../services/api';
+import { SummaryCard } from './SummaryCard';
+import farmerImage from 'figma:asset/8d18ad2077654c1f65710d650ff192f7ba499f8c.png';
+import { formatNumber } from '../utils/numberUtils';
+
+// Hook used by Home dashboard (and others) to load summary metrics.
+export function useHomeDashboardData() {
+  const [totalFarmers, setTotalFarmers] = useState<number>(0);
+  const [totalHarvest, setTotalHarvest] = useState<number>(0);
+  const [yieldPerAcre, setYieldPerAcre] = useState<number>(0);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchMetrics = async () => {
+      try {
+        setLoading(true);
+        // fetch farms and count unique farmers
+        const farmsResp = await farmAPI.getAllFarms();
+        const farms = farmsResp?.farms || [];
+        const uniqueFarmers = new Set(farms.map((f: any) => f.farmerNIC));
+        const farmland = farms.reduce((sum: number, f: any) => {
+          return sum + (f.farmSize || f.sizeInAcres || 0);
+        }, 0);
+
+        // fetch harvests to compute total harvest
+        const harvestResp = await farmAPI.getHarvestHistory();
+        const harvests = harvestResp?.harvests || [];
+        const totalHarvestQty = harvests.reduce((sum: number, h: any) => {
+          return sum + (h.harvestQty || 0);
+        }, 0);
+
+        setTotalFarmers(uniqueFarmers.size);
+        setTotalHarvest(totalHarvestQty);
+        setYieldPerAcre(farmland === 0 ? 0 : totalHarvestQty / farmland);
+      } catch (err: any) {
+        console.error('Error loading dashboard metrics', err);
+        setError(err?.message || 'Failed to load metrics');
+        setTotalFarmers(0);
+        setTotalHarvest(0);
+        setYieldPerAcre(0);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMetrics();
+  }, []);
+
+  const formattedTotalFarmers = formatNumber(totalFarmers);
+  const formattedTotalHarvest = formatNumber(totalHarvest);
+  const formattedYieldPerAcre = formatNumber(yieldPerAcre);
+
+  return {
+    totalFarmers, totalHarvest, yieldPerAcre, loading, error,
+    formattedTotalFarmers, formattedTotalHarvest, formattedYieldPerAcre
+  };
+}
 
 interface HomePageProps {
   onNavigate?: (page: string) => void;
@@ -39,6 +96,11 @@ export function HomePage({ onNavigate: onNavigateProp }: HomePageProps) {
     loadProfile();
   }, []);
 
+  // use shared hook to load metrics (total farmers/harvest/yield) for dashboard
+  const { totalFarmers, totalHarvest, yieldPerAcre, loading: metricsLoading, error: metricsError } = useHomeDashboardData();
+
+  // metrics are not currently shown in HomePage UI but hook ensures data is fetched
+
   return (
     <div className="space-y-4 md:space-y-6 pb-20">
       {/* Top Section - Welcome & Points */}
@@ -69,8 +131,16 @@ export function HomePage({ onNavigate: onNavigateProp }: HomePageProps) {
         </div>
 
         {/* Points Summary Card */}
-        <div className="bg-white rounded-2xl p-4 md:p-6 border border-gray-200">
-          <h3 className="text-base md:text-lg font-semibold text-gray-800 mb-4">Points Summary</h3>
+        <SummaryCard
+          hoverable={false}
+          className="w-full"
+          title="Points Summary"
+          subtext={
+            <span className="text-xs text-teal-600 flex items-center gap-1">
+              This season
+            </span>
+          }
+        >
           <div className="flex items-center gap-3 md:gap-4 mb-4">
             <Star className="w-10 h-10 md:w-12 md:h-12 text-yellow-400 fill-yellow-400" />
             <div>
@@ -80,7 +150,12 @@ export function HomePage({ onNavigate: onNavigateProp }: HomePageProps) {
               </p>
             </div>
           </div>
-        </div>
+          <div className="text-right">
+            <p className="text-xs md:text-sm text-gray-600">Season: Maha</p>
+            <p className="text-xs md:text-sm text-gray-600 mt-1">Points This Season</p>
+            <p className="text-2xl md:text-3xl font-bold text-gray-800 mt-1">420</p>
+          </div>
+        </SummaryCard>
       </div>
 
       {/* Middle Section - Alerts & Heat Map */}
