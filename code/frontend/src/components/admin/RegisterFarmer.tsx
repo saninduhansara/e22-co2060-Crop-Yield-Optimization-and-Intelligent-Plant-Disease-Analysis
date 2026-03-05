@@ -50,7 +50,13 @@ export function RegisterFarmer() {
 
   const [registeredFarmerId, setRegisteredFarmerId] = useState(null as string | null);
 
-  const districts = ['Gampaha', 'Kurunegala', 'Anuradhapura', 'Polonnaruwa', 'Ampara', 'Hambantota'];
+  const districts = [
+    'Ampara', 'Anuradhapura', 'Badulla', 'Batticaloa', 'Colombo',
+    'Galle', 'Gampaha', 'Hambantota', 'Jaffna', 'Kalutara',
+    'Kandy', 'Kegalle', 'Kilinochchi', 'Kurunegala', 'Mannar',
+    'Matale', 'Matara', 'Monaragala', 'Mullaitivu', 'Nuwara Eliya',
+    'Polonnaruwa', 'Puttalam', 'Ratnapura', 'Trincomalee', 'Vavuniya'
+];
   const crops = ['Paddy', 'Corn', 'Wheat', 'Tomatoes', 'Onions', 'Carrots', 'Cabbage', 'Potatoes'];
 
   // Step 1: Register Farmer
