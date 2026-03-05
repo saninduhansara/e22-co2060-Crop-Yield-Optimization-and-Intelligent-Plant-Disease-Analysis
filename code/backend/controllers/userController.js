@@ -82,6 +82,7 @@ export function loginUser(req, res) {
 
                         },
                         process.env.JWT_SECRET,
+                        { expiresIn: '24h' } // Token expires in 24 hours
                     )
 
                     res.json({
@@ -180,5 +181,44 @@ export async function getRecentFarmers(req, res) {
             message: "Failed to retrieve recent farmers",
             error: error.message
         });
+    }
+}
+
+// Update user profile
+export async function updateProfile(req, res) {
+    try {
+        if (!req.user || !req.user.email) {
+            return res.status(401).json({ message: "Unauthorized. Please log in again." });
+        }
+
+        const user = await User.findOne({ email: req.user.email });
+        if (!user) {
+            return res.status(404).json({ message: "User not found." });
+        }
+
+        // Update allowed fields
+        const updateData = {
+            firstName: req.body.firstName || user.firstName,
+            lastName: req.body.lastName || user.lastName,
+            phone: req.body.phone || user.phone,
+            address: req.body.address || user.address,
+            district: req.body.district || user.district,
+            division: req.body.division || user.division,
+            image: req.body.image || user.image,
+        };
+
+        const updatedUser = await User.findOneAndUpdate(
+            { email: req.user.email },
+            updateData,
+            { new: true }
+        ).select("-password");
+
+        res.json({
+            message: "Profile updated successfully",
+            user: updatedUser
+        });
+    } catch (error) {
+        console.error("Error updating profile:", error);
+        res.status(500).json({ message: "Failed to update profile", error: error.message });
     }
 }
