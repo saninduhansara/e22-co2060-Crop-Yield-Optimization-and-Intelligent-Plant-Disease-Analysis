@@ -45,6 +45,8 @@ export function AdminReports() {
   const [selectedYear, setSelectedYear] = useState<string>('');
   const [selectedSeason, setSelectedSeason] = useState<string>('');
   const [selectedCrop, setSelectedCrop] = useState<string>('');
+  const [districtYear, setDistrictYear] = useState<string>('');
+  const [districtSeason, setDistrictSeason] = useState<string>('');
 
   // dropdown toggles (reuse patterns from AddHarvest)
   const [isYearOpen, setIsYearOpen] = useState(false);
