@@ -49,6 +49,7 @@ export function RegisterFarmer() {
   const [farmerSearchTerm, setFarmerSearchTerm] = useState('');
   const [showFarmerDropdown, setShowFarmerDropdown] = useState(false);
   const [loadingFarmers, setLoadingFarmers] = useState(false);
+  const [createdFarmIds, setCreatedFarmIds] = useState<string[]>([]);
   
   const [farmerData, setFarmerData] = useState({
     firstName: '',
@@ -275,8 +276,10 @@ export function RegisterFarmer() {
         ? (selectedFarmer?.district || '')
         : farmerData.district;
 
+      const farmIds: string[] = [];
+
       for (const farm of validFarms) {
-        await farmAPI.createFarm({
+        const response = await farmAPI.createFarm({
           farmName: farm.farmName,
           crop: farm.crop,
           sizeInAcres: Number(farm.sizeInAcres),
@@ -285,14 +288,21 @@ export function RegisterFarmer() {
           district: district,
           status: 'active',
         });
+        
+        // Capture farm ID from response - prioritize custom farmId over MongoDB _id
+        if (response?.farm?.farmId || response?.farm?._id) {
+          farmIds.push(response.farm.farmId || response.farm._id);
+        }
       }
 
+      setCreatedFarmIds(farmIds);
       setSuccess(true);
       setTimeout(() => {
         // Reset form based on mode
         setFarms([{ farmName: '', crop: '', sizeInAcres: '', location: '' }]);
         setSuccess(false);
         setError(null);
+        setCreatedFarmIds([]);
         
         if (mode === 'new') {
           setFarmerData({
@@ -309,7 +319,7 @@ export function RegisterFarmer() {
           setSelectedFarmer(null);
           setFarmerSearchTerm('');
         }
-      }, 2000);
+      }, 10000); // Display for 10 seconds to allow time to copy Farm IDs
     } catch (err: any) {
       console.error('Error creating farms:', err);
       setError(err.response?.data?.message || 'Failed to create farms. Please try again.');
@@ -448,6 +458,22 @@ export function RegisterFarmer() {
                 ? 'Farmer registered successfully! Now add their farm details.' 
                 : 'Farm(s) registered successfully!'}
             </p>
+            
+            {/* Display Farm IDs */}
+            {createdFarmIds.length > 0 && (
+              <div className="mt-3 bg-white border border-green-300 rounded-lg p-3">
+                <p className="text-sm text-gray-700 font-medium mb-2">Farm ID(s):</p>
+                <div className="space-y-1">
+                  {createdFarmIds.map((farmId, index) => (
+                    <p key={farmId} className="text-xs text-gray-600">
+                      Farm {index + 1}: <span className="font-mono font-semibold text-green-900">{farmId}</span>
+                    </p>
+                  ))}
+                </div>
+                <p className="text-xs text-blue-600 mt-2">💾 Farm IDs saved successfully</p>
+              </div>
+            )}
+            
             {mode === 'new' && step === 2 && generatedPassword && (
               <div className="mt-3 bg-white border border-green-300 rounded-lg p-3">
                 <p className="text-sm text-gray-700 font-medium mb-1">Auto-generated Login Credentials:</p>
