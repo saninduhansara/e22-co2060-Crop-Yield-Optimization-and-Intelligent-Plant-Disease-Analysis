@@ -56,7 +56,36 @@ export function RegisterFarmer() {
     'Kandy', 'Kegalle', 'Kilinochchi', 'Kurunegala', 'Mannar',
     'Matale', 'Matara', 'Monaragala', 'Mullaitivu', 'Nuwara Eliya',
     'Polonnaruwa', 'Puttalam', 'Ratnapura', 'Trincomalee', 'Vavuniya'
-];
+  ];
+
+  const dsDivisions = {
+    'Ampara': ['Ampara', 'Kalmunai', 'Samanturai'],
+    'Anuradhapura': ['Anuradhapura City', 'Anuradhapura South', 'Embbekke', 'Galnewa', 'Habarana', 'Ipalogama', 'Kekirawa', 'Madawachchiya', 'Mihintale', 'Nuwara Wewa', 'Rajarata', 'Tambuttegama', 'Thalwella', 'Wilgamuwa'],
+    'Badulla': ['Badulla', 'Bandarawela', 'Haputale', 'Kandaketiya', 'Passara', 'Welimada'],
+    'Batticaloa': ['Batticaloa', 'Chavakachcheri', 'Eravur', 'Kaluwanchikudi', 'Kattankudy', 'Manmunai North', 'Manmunai South', 'Porativu'],
+    'Colombo': ['Colombo', 'Borella', 'Colombo South', 'Dehiwala', 'Kaduwela', 'Kelaniya', 'Kolonnawa', 'Maharagama', 'Minuwangoda', 'Moratuwa', 'Nugegoda', 'Padukka', 'Piliyandala', 'Kelaniya'],
+    'Galle': ['Galle', 'Ambalangoda', 'Benthota', 'Buwanekande', 'Habaraduwa', 'Imaduwa', 'Koggala', 'Mirissa', 'Unawatuna', 'Weligama'],
+    'Gampaha': ['Gampaha', 'Attanagalla', 'Biyagama', 'Ganemulla', 'Heiyanthuduwa', 'Katunayake', 'Kelaniya', 'Minuwangoda', 'Negombo', 'Seeduwa', 'Wattala', 'Yakmulla'],
+    'Hambantota': ['Hambantota', 'Mirissa', 'Tangalla', 'Tissamaharama', 'Walasmulla', 'Wellawaththu', 'Yakkalamulla'],
+    'Jaffna': ['Jaffna', 'Chavakacheri', 'Chulipuram', 'Delft', 'Jaffna North', 'Jaffna West', 'Kayts', 'Kopay', 'Nallur', 'Nanthottam', 'Point Pedro', 'Sandilipay', 'Valigamam'],
+    'Kalutara': ['Kalutara', 'Bandaragama', 'Beruwala', 'Matugama', 'Millaniya', 'Panadura', 'Wadduwa'],
+    'Kandy': ['Kandy', 'Akurana', 'Asgiriya', 'Dambulla', 'Gampola', 'Getambe', 'Harispattuwa', 'Katugastota', 'Kundasale', 'Nawalapitiya', 'Poojapitiya', 'Wattegama', 'Yatinuwara'],
+    'Kegalle': ['Kegalle', 'Dedigama', 'Deraniyagala', 'Galigamuwa', 'Hewessa', 'Kitulgala', 'Ruwanwella', 'Warakapola', 'Yatiyanthota'],
+    'Kilinochchi': ['Akkaraipattu', 'Chavakachcheri', 'Jaffna', 'Kilinochchi', 'Pulmoddai', 'Vembadi'],
+    'Kurunegala': ['Kurunegala', 'Attanagalla', 'Bingiriya', 'Dambadeniya', 'Galgamuwa', 'Hakgala', 'Ibbagamuwa', 'Kurunegala North', 'Kurunegala South', 'Madampe', 'Mawathagama', 'Narammala', 'Nikaweratota', 'Polgahawela', 'Wariyapola', 'Yapahuwa'],
+    'Mannar': ['Mannar', 'Arippu', 'Balapitiya', 'Medawachchiya', 'Talaimannar'],
+    'Matale': ['Matale', 'Dambulla', 'Galewela', 'Hilakotte', 'Matale North', 'Matale South', 'Naula', 'Rattota', 'Thalawa'],
+    'Matara': ['Matara', 'Attalbage', 'Devinuwara', 'Kamburupitiya', 'Morawaka', 'Nilwala', 'Pasgoda', 'Weligama'],
+    'Monaragala': ['Monaragala', 'Badalla', 'Bibile', 'Buttala', 'Hakmana', 'Kataragama', 'Medagama', 'Ruwanwella', 'Wellawaya'],
+    'Mullaitivu': ['Mullaitivu', 'Akkaraipattu', 'Batticaloa East', 'Kantale', 'Kirati', 'Kuchchaveli', 'Oddusuddan', 'Sampur', 'Valaichenai'],
+    'Nuwara Eliya': ['Nuwara Eliya', 'Ambewela', 'Bogawantalawa', 'Ginigathena', 'Hanguranketha', 'Kundasale', 'Madulsima', 'Talawakelle', 'Walapane', 'Welimada'],
+    'Polonnaruwa': ['Polonnaruwa', 'Habarana', 'Hingurakgoda', 'Kaduruwela', 'Minipe', 'Seruwavila', 'Thalawa'],
+    'Puttalam': ['Puttalam', 'Alutnuwara', 'Anamaduwa', 'Chilaw', 'Habaraduwa', 'Nattandiya', 'Puttalam North', 'Puttalam South', 'Wacchasbadda', 'Wilwatta'],
+    'Ratnapura': ['Ratnapura', 'Balangoda', 'Bulathkohupelella', 'Eheliyagoda', 'Kalawana', 'Opanayaka', 'Pelmadulla', 'Weligallela'],
+    'Trincomalee': ['Trincomalee', 'Habarana', 'Kantale', 'Kuchchaveli', 'Muttur', 'Nilaveli', 'Seruwavila', 'Trincomalee North', 'Trincomalee South', 'Verugal'],
+    'Vavuniya': ['Vavuniya', 'Cheddikulam', 'Eluthumadduval', 'Vengalacheddikulam']
+  } as Record<string, string[]>;
+
   const crops = ['Paddy', 'Corn', 'Wheat', 'Tomatoes', 'Onions', 'Carrots', 'Cabbage', 'Potatoes'];
 
   // Step 1: Register Farmer
@@ -421,7 +450,7 @@ export function RegisterFarmer() {
                   </label>
                   <select
                     value={farmerData.district}
-                    onChange={(e) => setFarmerData({...farmerData, district: e.target.value})}
+                    onChange={(e) => setFarmerData({...farmerData, district: e.target.value, division: ''})}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                     required
                   >
@@ -434,16 +463,22 @@ export function RegisterFarmer() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Division *
+                    DS Division *
                   </label>
-                  <input
-                    type="text"
+                  <select
                     value={farmerData.division}
                     onChange={(e) => setFarmerData({...farmerData, division: e.target.value})}
-                    placeholder="e.g., Attanagalla"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    disabled={!farmerData.district}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                     required
-                  />
+                  >
+                    <option value="">
+                      {farmerData.district ? 'Select DS Division' : 'Select a district first'}
+                    </option>
+                    {farmerData.district && dsDivisions[farmerData.district]?.map(div => (
+                      <option key={div} value={div}>{div}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="md:col-span-2">
