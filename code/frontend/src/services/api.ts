@@ -79,6 +79,19 @@ export const userAPI = {
     return response.data;
   },
 
+  updateProfile: async (userData: {
+    firstName?: string;
+    lastName?: string;
+    phone?: string;
+    address?: string;
+    district?: string;
+    division?: string;
+    image?: string;
+  }) => {
+    const response = await api.put('/api/users/profile', userData);
+    return response.data;
+  },
+
   getRecentFarmers: async (limit?: number) => {
     const response = await api.get(`/api/users/recent-farmers`, {
       params: limit ? { limit } : {}
