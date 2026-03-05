@@ -1,7 +1,7 @@
 import { Outlet, useNavigate } from 'react-router';
 import { AdminSidebar } from '../admin/AdminSidebar';
 import { Bell, AlertCircle } from 'lucide-react';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useInactivityTimeout } from '../../utils/useInactivityTimeout';
 import { clearAuthData } from '../../utils/authUtils';
 
@@ -25,14 +25,33 @@ export function AdminLayout() {
   });
 
   // Warning dialog before auto-logout
-  useEffect(() => {
-    const warningTimer = setTimeout(() => {
+  const warningTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const resetWarningTimer = useCallback(() => {
+    // Hide warning when activity detected
+    setShowWarning(false);
+    
+    // Clear existing warning timer
+    if (warningTimerRef.current) {
+      clearTimeout(warningTimerRef.current);
+    }
+
+    // Set new warning timer
+    warningTimerRef.current = setTimeout(() => {
       setShowWarning(true);
       setCountdown(60);
     }, WARNING_TIME_MS);
-
-    return () => clearTimeout(warningTimer);
   }, [WARNING_TIME_MS]);
+
+  useEffect(() => {
+    resetWarningTimer();
+
+    return () => {
+      if (warningTimerRef.current) {
+        clearTimeout(warningTimerRef.current);
+      }
+    };
+  }, [resetWarningTimer]);
 
   // Countdown timer for warning
   useEffect(() => {
@@ -44,13 +63,10 @@ export function AdminLayout() {
     }
   }, [showWarning, countdown]);
 
-  // Hide warning on user activity
+  // Hide warning and reset timer on user activity
   useEffect(() => {
     const handleActivity = () => {
-      if (showWarning) {
-        setShowWarning(false);
-        setCountdown(60);
-      }
+      resetWarningTimer();
     };
 
     const events = ['mousedown', 'mousemove', 'keypress', 'click'];
@@ -63,7 +79,7 @@ export function AdminLayout() {
         document.removeEventListener(event, handleActivity);
       });
     };
-  }, [showWarning]);
+  }, [resetWarningTimer]);
 
   // Get current page from URL
   const getCurrentPage = () => {
