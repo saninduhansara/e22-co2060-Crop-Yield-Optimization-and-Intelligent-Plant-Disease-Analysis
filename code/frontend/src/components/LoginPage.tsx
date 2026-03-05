@@ -45,6 +45,9 @@ export function LoginPage({ onLogin }: LoginPageProps) {
         lastName: response.user?.lastName,
       };
       localStorage.setItem('agriconnect_auth', JSON.stringify(authData));
+      
+      // Initialize activity timestamp for inactivity timeout
+      localStorage.setItem('lastActivityTime', Date.now().toString());
 
       // Navigate based on user type
       if (mappedUserType === 'farmer') {

@@ -14,8 +14,13 @@ export function AdminLayout() {
   const WARNING_TIME_MS = 14 * 60 * 1000; // Show warning 1 minute before logout
 
   const handleLogout = useCallback(() => {
+    // Clear all timers before logout
+    if (warningTimerRef.current) {
+      clearTimeout(warningTimerRef.current);
+    }
     clearAuthData();
-    navigate('/');
+    // Use replace instead of push to prevent back navigation issues
+    navigate('/', { replace: true });
   }, [navigate]);
 
   // Session timeout due to inactivity (15 minutes)

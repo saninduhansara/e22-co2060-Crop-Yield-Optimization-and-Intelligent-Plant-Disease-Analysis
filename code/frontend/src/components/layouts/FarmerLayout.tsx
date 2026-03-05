@@ -1,7 +1,7 @@
 import { Outlet, useNavigate } from 'react-router';
 import { Sidebar } from '../Sidebar';
 import { Bell, AlertCircle } from 'lucide-react';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useInactivityTimeout } from '../../utils/useInactivityTimeout';
 import { clearAuthData } from '../../utils/authUtils';
 
@@ -10,27 +10,54 @@ export function FarmerLayout() {
   const [showWarning, setShowWarning] = useState(false);
   const [countdown, setCountdown] = useState(60);
 
+  const TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
+  const WARNING_TIME_MS = 14 * 60 * 1000; // Show warning 1 minute before logout
+  const warningTimerRef = useRef<NodeJS.Timeout | null>(null);
+
   const handleLogout = useCallback(() => {
+    // Clear all timers before logout
+    if (warningTimerRef.current) {
+      clearTimeout(warningTimerRef.current);
+    }
     clearAuthData();
-    navigate('/');
+    // Use replace instead of push to prevent back navigation issues
+    navigate('/', { replace: true });
   }, [navigate]);
 
   // Session timeout due to inactivity (15 minutes)
   useInactivityTimeout({
-    timeout: 15 * 60 * 1000, // 15 minutes
+    timeout: TIMEOUT_MS,
     onTimeout: handleLogout,
   });
 
   // Warning dialog before auto-logout
-  useEffect(() => {
-    const warningTime = 14 * 60 * 1000; // 14 minutes - show warning 1 minute before logout
-    const warningTimer = setTimeout(() => {
+  const warningTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const resetWarningTimer = useCallback(() => {
+    // Hide warning when activity detected
+    setShowWarning(false);
+    
+    // Clear existing warning timer
+    if (warningTimerRef.current) {
+      clearTimeout(warningTimerRef.current);
+    }
+
+    // Set new warning timer
+    warningTimerRef.current = setTimeout(() => {
       setShowWarning(true);
       setCountdown(60);
-    }, warningTime);
+    }, WARNING_TIME_MS);
+  }, [WARNING_TIME_MS]);
 
-    return () => clearTimeout(warningTimer);
-  }, []);
+  useEffect(() => {
+    resetWarningTimer();
+
+    return () => {
+      if (warningTimerRef.current) {
+        clearTimeout(warningTimerRef.current);
+      }
+    };
+  }, [resetWarningTimer]);
 
   // Countdown timer for warning
   useEffect(() => {
@@ -42,12 +69,13 @@ export function FarmerLayout() {
     }
   }, [showWarning, countdown]);
 
-  // Hide warning on user activity
+  // Hide warning and reset timer on user activity (only if warning not showing)
   useEffect(() => {
     const handleActivity = () => {
-      if (showWarning) {
-        setShowWarning(false);
-        setCountdown(60);
+      // Only reset warning timer if warning is not currently showing
+      // This allows user to click buttons on the warning modal
+      if (!showWarning) {
+        resetWarningTimer();
       }
     };
 
@@ -61,7 +89,7 @@ export function FarmerLayout() {
         document.removeEventListener(event, handleActivity);
       });
     };
-  }, [showWarning]);
+  }, [resetWarningTimer, showWarning]);
 
   // Get current page from URL
   const getCurrentPage = () => {
