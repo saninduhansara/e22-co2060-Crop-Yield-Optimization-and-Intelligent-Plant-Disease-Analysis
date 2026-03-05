@@ -25,7 +25,6 @@ export function useInactivityTimeout({
     // Set new timer
     timeoutRef.current = setTimeout(() => {
       if (isActiveRef.current) {
-        console.log('Session expired due to inactivity');
         onTimeout();
       }
     }, timeout);
@@ -37,7 +36,6 @@ export function useInactivityTimeout({
     if (lastActivityTime) {
       const timeSinceLastActivity = Date.now() - parseInt(lastActivityTime, 10);
       if (timeSinceLastActivity > timeout) {
-        console.log('Session already expired');
         onTimeout();
         return true;
       }

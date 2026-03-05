@@ -10,6 +10,9 @@ export function AdminLayout() {
   const [showWarning, setShowWarning] = useState(false);
   const [countdown, setCountdown] = useState(60);
 
+  const TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
+  const WARNING_TIME_MS = 14 * 60 * 1000; // Show warning 1 minute before logout
+
   const handleLogout = useCallback(() => {
     clearAuthData();
     navigate('/');
@@ -17,20 +20,19 @@ export function AdminLayout() {
 
   // Session timeout due to inactivity (15 minutes)
   useInactivityTimeout({
-    timeout: 15 * 60 * 1000, // 15 minutes
+    timeout: TIMEOUT_MS,
     onTimeout: handleLogout,
   });
 
-  // Warning dialog before auto-logout (optional - shows 1 minute before timeout)
+  // Warning dialog before auto-logout
   useEffect(() => {
-    const warningTime = 14 * 60 * 1000; // 14 minutes - show warning 1 minute before logout
     const warningTimer = setTimeout(() => {
       setShowWarning(true);
       setCountdown(60);
-    }, warningTime);
+    }, WARNING_TIME_MS);
 
     return () => clearTimeout(warningTimer);
-  }, []);
+  }, [WARNING_TIME_MS]);
 
   // Countdown timer for warning
   useEffect(() => {
