@@ -63,10 +63,14 @@ export function AdminLayout() {
     }
   }, [showWarning, countdown]);
 
-  // Hide warning and reset timer on user activity
+  // Hide warning and reset timer on user activity (only if warning not showing)
   useEffect(() => {
     const handleActivity = () => {
-      resetWarningTimer();
+      // Only reset warning timer if warning is not currently showing
+      // This allows user to click buttons on the warning modal
+      if (!showWarning) {
+        resetWarningTimer();
+      }
     };
 
     const events = ['mousedown', 'mousemove', 'keypress', 'click'];
@@ -79,7 +83,7 @@ export function AdminLayout() {
         document.removeEventListener(event, handleActivity);
       });
     };
-  }, [resetWarningTimer]);
+  }, [resetWarningTimer, showWarning]);
 
   // Get current page from URL
   const getCurrentPage = () => {
