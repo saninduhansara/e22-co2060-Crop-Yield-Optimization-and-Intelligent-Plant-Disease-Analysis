@@ -80,13 +80,6 @@ export function HomePage({ onNavigate: onNavigateProp }: HomePageProps) {
               </p>
             </div>
           </div>
-          <div className="text-right">
-            <p className="text-xs md:text-sm text-gray-600">Season: Maha</p>
-            <p className="text-xs md:text-sm text-gray-600 mt-1">Points This Season</p>
-            <p className="text-2xl md:text-3xl font-bold text-gray-800 mt-1">
-              {loading ? '...' : Math.floor((userProfile?.points || 0) * 0.3)} {/* Mocking recent points */}
-            </p>
-          </div>
         </div>
       </div>
 

@@ -1,5 +1,6 @@
 import { Home, Users, UserPlus, Wheat, History, FileText, Shield, LogOut, Menu, X, Mail } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { userAPI } from '../../services/api';
 
 interface AdminSidebarProps {
   currentPage: string;
@@ -9,6 +10,49 @@ interface AdminSidebarProps {
 
 export function AdminSidebar({ currentPage, onNavigate, onLogout }: AdminSidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [adminUser, setAdminUser] = useState<any>(null);
+
+  useEffect(() => {
+    const loadAdminUser = async () => {
+      // First try to load from local storage for immediate render
+      const authData = localStorage.getItem('agriconnect_auth');
+      if (authData) {
+        try {
+          const parsed = JSON.parse(authData);
+          if (parsed.user) {
+            setAdminUser(parsed.user);
+          }
+        } catch (e) {
+          console.error("Failed to parse auth data", e);
+        }
+      }
+
+      // Then fetch fresh data from backend
+      try {
+        const response = await userAPI.fetchProfile();
+        if (response && response.user) {
+          setAdminUser(response.user);
+          // Update local storage invisibly
+          if (authData) {
+            const parsed = JSON.parse(authData);
+            parsed.user = { ...parsed.user, ...response.user };
+            localStorage.setItem('agriconnect_auth', JSON.stringify(parsed));
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch fresh admin profile for sidebar", err);
+      }
+    };
+
+    loadAdminUser();
+
+    // Listen for storage events (which we trigger manually on profile save)
+    window.addEventListener('storage', loadAdminUser);
+
+    return () => {
+      window.removeEventListener('storage', loadAdminUser);
+    };
+  }, []);
 
   const menuItems = [
     { id: 'dashboard', label: 'Home', icon: Home },
@@ -92,12 +136,22 @@ export function AdminSidebar({ currentPage, onNavigate, onLogout }: AdminSidebar
             onClick={() => handleNavigate('profile')}
             className="w-full flex items-center gap-3 mb-4 p-3 rounded-lg hover:bg-green-600/30 transition-all"
           >
-            <div className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center">
-              <span className="text-sm font-semibold">AD</span>
+            <div className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center overflow-hidden border-2 border-green-500">
+              {adminUser?.image && !adminUser.image.includes('blank-profile') ? (
+                <img src={adminUser.image} alt={adminUser.firstName} className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-sm font-semibold uppercase">
+                  {(adminUser?.firstName?.charAt(0) || 'A') + (adminUser?.lastName?.charAt(0) || 'D')}
+                </span>
+              )}
             </div>
-            <div className="text-left">
-              <p className="text-sm font-medium">Admin User</p>
-              <p className="text-xs text-green-200">admin@agriconnect.lk</p>
+            <div className="text-left overflow-hidden">
+              <p className="text-sm font-medium truncate">
+                {adminUser ? `${adminUser.firstName} ${adminUser.lastName}` : 'Admin User'}
+              </p>
+              <p className="text-xs text-green-200 truncate">
+                {adminUser?.email || 'admin@agriconnect.lk'}
+              </p>
             </div>
           </button>
 

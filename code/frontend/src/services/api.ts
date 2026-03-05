@@ -84,6 +84,18 @@ export const userAPI = {
     return response.data;
   },
 
+  updateProfile: async (profileData: {
+    firstName?: string;
+    lastName?: string;
+    phone?: string;
+    address?: string;
+    district?: string;
+    division?: string;
+  }) => {
+    const response = await api.put('/api/users/profile', profileData);
+    return response.data;
+  },
+
   getRecentFarmers: async (limit?: number) => {
     const response = await api.get(`/api/users/recent-farmers`, {
       params: limit ? { limit } : {}
@@ -131,6 +143,11 @@ export const farmAPI = {
     harvestQty: number;
   }) => {
     const response = await api.post('/api/farms/addharvestandpoints', harvestData);
+    return response.data;
+  },
+
+  recalculatePoints: async () => {
+    const response = await api.post('/api/farms/recalculate-points');
     return response.data;
   },
 

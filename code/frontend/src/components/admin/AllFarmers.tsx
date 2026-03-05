@@ -18,6 +18,8 @@ interface Farm {
   status: string;
   points: number;
   farmerImage?: string;
+  harvests?: any[];
+  location: string;
 }
 
 export function AllFarmers() {
@@ -172,8 +174,8 @@ export function AllFarmers() {
                     </thead>
                     <tbody className="divide-y divide-gray-200">
                       {filteredFarms.map((farm) => (
-                        <tr 
-                          key={farm.farmId} 
+                        <tr
+                          key={farm.farmId}
                           className="hover:bg-gray-50 transition-colors cursor-pointer"
                           onClick={() => setSelectedFarmer(farm)}
                         >
@@ -184,8 +186,8 @@ export function AllFarmers() {
                             <div className="flex items-center gap-2">
                               <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden bg-green-100 border border-green-200">
                                 {farm.farmerImage ? (
-                                  <img 
-                                    src={farm.farmerImage} 
+                                  <img
+                                    src={farm.farmerImage}
                                     alt={farm.farmerName}
                                     className="w-full h-full object-cover"
                                     onError={(e) => {
@@ -214,11 +216,10 @@ export function AllFarmers() {
                             </span>
                           </td>
                           <td className="px-3 py-3 whitespace-nowrap">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              farm.status === 'active' 
-                                ? 'bg-green-100 text-green-700' 
-                                : 'bg-yellow-100 text-yellow-700'
-                            }`}>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${farm.status === 'active'
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-yellow-100 text-yellow-700'
+                              }`}>
                               {farm.status.charAt(0).toUpperCase() + farm.status.slice(1)}
                             </span>
                           </td>
@@ -248,8 +249,8 @@ export function AllFarmers() {
               {/* Mobile Card View */}
               <div className="lg:hidden space-y-4">
                 {filteredFarms.map((farm) => (
-                  <div 
-                    key={farm.farmId} 
+                  <div
+                    key={farm.farmId}
                     className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
                     onClick={() => setSelectedFarmer(farm)}
                   >
@@ -257,8 +258,8 @@ export function AllFarmers() {
                       <div className="flex items-center gap-3 flex-1 min-w-0">
                         <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden bg-green-100 border-2 border-green-200">
                           {farm.farmerImage ? (
-                            <img 
-                              src={farm.farmerImage} 
+                            <img
+                              src={farm.farmerImage}
                               alt={farm.farmerName}
                               className="w-full h-full object-cover"
                               onError={(e) => {
@@ -276,11 +277,10 @@ export function AllFarmers() {
                           <p className="text-sm text-green-600 font-medium">{farm.farmId}</p>
                         </div>
                       </div>
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ml-2 ${
-                        farm.status === 'active' 
-                          ? 'bg-green-100 text-green-700' 
-                          : 'bg-yellow-100 text-yellow-700'
-                      }`}>
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ml-2 ${farm.status === 'active'
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-yellow-100 text-yellow-700'
+                        }`}>
                         {farm.status.charAt(0).toUpperCase() + farm.status.slice(1)}
                       </span>
                     </div>
@@ -343,8 +343,8 @@ export function AllFarmers() {
 
       {/* Edit Farm Modal */}
       {farmToEdit && (
-        <EditFarmModal 
-          farm={farmToEdit} 
+        <EditFarmModal
+          farm={farmToEdit}
           onClose={() => setFarmToEdit(null)}
           onSuccess={() => {
             fetchFarms();
