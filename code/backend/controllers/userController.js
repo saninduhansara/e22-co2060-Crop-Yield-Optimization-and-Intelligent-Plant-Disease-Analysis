@@ -82,6 +82,7 @@ export function loginUser(req, res) {
 
                         },
                         process.env.JWT_SECRET,
+                        { expiresIn: '24h' } // Token expires in 24 hours
                     )
 
                     res.json({

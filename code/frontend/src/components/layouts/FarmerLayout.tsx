@@ -1,15 +1,67 @@
 import { Outlet, useNavigate } from 'react-router';
 import { Sidebar } from '../Sidebar';
-import { Bell } from 'lucide-react';
-import { useEffect } from 'react';
+import { Bell, AlertCircle } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { useInactivityTimeout } from '../../utils/useInactivityTimeout';
+import { clearAuthData } from '../../utils/authUtils';
 
 export function FarmerLayout() {
   const navigate = useNavigate();
+  const [showWarning, setShowWarning] = useState(false);
+  const [countdown, setCountdown] = useState(60);
 
-  const handleLogout = () => {
-    localStorage.removeItem('agriconnect_auth');
+  const handleLogout = useCallback(() => {
+    clearAuthData();
     navigate('/');
-  };
+  }, [navigate]);
+
+  // Session timeout due to inactivity (15 minutes)
+  useInactivityTimeout({
+    timeout: 15 * 60 * 1000, // 15 minutes
+    onTimeout: handleLogout,
+  });
+
+  // Warning dialog before auto-logout
+  useEffect(() => {
+    const warningTime = 14 * 60 * 1000; // 14 minutes - show warning 1 minute before logout
+    const warningTimer = setTimeout(() => {
+      setShowWarning(true);
+      setCountdown(60);
+    }, warningTime);
+
+    return () => clearTimeout(warningTimer);
+  }, []);
+
+  // Countdown timer for warning
+  useEffect(() => {
+    if (showWarning && countdown > 0) {
+      const timer = setInterval(() => {
+        setCountdown((prev) => prev - 1);
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [showWarning, countdown]);
+
+  // Hide warning on user activity
+  useEffect(() => {
+    const handleActivity = () => {
+      if (showWarning) {
+        setShowWarning(false);
+        setCountdown(60);
+      }
+    };
+
+    const events = ['mousedown', 'mousemove', 'keypress', 'click'];
+    events.forEach((event) => {
+      document.addEventListener(event, handleActivity);
+    });
+
+    return () => {
+      events.forEach((event) => {
+        document.removeEventListener(event, handleActivity);
+      });
+    };
+  }, [showWarning]);
 
   // Get current page from URL
   const getCurrentPage = () => {
@@ -37,6 +89,45 @@ export function FarmerLayout() {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
+      {/* Session Timeout Warning */}
+      {showWarning && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full animate-in fade-in zoom-in duration-200">
+            <div className="flex items-start gap-4">
+              <div className="bg-yellow-100 rounded-full p-3 flex-shrink-0">
+                <AlertCircle className="w-6 h-6 text-yellow-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  Session Timeout Warning
+                </h3>
+                <p className="text-gray-600 mb-4">
+                  Your session will expire in <span className="font-bold text-red-600">{countdown}</span> seconds due to inactivity. 
+                  Move your mouse or press any key to stay logged in.
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      setShowWarning(false);
+                      setCountdown(60);
+                    }}
+                    className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors"
+                  >
+                    Stay Logged In
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-lg transition-colors"
+                  >
+                    Logout Now
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Sidebar 
         currentPage={getCurrentPage()} 
         onNavigate={handleNavigate} 
