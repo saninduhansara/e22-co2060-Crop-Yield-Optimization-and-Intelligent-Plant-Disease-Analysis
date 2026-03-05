@@ -1,4 +1,5 @@
 import Inquiry from "../models/inquiryModel.js";
+import { isAdmin } from "./userController.js";
 
 // @desc    Submit a new inquiry (Farmer)
 // @route   POST /api/inquiries
@@ -27,10 +28,16 @@ export const createInquiry = async (req, res) => {
 
 // @desc    Get all inquiries (Admin)
 // @route   GET /api/inquiries
-// @access  Private (Admin)
+// @access  Private 
 export const getInquiries = async (req, res) => {
     try {
-        const inquiries = await Inquiry.find({})
+        if (!req.user) {
+            return res.status(401).json({ message: "Unauthorized." });
+        }
+
+        const queryFilter = req.user.role === 'admin' ? {} : { farmer: req.user.id };
+
+        const inquiries = await Inquiry.find(queryFilter)
             .populate("farmer", "firstName lastName email district")
             .sort({ createdAt: -1 });
 
@@ -45,6 +52,10 @@ export const getInquiries = async (req, res) => {
 // @route   PUT /api/inquiries/:id/status
 // @access  Private (Admin)
 export const updateInquiryStatus = async (req, res) => {
+    if (!isAdmin(req)) {
+        return res.status(403).json({ message: "Access denied. Admins only" });
+    }
+
     try {
         const { status } = req.body;
 

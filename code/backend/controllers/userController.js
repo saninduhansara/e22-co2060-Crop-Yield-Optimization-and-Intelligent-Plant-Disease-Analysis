@@ -132,14 +132,10 @@ export async function loginUser(req, res) {
  * @returns {Boolean} True if user is admin, false otherwise.
  */
 export function isAdmin(req) {
-    if (req.user == null) {
-        return false
+    if (!req.user) {
+        return false;
     }
-    if (req.user.role == "admin") {
-        return true
-    } else {
-        return false
-    }
+    return req.user.role === "admin";
 }
 
 /**
@@ -210,5 +206,53 @@ export async function getRecentFarmers(req, res) {
             message: "Failed to retrieve recent farmers",
             error: error.message
         });
+    }
+}
+
+/**
+ * Updates the profile of the currently logged-in user.
+ * 
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
+export async function updateProfile(req, res) {
+    try {
+        if (!req.user || !req.user.email) {
+            return res.status(401).json({ message: "Unauthorized. Please log in again." });
+        }
+
+        const updateData = {
+            firstName: req.body.firstName,
+            lastName: req.body.lastName,
+            phone: req.body.phone,
+            address: req.body.address,
+            district: req.body.district,
+            division: req.body.division,
+        };
+
+        // Remove undefined fields so we don't accidentally overwrite with null
+        Object.keys(updateData).forEach(key => {
+            if (updateData[key] === undefined) {
+                delete updateData[key];
+            }
+        });
+
+        const updatedUser = await User.findOneAndUpdate(
+            { email: req.user.email },
+            { $set: updateData },
+            { new: true, runValidators: true }
+        ).select("-password");
+
+        if (!updatedUser) {
+            return res.status(404).json({ message: "User not found." });
+        }
+
+        res.json({
+            message: "Profile updated successfully",
+            user: updatedUser
+        });
+    } catch (error) {
+        console.error("Error updating user profile", error);
+        res.status(500).json({ message: "Failed to update profile", error: error.message });
     }
 }

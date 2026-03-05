@@ -50,8 +50,15 @@ function FarmerRoute({ children }: { children: React.ReactNode }) {
         return;
       }
       try {
-        await userAPI.fetchProfile();
-        setIsValid(true);
+        const response = await userAPI.fetchProfile();
+        // Normalize role ('user' or 'farmer' both count as farmer frontend)
+        const actualRole = response?.user?.role === 'user' ? 'farmer' : response?.user?.role;
+
+        if (actualRole === 'farmer') {
+          setIsValid(true);
+        } else {
+          throw new Error('Role mismatch');
+        }
       } catch (error) {
         localStorage.removeItem('agriconnect_auth');
         setIsValid(false);
@@ -92,8 +99,13 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
         return;
       }
       try {
-        await userAPI.fetchProfile();
-        setIsValid(true);
+        const response = await userAPI.fetchProfile();
+
+        if (response?.user?.role === 'admin') {
+          setIsValid(true);
+        } else {
+          throw new Error('Role mismatch');
+        }
       } catch (error) {
         localStorage.removeItem('agriconnect_auth');
         setIsValid(false);
