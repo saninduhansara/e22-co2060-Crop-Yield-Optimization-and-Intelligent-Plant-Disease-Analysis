@@ -1,8 +1,9 @@
 import axios from 'axios';
+import { clearAuthData } from '../utils/authUtils';
 
 // Base API URL - use relative path in development to work with Vite proxy
 // In production, use the full API URL from environment variable
-const API_BASE_URL = import.meta.env.PROD 
+const API_BASE_URL = import.meta.env.PROD
   ? (import.meta.env.VITE_API_URL || 'http://localhost:5000')
   : ''; // Empty string means use relative paths in dev mode
 
@@ -36,10 +37,10 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 403) {
-      // Token expired or invalid - clear auth and redirect to login
-      localStorage.removeItem('agriconnect_auth');
-      window.location.href = '/login';
+    if (error.response?.status === 403 || error.response?.status === 401) {
+      // Token expired or invalid - clear auth and redirect to root login page
+      clearAuthData();
+      window.location.href = '/';
     }
     return Promise.reject(error);
   }
@@ -64,7 +65,7 @@ export const userAPI = {
     return response.data;
   },
 
-  login: async (credentials: { email: string; password: string }) => {
+  login: async (credentials: { email: string; password: string; intendedRole?: string }) => {
     try {
       const response = await api.post('/api/users/login', credentials);
       return response.data;
@@ -72,6 +73,24 @@ export const userAPI = {
       // Re-throw with better error handling
       throw error;
     }
+  },
+
+  fetchProfile: async () => {
+    const response = await api.get('/api/users/profile');
+    return response.data;
+  },
+
+  updateProfile: async (userData: {
+    firstName?: string;
+    lastName?: string;
+    phone?: string;
+    address?: string;
+    district?: string;
+    division?: string;
+    image?: string;
+  }) => {
+    const response = await api.put('/api/users/profile', userData);
+    return response.data;
   },
 
   getRecentFarmers: async (limit?: number) => {
@@ -136,6 +155,11 @@ export const farmAPI = {
 
   getHarvestHistory: async () => {
     const response = await api.get('/api/farms/harvests');
+    return response.data;
+  },
+
+  getFarmerReport: async () => {
+    const response = await api.get('/api/farms/my-report');
     return response.data;
   },
 

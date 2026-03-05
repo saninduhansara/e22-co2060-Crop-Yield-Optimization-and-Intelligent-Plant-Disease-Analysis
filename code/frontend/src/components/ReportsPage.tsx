@@ -1,7 +1,30 @@
+import { useEffect, useState } from 'react';
 import { Download, TrendingUp, BarChart3, PieChart } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart as RePieChart, Pie, Cell } from 'recharts';
+import { farmAPI } from '../services/api';
 
 export function ReportsPage() {
+  const [reportData, setReportData] = useState<{
+    totalPoints: number;
+    totalAcres: number;
+    cropVarieties: { name: string; acres: number; value: number }[];
+  } | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchReport = async () => {
+      try {
+        const data = await farmAPI.getFarmerReport();
+        setReportData(data);
+      } catch (error) {
+        console.error("Failed to fetch report", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchReport();
+  }, []);
+
   const pointsData = [
     { month: 'Aug', points: 80 },
     { month: 'Sep', points: 95 },
@@ -11,11 +34,9 @@ export function ReportsPage() {
     { month: 'Jan', points: 75 },
   ];
 
-  const cropVarietyData = [
-    { name: 'BG 352', value: 40, acres: 4.0 },
-    { name: 'BG 300', value: 33, acres: 3.0 },
-    { name: 'AT 362', value: 22, acres: 2.0 },
-  ];
+  const cropVarietyData = reportData?.cropVarieties && reportData.cropVarieties.length > 0
+    ? reportData.cropVarieties
+    : [{ name: 'No Data', value: 100, acres: 0 }];
 
   const diseaseData = [
     { name: 'Brown Spot', value: 40 },
@@ -25,6 +46,10 @@ export function ReportsPage() {
 
   const COLORS = ['#10b981', '#f59e0b', '#3b82f6', '#ef4444'];
 
+  if (loading) {
+    return <div className="p-8 text-center text-gray-500">Loading reports...</div>;
+  }
+
   return (
     <div className="space-y-6">
       {/* Summary Cards */}
@@ -32,19 +57,19 @@ export function ReportsPage() {
         <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white shadow-lg">
           <TrendingUp className="w-8 h-8 mb-3 opacity-80" />
           <p className="text-green-100 text-sm mb-1">Total Points</p>
-          <p className="text-3xl font-bold">1,250</p>
+          <p className="text-3xl font-bold">{reportData?.totalPoints?.toLocaleString() || 0}</p>
         </div>
 
         <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg">
           <BarChart3 className="w-8 h-8 mb-3 opacity-80" />
           <p className="text-blue-100 text-sm mb-1">Total Acres</p>
-          <p className="text-3xl font-bold">9.0</p>
+          <p className="text-3xl font-bold">{reportData?.totalAcres || 0}</p>
         </div>
 
         <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl p-6 text-white shadow-lg">
           <PieChart className="w-8 h-8 mb-3 opacity-80" />
           <p className="text-amber-100 text-sm mb-1">Crop Varieties</p>
-          <p className="text-3xl font-bold">3</p>
+          <p className="text-3xl font-bold">{reportData?.cropVarieties?.length || 0}</p>
         </div>
 
         <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-6 text-white shadow-lg">
@@ -70,7 +95,7 @@ export function ReportsPage() {
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis dataKey="month" stroke="#666" />
               <YAxis stroke="#666" />
-              <Tooltip 
+              <Tooltip
                 contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px' }}
               />
               <Line type="monotone" dataKey="points" stroke="#10b981" strokeWidth={3} dot={{ fill: '#10b981', r: 5 }} />
@@ -123,7 +148,7 @@ export function ReportsPage() {
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
             <XAxis dataKey="month" stroke="#666" />
             <YAxis stroke="#666" />
-            <Tooltip 
+            <Tooltip
               contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px' }}
             />
             <Legend />
@@ -156,8 +181,8 @@ export function ReportsPage() {
                     <td className="px-6 py-4 text-sm">
                       <div className="flex items-center gap-2">
                         <div className="flex-1 bg-gray-200 rounded-full h-2 max-w-[100px]">
-                          <div 
-                            className="bg-green-500 h-2 rounded-full" 
+                          <div
+                            className="bg-green-500 h-2 rounded-full"
                             style={{ width: `${variety.value}%` }}
                           ></div>
                         </div>
@@ -191,8 +216,8 @@ export function ReportsPage() {
                     <td className="px-6 py-4 text-sm">
                       <div className="flex items-center gap-2">
                         <div className="flex-1 bg-gray-200 rounded-full h-2 max-w-[100px]">
-                          <div 
-                            className="bg-red-500 h-2 rounded-full" 
+                          <div
+                            className="bg-red-500 h-2 rounded-full"
                             style={{ width: `${disease.value}%` }}
                           ></div>
                         </div>

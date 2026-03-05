@@ -1,20 +1,52 @@
 import { User, MapPin, Phone, Mail, Calendar, FileText } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { userAPI } from '../services/api';
+
+interface FarmerProfile {
+  firstName: string;
+  lastName: string;
+  phone: string;
+  email: string;
+  address: string;
+  district: string;
+  division: string;
+  createdAt?: string;
+  nic: string;
+}
 
 export function ProfilePage() {
-  const profile = {
-    name: 'Ahmed Rasheed',
-    farmerId: 'FR-2024-001234',
-    phone: '+94 77 123 4567',
-    email: 'ahmed.rasheed@example.com',
-    address: 'Gampaha, Attanagalla',
-    district: 'Gampaha',
-    province: 'Western Province',
-    registeredDate: '2023-05-15',
-    landSize: '9.0 acres',
-    season: 'Maha',
-    officer: 'Mr. K.P. Rajapakse',
-    officerPhone: '+94 71 987 6543',
-  };
+  const [profile, setProfile] = useState<FarmerProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const getProfile = async () => {
+      try {
+        const response = await userAPI.fetchProfile();
+        setProfile(response.user);
+      } catch (err: any) {
+        setError(err.response?.data?.message || 'Failed to load profile');
+      } finally {
+        setLoading(false);
+      }
+    };
+    getProfile();
+  }, []);
+
+  if (loading) {
+    return <div className="flex justify-center items-center h-64">Loading profile data...</div>;
+  }
+
+  if (error || !profile) {
+    return (
+      <div className="bg-red-50 border border-red-200 text-red-600 p-4 rounded-lg">
+        {error || 'Profile not found'}
+      </div>
+    );
+  }
+
+  const fullName = `${profile.firstName || ''} ${profile.lastName || ''}`.trim();
+  const regDate = profile.createdAt ? new Date(profile.createdAt) : new Date();
 
   return (
     <div className="max-w-4xl space-y-6">
@@ -25,8 +57,8 @@ export function ProfilePage() {
             <User className="w-12 h-12" />
           </div>
           <div className="flex-1">
-            <h1 className="text-white text-3xl font-semibold mb-2">{profile.name}</h1>
-            <p className="text-green-100 mb-1">Farmer ID: {profile.farmerId}</p>
+            <h1 className="text-white text-3xl font-semibold mb-2">{fullName || 'Farmer'}</h1>
+            <p className="text-green-100 mb-1">NIC: {profile.nic || 'N/A'}</p>
             <span className="inline-flex px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-sm font-medium">
               Active Member
             </span>
@@ -43,25 +75,25 @@ export function ProfilePage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="text-sm text-gray-600 mb-1 block">Full Name</label>
-            <p className="text-gray-800 font-medium">{profile.name}</p>
+            <p className="text-gray-800 font-medium">{fullName}</p>
           </div>
           <div>
-            <label className="text-sm text-gray-600 mb-1 block">Farmer ID</label>
-            <p className="text-gray-800 font-medium">{profile.farmerId}</p>
+            <label className="text-sm text-gray-600 mb-1 block">NIC</label>
+            <p className="text-gray-800 font-medium">{profile.nic}</p>
           </div>
           <div>
             <label className="text-sm text-gray-600 mb-1 block flex items-center gap-2">
               <Phone className="w-4 h-4" />
               Phone Number
             </label>
-            <p className="text-gray-800 font-medium">{profile.phone}</p>
+            <p className="text-gray-800 font-medium">{profile.phone || 'N/A'}</p>
           </div>
           <div>
             <label className="text-sm text-gray-600 mb-1 block flex items-center gap-2">
               <Mail className="w-4 h-4" />
               Email Address
             </label>
-            <p className="text-gray-800 font-medium">{profile.email}</p>
+            <p className="text-gray-800 font-medium">{profile.email || 'N/A'}</p>
           </div>
           <div>
             <label className="text-sm text-gray-600 mb-1 block flex items-center gap-2">
@@ -69,10 +101,10 @@ export function ProfilePage() {
               Registered Date
             </label>
             <p className="text-gray-800 font-medium">
-              {new Date(profile.registeredDate).toLocaleDateString('en-US', { 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
+              {regDate.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
               })}
             </p>
           </div>
@@ -88,33 +120,15 @@ export function ProfilePage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="text-sm text-gray-600 mb-1 block">Address</label>
-            <p className="text-gray-800 font-medium">{profile.address}</p>
+            <p className="text-gray-800 font-medium">{profile.address || 'N/A'}</p>
+          </div>
+          <div>
+            <label className="text-sm text-gray-600 mb-1 block">Division</label>
+            <p className="text-gray-800 font-medium">{profile.division || 'N/A'}</p>
           </div>
           <div>
             <label className="text-sm text-gray-600 mb-1 block">District</label>
-            <p className="text-gray-800 font-medium">{profile.district}</p>
-          </div>
-          <div>
-            <label className="text-sm text-gray-600 mb-1 block">Province</label>
-            <p className="text-gray-800 font-medium">{profile.province}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Farm Information */}
-      <div className="bg-white rounded-2xl shadow-sm p-8 border border-gray-100">
-        <h2 className="text-gray-800 mb-6 flex items-center gap-2">
-          <FileText className="w-5 h-5 text-green-600" />
-          Farm Information
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="text-sm text-gray-600 mb-1 block">Total Land Size</label>
-            <p className="text-gray-800 font-medium">{profile.landSize}</p>
-          </div>
-          <div>
-            <label className="text-sm text-gray-600 mb-1 block">Current Season</label>
-            <p className="text-gray-800 font-medium">{profile.season}</p>
+            <p className="text-gray-800 font-medium">{profile.district || 'N/A'}</p>
           </div>
         </div>
       </div>
@@ -127,13 +141,12 @@ export function ProfilePage() {
             <User className="w-6 h-6 text-green-700" />
           </div>
           <div className="flex-1">
-            <h3 className="text-gray-800 font-medium mb-2">{profile.officer}</h3>
+            <h3 className="text-gray-800 font-medium mb-2">District Office: {profile.district || 'N/A'}</h3>
             <p className="text-gray-600 text-sm flex items-center gap-2 mb-1">
-              <Phone className="w-4 h-4" />
-              {profile.officerPhone}
+              Contact your local agrarian service center for updates to your profile.
             </p>
             <p className="text-gray-600 text-sm">
-              Your officer manages crop data entry and provides agricultural guidance
+              Your officer manages crop data entry and provides agricultural guidance.
             </p>
           </div>
         </div>
@@ -142,7 +155,7 @@ export function ProfilePage() {
       {/* Note */}
       <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
         <p className="text-blue-800 text-sm">
-          <strong>Note:</strong> To update any profile information, please contact your district officer 
+          <strong>Note:</strong> To update any profile information, please contact your district officer
           or visit your nearest agricultural office.
         </p>
       </div>

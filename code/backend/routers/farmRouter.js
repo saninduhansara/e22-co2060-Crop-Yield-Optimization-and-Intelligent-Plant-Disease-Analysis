@@ -1,5 +1,5 @@
 import express from "express";
-import { addHarvestAndPoints, createFarm, getAllFarms, getFarmById, updateFarm, deleteFarm, getHarvestHistory, getAllCrops } from "../controllers/farmController.js";
+import { addHarvestAndPoints, createFarm, getAllFarms, getFarmById, updateFarm, deleteFarm, getHarvestHistory, getFarmerReport, getAllCrops } from "../controllers/farmController.js";
 
 const farmRouter = express.Router()
 
@@ -7,6 +7,7 @@ const farmRouter = express.Router()
 farmRouter.get("/", getAllFarms)
 farmRouter.get("/crops/list", getAllCrops)
 farmRouter.get("/harvests", getHarvestHistory)
+farmRouter.get("/my-report", getFarmerReport)
 farmRouter.get("/:farmId", getFarmById)
 
 // POST endpoints
