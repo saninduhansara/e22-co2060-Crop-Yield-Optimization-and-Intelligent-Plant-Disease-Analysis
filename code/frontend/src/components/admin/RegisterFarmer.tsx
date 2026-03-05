@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { User, MapPin, Phone, IdCard, Save, Plus, Trash2, AlertCircle, CheckCircle, Upload, Camera } from 'lucide-react';
 import { userAPI, farmAPI } from '../../services/api';
 import uploadfile from '../../utils/mediaUpload';
@@ -50,6 +50,9 @@ export function RegisterFarmer() {
   const [showFarmerDropdown, setShowFarmerDropdown] = useState(false);
   const [loadingFarmers, setLoadingFarmers] = useState(false);
   const [createdFarmIds, setCreatedFarmIds] = useState<string[]>([]);
+  
+  // Ref for click-outside handling
+  const farmerInputRef = useRef<HTMLDivElement>(null);
   
   const [farmerData, setFarmerData] = useState({
     firstName: '',
@@ -135,6 +138,22 @@ export function RegisterFarmer() {
       setSelectedFarmer(null);
     }
   };
+
+  // Handle click outside to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (farmerInputRef.current && !farmerInputRef.current.contains(event.target as Node)) {
+        setShowFarmerDropdown(false);
+      }
+    };
+
+    if (showFarmerDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [showFarmerDropdown]);
 
   // Filter farmers based on search term
   const filteredFarmers = existingFarmers.filter(farmer => {
@@ -392,47 +411,58 @@ export function RegisterFarmer() {
               <p className="text-gray-600 mt-2">Loading farmers...</p>
             </div>
           ) : (
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search farmer by name, NIC, or email..."
-                value={farmerSearchTerm}
-                onChange={(e) => {
-                  setFarmerSearchTerm(e.target.value);
-                  setShowFarmerDropdown(true);
-                }}
-                onFocus={() => setShowFarmerDropdown(true)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              />
-              
-              {showFarmerDropdown && filteredFarmers.length > 0 && (
-                <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto">
-                  {filteredFarmers.map((farmer) => (
-                    <button
-                      key={farmer._id}
-                      type="button"
-                      onClick={() => handleSelectFarmer(farmer)}
-                      className="w-full px-4 py-3 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
-                    >
-                      <div className="font-medium text-gray-900">
-                        {farmer.firstName || ''} {farmer.lastName || ''}
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        NIC: {farmer.nic || 'N/A'} | {farmer.email || 'N/A'}
-                      </div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        {farmer.division || 'N/A'}, {farmer.district || 'N/A'}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
+            <>
+              <div className="relative mb-4" ref={farmerInputRef}>
+                <input
+                  type="text"
+                  placeholder="Search farmer by name, NIC, or email..."
+                  value={farmerSearchTerm}
+                  onChange={(e) => {
+                    setFarmerSearchTerm(e.target.value);
+                    setShowFarmerDropdown(true);
+                  }}
+                  onFocus={() => setShowFarmerDropdown(true)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                />
+                
+                {showFarmerDropdown && filteredFarmers.length > 0 && farmerInputRef.current && (
+                  <div 
+                    style={{
+                      position: 'fixed',
+                      top: farmerInputRef.current.offsetHeight + (farmerInputRef.current.getBoundingClientRect().top + farmerInputRef.current.offsetHeight) + 8,
+                      left: farmerInputRef.current.getBoundingClientRect().left,
+                      width: farmerInputRef.current.offsetWidth,
+                      zIndex: 9999,
+                    }}
+                    className="bg-white border border-gray-200 rounded-lg shadow-2xl max-h-64 overflow-y-auto"
+                  >
+                    {filteredFarmers.map((farmer) => (
+                      <button
+                        key={farmer._id}
+                        type="button"
+                        onClick={() => handleSelectFarmer(farmer)}
+                        className="w-full px-4 py-3 text-left hover:bg-green-50 border-b border-gray-100 last:border-b-0 transition-colors"
+                      >
+                        <div className="font-medium text-gray-900">
+                          {farmer.firstName || ''} {farmer.lastName || ''}
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          NIC: {farmer.nic || 'N/A'} | {farmer.email || 'N/A'}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          {farmer.division || 'N/A'}, {farmer.district || 'N/A'}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               
               {selectedFarmer && (
-                <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
                   <div className="flex items-start gap-3">
                     <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                    <div>
+                    <div className="flex-1">
                       <p className="font-medium text-green-900">
                         Selected: {selectedFarmer.firstName || ''} {selectedFarmer.lastName || ''}
                       </p>
@@ -443,7 +473,7 @@ export function RegisterFarmer() {
                   </div>
                 </div>
               )}
-            </div>
+            </>
           )}
         </div>
       )}
