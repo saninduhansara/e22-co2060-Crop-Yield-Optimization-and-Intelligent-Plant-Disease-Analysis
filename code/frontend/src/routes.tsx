@@ -30,7 +30,7 @@ import { getAuthData, isAdmin, isFarmer } from "./utils/authUtils";
 function FarmerRoute({ children }: { children: React.ReactNode }) {
   const [isValidating, setIsValidating] = useState(true);
   const [isValid, setIsValid] = useState(false);
-  const auth = getAuthState();
+  const auth = getAuthData();
 
   useEffect(() => {
     const validateToken = async () => {
@@ -72,7 +72,7 @@ function FarmerRoute({ children }: { children: React.ReactNode }) {
 function AdminRoute({ children }: { children: React.ReactNode }) {
   const [isValidating, setIsValidating] = useState(true);
   const [isValid, setIsValid] = useState(false);
-  const auth = getAuthState();
+  const auth = getAuthData();
 
   useEffect(() => {
     const validateToken = async () => {
