@@ -47,7 +47,8 @@ export async function createFarm(req, res) {
 
 // add harvest and update points automatically in farmers
 // y max = maximum average yield for that season and year across all districts
-// points = P max * sqrt( max(0, farm yield - average yield) / (y max - average yield) )
+// points = P max * sqrt((farm yield - average yield) / (y max - average yield)) + P max * 0.2* (farm yield / average yield) if farm yield >= average yield
+// if farm yield < average yield → points = P max * 0.2 * (farm yield / average yield)
 
 export const addHarvestAndPoints = async (req, res) => {
   if (!isAdmin(req)) {
@@ -99,11 +100,16 @@ export const addHarvestAndPoints = async (req, res) => {
 
     // Points calculation
     const P_MAX = 1000;
-    const numerator = Math.max(0, farmYield - avgYield);
-    const denominator = (Y_MAX - avgYield);
+    const denominator = Y_MAX - avgYield;
     let pointsEarned = 0;
-    if (denominator > 0) {
-      pointsEarned = P_MAX * Math.sqrt(numerator / denominator);
+
+    if (farmYield >= avgYield && denominator > 0) {
+      const numerator = farmYield - avgYield;
+      pointsEarned = P_MAX * Math.sqrt(numerator / denominator) + P_MAX * 0.2* (farmYield / avgYield);
+    }
+    if (farmYield < avgYield ) {
+      pointsEarned = P_MAX * 0.2 * (farmYield / avgYield) ;
+
     }
 
     // Update farmer points
