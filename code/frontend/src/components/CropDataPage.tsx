@@ -1,12 +1,13 @@
-import { MapPin, Wheat, TrendingUp, Calendar, Loader } from 'lucide-react';
+import { MapPin, Wheat, TrendingUp, Calendar, Loader, RefreshCw } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { farmAPI } from '../services/api';
+import { farmAPI, userAPI } from '../services/api';
 
 interface HarvestDetail {
   _id: string;
   season: string;
   year: string | number;
   harvestQty: number;
+  pointsEarned?: number;
   createdDate: string;
 }
 
@@ -15,7 +16,7 @@ interface FarmWithHarvests {
   farmName: string;
   location: string;
   crop: string;
-  sizeInAcres: number;
+  farmSize: number;
   harvests: HarvestDetail[];
 }
 
@@ -23,6 +24,7 @@ export function CropDataPage() {
   const [farms, setFarms] = useState<FarmWithHarvests[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshingPoints, setRefreshingPoints] = useState(false);
 
   useEffect(() => {
     fetchMyFarms();
@@ -31,16 +33,39 @@ export function CropDataPage() {
   const fetchMyFarms = async () => {
     try {
       setLoading(true);
-      // getAllFarms filters by logged-in user if we are a farmer, but wait, 
-      // let's check farmController's getAllFarms logic.
-      // Assuming getAllFarms returns farms belonging to the user for farmers.
+      // Fetch the currently logged-in user's profile to get their NIC
+      const profileData = await userAPI.fetchProfile();
+      const userNic = profileData?.user?.nic;
+
+      if (!userNic) {
+        throw new Error("Could not find user NIC to filter farms.");
+      }
+
+      // Fetch all farms and filter down to just this farmer's farms
       const data = await farmAPI.getAllFarms();
-      setFarms(data.farms || []);
+      const allFarms = data.farms || [];
+      const myFarms = allFarms.filter((farm: any) => farm.farmerNIC === userNic);
+
+      setFarms(myFarms);
     } catch (err: any) {
       console.error("Failed to load crop data:", err);
       setError("Failed to load your cultivation records.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRefreshPoints = async () => {
+    try {
+      setRefreshingPoints(true);
+      await farmAPI.recalculatePoints();
+      // Refetch user profile to get the updated global points, and refetch farms
+      await fetchMyFarms();
+      // In a real app we might want to also trigger a global auth config update here if the navbar needs it
+    } catch (err) {
+      console.error("Failed to refresh points", err);
+    } finally {
+      setRefreshingPoints(false);
     }
   };
 
@@ -50,7 +75,7 @@ export function CropDataPage() {
   let totalRecords = 0;
 
   const flatHarvests = farms.flatMap(farm => {
-    totalAcres += farm.sizeInAcres || 0;
+    totalAcres += farm.farmSize || 0;
     return (farm.harvests || []).map(h => {
       totalYield += h.harvestQty || 0;
       totalRecords += 1;
@@ -59,7 +84,7 @@ export function CropDataPage() {
         farmName: farm.farmName,
         location: farm.location,
         crop: farm.crop,
-        acres: farm.sizeInAcres
+        acres: farm.farmSize
       };
     });
   });
@@ -89,8 +114,18 @@ export function CropDataPage() {
   return (
     <div className="space-y-4 md:space-y-6">
       {/* Header */}
-      <div>
-        <p className="text-sm md:text-base text-gray-600">View your paddy cultivation data entered by district officers</p>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <p className="text-sm md:text-base text-gray-600">View your paddy cultivation data entered by district officers</p>
+        </div>
+        <button
+          onClick={handleRefreshPoints}
+          disabled={refreshingPoints}
+          className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 hover:bg-green-100 rounded-lg transition-colors font-medium text-sm disabled:opacity-50"
+        >
+          <RefreshCw className={`w-4 h-4 ${refreshingPoints ? 'animate-spin' : ''}`} />
+          {refreshingPoints ? 'Recalculating...' : 'Refresh Points'}
+        </button>
       </div>
 
       {/* Stats Cards */}
@@ -192,7 +227,7 @@ export function CropDataPage() {
                 <div className="mt-4 pt-4 border-t border-gray-200">
                   <div className="flex items-center justify-between">
                     <p className="text-xs md:text-sm text-gray-600">Points Earned</p>
-                    <p className="text-lg md:text-xl font-bold text-green-600">+{Math.floor(record.harvestQty * 0.1)} points</p>
+                    <p className="text-lg md:text-xl font-bold text-green-600">+{record.pointsEarned || 0} points</p>
                   </div>
                 </div>
               </div>

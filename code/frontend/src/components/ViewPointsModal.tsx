@@ -108,10 +108,10 @@ export function ViewPointsModal({ isOpen, onClose }: ViewPointsModalProps) {
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
             <h3 className="font-semibold text-gray-800 mb-3">How Points Work</h3>
             <div className="space-y-2 text-sm text-gray-700">
-              <p>• <strong>Base Rate:</strong> 50 points per acre of paddy cultivation</p>
-              <p>• <strong>Quality Bonus:</strong> Additional points for high-quality yield</p>
-              <p>• <strong>Season Target:</strong> Achieve 500 points per season for rewards</p>
-              <p>• <strong>Redemption:</strong> Points can be redeemed for agricultural supplies and equipment</p>
+              <p>• <strong>Dynamic Calculation:</strong> Points are uniquely calculated against last year's actual average yield for the same crop and season.</p>
+              <p>• <strong>Calculation Formula:</strong> Max Score (1,000) × √[(Your Yield - Avg Yield) / (20,000 - Avg Yield)]</p>
+              <p>• <strong>Maximum Yield Cap:</strong> Theoretical maximum yield capped strictly at 20,000 kg/acre.</p>
+              <p>• <strong>Redemption:</strong> Points can be redeemed for agricultural supplies and equipment.</p>
             </div>
           </div>
 
@@ -134,10 +134,10 @@ export function ViewPointsModal({ isOpen, onClose }: ViewPointsModalProps) {
                           <h4 className="text-gray-800 font-medium">{item.description}</h4>
                           <p className="text-gray-600 text-sm flex items-center gap-2">
                             <Calendar className="w-3 h-3" />
-                            {new Date(item.date).toLocaleDateString('en-US', { 
-                              year: 'numeric', 
-                              month: 'long', 
-                              day: 'numeric' 
+                            {new Date(item.date).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric'
                             })}
                             <span className="text-gray-400">•</span>
                             Season: {item.season}
@@ -145,16 +145,15 @@ export function ViewPointsModal({ isOpen, onClose }: ViewPointsModalProps) {
                         </div>
                       </div>
                     </div>
-                    
+
                     <div className="flex flex-col items-end gap-2">
                       <span className="text-2xl font-bold text-amber-600">
                         +{item.points}
                       </span>
-                      <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${
-                        item.status === 'Verified' 
-                          ? 'bg-green-100 text-green-700' 
+                      <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${item.status === 'Verified'
+                          ? 'bg-green-100 text-green-700'
                           : 'bg-yellow-100 text-yellow-700'
-                      }`}>
+                        }`}>
                         {item.status}
                       </span>
                     </div>
