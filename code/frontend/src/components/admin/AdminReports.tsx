@@ -49,6 +49,8 @@ export function AdminReports() {
   const [selectedSeason, setSelectedSeason] = useState<string>('');
   const [selectedCrop, setSelectedCrop] = useState<string | null>(null);
   const [availableCrops, setAvailableCrops] = useState<string[]>([]);
+  const [districtYear, setDistrictYear] = useState<string>('');
+  const [districtSeason, setDistrictSeason] = useState<string>('');
 
   // dropdown toggles (reuse patterns from AddHarvest)
   // dropdown open state no longer needed; using native <select> elements for
@@ -165,13 +167,13 @@ export function AdminReports() {
   const prevFilt = smartPrevFilters();
   const prevHarvests = prevFilt
     ? harvests.filter((h) => {
-        const yearMatch = String(h.year) === prevFilt.year;
-        const seasonMatch = String(h.season || '').toLowerCase() === prevFilt.season;
-        const cropMatch = selectedCrop
-          ? String(h.crop || '').toLowerCase() === selectedCrop.toLowerCase()
-          : true;
-        return yearMatch && seasonMatch && cropMatch;
-      })
+      const yearMatch = String(h.year) === prevFilt.year;
+      const seasonMatch = String(h.season || '').toLowerCase() === prevFilt.season;
+      const cropMatch = selectedCrop
+        ? String(h.crop || '').toLowerCase() === selectedCrop.toLowerCase()
+        : true;
+      return yearMatch && seasonMatch && cropMatch;
+    })
     : [];
   const prevFarmers = prevFilt ? new Set(prevHarvests.map((h) => h.farmerNIC)).size : 0;
   const prevHarvestKg = prevFilt
@@ -185,7 +187,7 @@ export function AdminReports() {
   const harvestGrowth = prevHarvestKg > 0 ? ((totalHarvestKg - prevHarvestKg) / prevHarvestKg) * 100 : null;
   const yieldGrowth = prevAcres > 0 && prevHarvestKg > 0
     ? ((avgYieldPerAcre - (prevHarvestKg / 1000 / prevAcres)) /
-        (prevHarvestKg / 1000 / prevAcres)) * 100
+      (prevHarvestKg / 1000 / prevAcres)) * 100
     : null;
 
   // formatted versions for summary cards
@@ -331,9 +333,9 @@ export function AdminReports() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
-          
+
           <p className="text-gray-600">Comprehensive insights and data analysis</p>
         </div>
         <button className="px-6 py-3 bg-green-700 hover:bg-green-800 text-white rounded-lg flex items-center gap-2 transition-colors">
@@ -427,8 +429,8 @@ export function AdminReports() {
                 {metricsLoading || loadingHarvests
                   ? '...'
                   : (selectedYear || selectedSeason || selectedCrop)
-                  ? formattedTotalHarvest
-                  : formattedTotalHarvest}
+                    ? formattedTotalHarvest
+                    : formattedTotalHarvest}
               </p>
               <span className="text-xs sm:text-sm font-medium text-gray-600 break-words">tons</span>
             </div>
@@ -451,8 +453,8 @@ export function AdminReports() {
                 {metricsLoading || loadingHarvests
                   ? '...'
                   : (selectedYear || selectedSeason || selectedCrop)
-                  ? formattedAvgYield
-                  : formattedAvgYield}
+                    ? formattedAvgYield
+                    : formattedAvgYield}
               </p>
               <span className="text-xs sm:text-sm font-medium text-gray-600 break-words">tons</span>
             </div>
@@ -480,7 +482,7 @@ export function AdminReports() {
       </div>
 
       {/* Charts Row 1 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6">
         {/* Season Comparison */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Yield by Season {selectedCrop && `- ${selectedCrop}`}</h3>
@@ -541,7 +543,30 @@ export function AdminReports() {
 
         {/* District Performance */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Yield by District</h3>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-4">
+            <h3 className="text-lg font-semibold text-gray-800">Yield by District</h3>
+            <div className="flex gap-2">
+              <select
+                value={districtYear}
+                onChange={(e) => setDistrictYear(e.target.value)}
+                className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-green-500"
+              >
+                <option value="">All Years</option>
+                <option value="2026">2026</option>
+                <option value="2025">2025</option>
+                <option value="2024">2024</option>
+              </select>
+              <select
+                value={districtSeason}
+                onChange={(e) => setDistrictSeason(e.target.value)}
+                className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-green-500"
+              >
+                <option value="">All Seasons</option>
+                <option value="Maha">Maha</option>
+                <option value="Yala">Yala</option>
+              </select>
+            </div>
+          </div>
           <ResponsiveContainer width="100%" height={300}>
             {/* same format as yield-by-season chart */}
             <BarChart data={districtData}>
@@ -575,18 +600,17 @@ export function AdminReports() {
             </thead>
             <tbody className="divide-y divide-gray-200">
               {topPerformers.slice(0, showAllPerformers ? 10 : 5).map((farmer) => (
-                <tr 
-                  key={farmer.rank} 
+                <tr
+                  key={farmer.rank}
                   className="hover:bg-gray-50 transition-colors cursor-pointer"
                   onClick={() => handleSelectPerformer(farmer)}
                 >
                   <td className="px-6 py-4">
-                    <span className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${
-                      farmer.rank === 1 ? 'bg-yellow-100 text-yellow-700' :
+                    <span className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${farmer.rank === 1 ? 'bg-yellow-100 text-yellow-700' :
                       farmer.rank === 2 ? 'bg-gray-100 text-gray-700' :
-                      farmer.rank === 3 ? 'bg-orange-100 text-orange-700' :
-                      'bg-gray-50 text-gray-600'
-                    }`}>
+                        farmer.rank === 3 ? 'bg-orange-100 text-orange-700' :
+                          'bg-gray-50 text-gray-600'
+                      }`}>
                       {farmer.rank}
                     </span>
                   </td>
@@ -622,7 +646,7 @@ export function AdminReports() {
 
       {/* Farmer Details Modal */}
       {selectedFarmer && (
-        <FarmerProfile 
+        <FarmerProfile
           farm={{
             farmId: selectedFarmer.farmId,
             farmName: selectedFarmer.farmName,
@@ -635,8 +659,8 @@ export function AdminReports() {
             crop: selectedFarmer.crop,
             status: selectedFarmer.status,
             points: selectedFarmer.points,
-          }} 
-          onClose={() => setSelectedFarmer(null)} 
+          }}
+          onClose={() => setSelectedFarmer(null)}
         />
       )}
     </div>

@@ -4,5 +4,3 @@ dist/
 *.log
 .env
 .env.*
-.env
-code/backend/.env

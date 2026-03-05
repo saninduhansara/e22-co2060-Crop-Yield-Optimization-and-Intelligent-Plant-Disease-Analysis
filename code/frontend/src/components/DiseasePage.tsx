@@ -23,7 +23,7 @@ export function DiseasePage() {
 
   const handleAnalyze = () => {
     if (!selectedImage) return;
-    
+
     setIsAnalyzing(true);
     // Simulate AI analysis
     setTimeout(() => {
@@ -48,16 +48,18 @@ export function DiseasePage() {
     }, 1500);
   };
 
-  // Temperature scale data for heat map
+  // Frequency scale data for heat map
   const tempScale = [
-    { temp: '5°C', color: 'bg-green-200' },
-    { temp: '10°C', color: 'bg-green-300' },
-    { temp: '15°C', color: 'bg-yellow-300' },
-    { temp: '20°C', color: 'bg-yellow-400' },
-    { temp: '25°C', color: 'bg-orange-400' },
-    { temp: '30°C', color: 'bg-orange-500' },
-    { temp: '35°C', color: 'bg-red-500' },
-    { temp: '40°C', color: 'bg-red-700' },
+    { temp: 'None', color: 'bg-green-200' },
+    { temp: 'Very Low', color: 'bg-green-300' },
+    { temp: 'Low', color: 'bg-yellow-200' },
+    { temp: 'Warning', color: 'bg-yellow-300' },
+    { temp: 'Alert', color: 'bg-yellow-400' },
+    { temp: 'Moderate', color: 'bg-orange-400' },
+    { temp: 'Elevated', color: 'bg-orange-500' },
+    { temp: 'High', color: 'bg-red-500' },
+    { temp: 'Very High', color: 'bg-red-700' },
+    { temp: 'Critical', color: 'bg-red-900' },
   ];
 
   return (
@@ -182,13 +184,12 @@ export function DiseasePage() {
                 </div>
                 <div>
                   <p className="text-xs md:text-sm text-gray-600 mb-1">Severity</p>
-                  <span className={`inline-flex px-2 md:px-3 py-0.5 md:py-1 rounded-full text-xs md:text-sm font-medium ${
-                    analysisResult.severity === 'High' 
+                  <span className={`inline-flex px-2 md:px-3 py-0.5 md:py-1 rounded-full text-xs md:text-sm font-medium ${analysisResult.severity === 'High'
                       ? 'bg-red-100 text-red-700'
                       : analysisResult.severity === 'Medium'
-                      ? 'bg-orange-100 text-orange-700'
-                      : 'bg-yellow-100 text-yellow-700'
-                  }`}>
+                        ? 'bg-orange-100 text-orange-700'
+                        : 'bg-yellow-100 text-yellow-700'
+                    }`}>
                     {analysisResult.severity}
                   </span>
                 </div>
@@ -244,7 +245,7 @@ export function DiseasePage() {
       <div className="space-y-4 md:space-y-6">
         {/* Temperature Scale */}
         <div className="bg-white rounded-xl border border-gray-200 p-3 md:p-4">
-          <h3 className="text-sm md:text-base font-semibold text-gray-800 mb-3">Temperature Scale</h3>
+          <h3 className="text-sm md:text-base font-semibold text-gray-800 mb-3">Report Frequency</h3>
           <div className="space-y-2">
             {tempScale.map((item, index) => (
               <div key={index} className="flex items-center gap-2 md:gap-3">
@@ -258,41 +259,9 @@ export function DiseasePage() {
         {/* Heat Map Visualization */}
         <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6">
           <h3 className="text-sm md:text-base font-semibold text-gray-800 mb-3">Disease Heat Map</h3>
-          <div className="relative">
-            {/* Leaf Shape Heat Map */}
-            <svg viewBox="0 0 200 280" className="w-full h-auto">
-              {/* Gradient definitions */}
-              <defs>
-                <radialGradient id="heatGradient1" cx="50%" cy="30%">
-                  <stop offset="0%" stopColor="#ef4444" />
-                  <stop offset="40%" stopColor="#f97316" />
-                  <stop offset="70%" stopColor="#eab308" />
-                  <stop offset="100%" stopColor="#22c55e" />
-                </radialGradient>
-                <radialGradient id="heatGradient2" cx="60%" cy="60%">
-                  <stop offset="0%" stopColor="#ef4444" />
-                  <stop offset="50%" stopColor="#f59e0b" />
-                  <stop offset="100%" stopColor="#84cc16" />
-                </radialGradient>
-              </defs>
-              
-              {/* Leaf shape with gradient */}
-              <ellipse 
-                cx="100" 
-                cy="140" 
-                rx="80" 
-                ry="120" 
-                fill="url(#heatGradient1)"
-                opacity="0.9"
-              />
-              
-              {/* Disease markers */}
-              <circle cx="85" cy="100" r="5" fill="white" stroke="#ef4444" strokeWidth="2" />
-              <circle cx="120" cy="130" r="5" fill="white" stroke="#ef4444" strokeWidth="2" />
-              <circle cx="95" cy="170" r="5" fill="white" stroke="#f97316" strokeWidth="2" />
-              <circle cx="110" cy="200" r="5" fill="white" stroke="#eab308" strokeWidth="2" />
-              <circle cx="75" cy="220" r="5" fill="white" stroke="#22c55e" strokeWidth="2" />
-            </svg>
+          <div className="relative flex items-center justify-center min-h-[300px] bg-gray-50 rounded-lg">
+            {/* Generated Map Heat Map */}
+            <img src="/src/assets/sri_lanka_heatmap.png" alt="Sri Lanka Disease Heatmap" className="w-full h-full object-contain mix-blend-multiply opacity-90 p-4" />
           </div>
         </div>
 

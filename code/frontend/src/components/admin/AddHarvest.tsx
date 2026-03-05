@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Search, Calendar, Wheat, TrendingUp, Save, ChevronDown, Loader, CheckCircle, AlertCircle } from 'lucide-react';
 import { farmAPI } from '../../services/api';
+import { toast } from 'sonner';
 
 interface Farm {
   farmId: string;
@@ -52,6 +53,7 @@ export function AddHarvest() {
       setFarms(data.farms || []);
     } catch (err: any) {
       console.error('Error fetching farms:', err);
+      toast.error('Failed to load farms');
       setError('Failed to load farms');
     } finally {
       setLoading(false);
@@ -80,8 +82,9 @@ export function AddHarvest() {
         pointsEarned: response.pointsEarned,
       });
       setShowResult(true);
+      toast.success('Harvest recorded successfully!');
 
-      // Reset form after 3 seconds
+      // Reset form after 5 seconds
       setTimeout(() => {
         setFormData({
           year: '',
@@ -96,7 +99,9 @@ export function AddHarvest() {
         setResult(null);
       }, 5000);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to record harvest. Please try again.');
+      const errMessage = err.response?.data?.message || 'Failed to record harvest. Please try again.';
+      setError(errMessage);
+      toast.error(errMessage);
       console.error('Error recording harvest:', err);
     } finally {
       setSubmitting(false);
@@ -106,14 +111,14 @@ export function AddHarvest() {
   const years = ['2024', '2025', '2026', '2027', '2028'];
   const seasons = ['Maha', 'Yala'];
 
-  const filteredFarmers = farms.filter((farm: Farm) => 
+  const filteredFarmers = farms.filter((farm: Farm) =>
     farm.farmId.toLowerCase().includes(searchTerm.toLowerCase()) ||
     farm.farmerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     farm.farmerNIC.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleFarmerSelect = (farm: Farm) => {
-    setFormData({...formData, farmId: farm.farmId, farmerName: farm.farmerName, acres: farm.farmSize.toString()});
+    setFormData({ ...formData, farmId: farm.farmId, farmerName: farm.farmerName, acres: farm.farmSize.toString() });
     setIsFarmIdOpen(false);
     setSearchTerm('');
   };
@@ -186,7 +191,7 @@ export function AddHarvest() {
                     </span>
                     <ChevronDown className={`w-5 h-5 text-gray-600 transition-transform ${isYearOpen ? 'rotate-180' : ''}`} />
                   </button>
-                  
+
                   {isYearOpen && (
                     <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
                       {years.map((year) => (
@@ -194,12 +199,11 @@ export function AddHarvest() {
                           key={year}
                           type="button"
                           onClick={() => {
-                            setFormData({...formData, year});
+                            setFormData({ ...formData, year });
                             setIsYearOpen(false);
                           }}
-                          className={`w-full px-4 py-3 text-left hover:bg-green-50 transition-colors ${
-                            formData.year === year ? 'bg-green-100 text-green-700 font-medium' : 'text-gray-800'
-                          }`}
+                          className={`w-full px-4 py-3 text-left hover:bg-green-50 transition-colors ${formData.year === year ? 'bg-green-100 text-green-700 font-medium' : 'text-gray-800'
+                            }`}
                         >
                           {year}
                         </button>
@@ -225,7 +229,7 @@ export function AddHarvest() {
                     </span>
                     <ChevronDown className={`w-5 h-5 text-gray-600 transition-transform ${isSeasonOpen ? 'rotate-180' : ''}`} />
                   </button>
-                  
+
                   {isSeasonOpen && (
                     <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
                       {seasons.map((season) => (
@@ -233,12 +237,11 @@ export function AddHarvest() {
                           key={season}
                           type="button"
                           onClick={() => {
-                            setFormData({...formData, season});
+                            setFormData({ ...formData, season });
                             setIsSeasonOpen(false);
                           }}
-                          className={`w-full px-4 py-3 text-left hover:bg-green-50 transition-colors ${
-                            formData.season === season ? 'bg-green-100 text-green-700 font-medium' : 'text-gray-800'
-                          }`}
+                          className={`w-full px-4 py-3 text-left hover:bg-green-50 transition-colors ${formData.season === season ? 'bg-green-100 text-green-700 font-medium' : 'text-gray-800'
+                            }`}
                         >
                           {season}
                         </button>
@@ -264,7 +267,7 @@ export function AddHarvest() {
                     </span>
                     <ChevronDown className={`w-5 h-5 text-gray-600 transition-transform ${isFarmIdOpen ? 'rotate-180' : ''}`} />
                   </button>
-                  
+
                   {isFarmIdOpen && (
                     <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
                       {/* Search Input */}
@@ -281,7 +284,7 @@ export function AddHarvest() {
                           />
                         </div>
                       </div>
-                      
+
                       {/* Farmer List */}
                       <div className="max-h-60 overflow-y-auto">
                         {loading ? (
@@ -295,9 +298,8 @@ export function AddHarvest() {
                               key={farm.farmId}
                               type="button"
                               onClick={() => handleFarmerSelect(farm)}
-                              className={`w-full px-4 py-3 text-left hover:bg-green-50 transition-colors border-b border-gray-100 last:border-0 ${
-                                formData.farmId === farm.farmId ? 'bg-green-100 text-green-700' : 'text-gray-800'
-                              }`}
+                              className={`w-full px-4 py-3 text-left hover:bg-green-50 transition-colors border-b border-gray-100 last:border-0 ${formData.farmId === farm.farmId ? 'bg-green-100 text-green-700' : 'text-gray-800'
+                                }`}
                             >
                               <div className="font-medium">{farm.farmId} - {farm.farmerName}</div>
                               <div className="text-xs text-gray-600">{farm.farmerNIC} | {farm.farmSize} acres | {farm.crop}</div>
@@ -337,7 +339,7 @@ export function AddHarvest() {
                     type="number"
                     step="0.01"
                     value={formData.harvestQuantity}
-                    onChange={(e: any) => setFormData({...formData, harvestQuantity: e.target.value})}
+                    onChange={(e: any) => setFormData({ ...formData, harvestQuantity: e.target.value })}
                     placeholder="e.g., 4500"
                     className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     required

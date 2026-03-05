@@ -1,9 +1,15 @@
+/**
+ * Frontend API Service Layer
+ * Configures the Axios instance, HTTP interceptors for JWT auth/error handling,
+ * and exports organized objects for User, Farm, and Yield endpoints.
+ */
 import axios from 'axios';
+import { clearAuthData } from '../utils/authUtils';
 
 // Base API URL - use relative path in development to work with Vite proxy
 // In production, use the full API URL from environment variable
 const API_BASE_URL = import.meta.env.PROD
-  ? ((import.meta as any).env?.VITE_API_URL || 'http://localhost:5000')
+  ? (import.meta.env.VITE_API_URL || 'http://localhost:5000')
   : ''; // Empty string means use relative paths in dev mode
 
 // Create axios instance with default config
@@ -36,9 +42,9 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 403) {
+    if (error.response?.status === 403 || error.response?.status === 401) {
       // Token expired or invalid - clear auth and redirect to root login page
-      localStorage.removeItem('agriconnect_auth');
+      clearAuthData();
       window.location.href = '/';
     }
     return Promise.reject(error);
@@ -76,6 +82,19 @@ export const userAPI = {
 
   fetchProfile: async () => {
     const response = await api.get('/api/users/profile');
+    return response.data;
+  },
+
+  updateProfile: async (userData: {
+    firstName?: string;
+    lastName?: string;
+    phone?: string;
+    address?: string;
+    district?: string;
+    division?: string;
+    image?: string;
+  }) => {
+    const response = await api.put('/api/users/profile', userData);
     return response.data;
   },
 
@@ -129,6 +148,11 @@ export const farmAPI = {
     return response.data;
   },
 
+  recalculatePoints: async () => {
+    const response = await api.post('/api/farms/recalculate-points');
+    return response.data;
+  },
+
   getAllFarms: async () => {
     const response = await api.get('/api/farms');
     return response.data;
@@ -170,6 +194,28 @@ export const avgYieldAPI = {
     const response = await api.post('/api/avgYields', yieldData);
     return response.data;
   },
+};
+
+// Inquiry API endpoints
+export const inquiryAPI = {
+  createInquiry: async (inquiryData: {
+    subject: string;
+    message: string;
+    farmerId?: string;
+  }) => {
+    const response = await api.post('/api/inquiries', inquiryData);
+    return response.data;
+  },
+
+  getAllInquiries: async () => {
+    const response = await api.get('/api/inquiries');
+    return response.data;
+  },
+
+  updateStatus: async (inquiryId: string, status: string) => {
+    const response = await api.put(`/api/inquiries/${inquiryId}/status`, { status });
+    return response.data;
+  }
 };
 
 // Export the axios instance for custom requests
