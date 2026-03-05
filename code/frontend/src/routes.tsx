@@ -16,22 +16,11 @@ import { HarvestHistory } from "./components/admin/HarvestHistory";
 import { AdminReports } from "./components/admin/AdminReports";
 import { AdminProfilePage } from "./components/admin/AdminProfilePage";
 import { NotFoundPage } from "./components/NotFoundPage";
-
-// Helper to get auth state from localStorage
-function getAuthState() {
-  const authData = localStorage.getItem('agriconnect_auth');
-  if (!authData) return null;
-  try {
-    return JSON.parse(authData);
-  } catch {
-    return null;
-  }
-}
+import { getAuthData, isAdmin, isFarmer } from "./utils/authUtils";
 
 // Protected Route Component for Farmers
 function FarmerRoute({ children }: { children: React.ReactNode }) {
-  const auth = getAuthState();
-  if (!auth || auth.userType !== 'farmer') {
+  if (!isFarmer()) {
     return <Navigate to="/" replace />;
   }
   return <>{children}</>;
@@ -39,8 +28,7 @@ function FarmerRoute({ children }: { children: React.ReactNode }) {
 
 // Protected Route Component for Admins
 function AdminRoute({ children }: { children: React.ReactNode }) {
-  const auth = getAuthState();
-  if (!auth || auth.userType !== 'admin') {
+  if (!isAdmin()) {
     return <Navigate to="/" replace />;
   }
   return <>{children}</>;
@@ -48,7 +36,7 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
 
 // Root redirect based on auth state
 function RootRedirect() {
-  const auth = getAuthState();
+  const auth = getAuthData();
   
   if (!auth) {
     return <LoginPage />;

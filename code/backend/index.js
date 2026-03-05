@@ -66,6 +66,7 @@ app.use("/api/users", userRouter)
 app.use("/api/farms", farmRouter)
 app.use("/api/avgYields", avgYieldRouter)
 
-const PORT = process.env.PORT || 5000
-app.listen(PORT, ()=>{
-    console.log(`server started at port ${PORT}`)})
+
+
+app.listen(5000, ()=>{
+    console.log("server started at port 5000")})

@@ -1,5 +1,5 @@
 import { Home, Sprout, AlertTriangle, User, FileText, LogOut, Menu, X, MessageSquare } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface SidebarProps {
   currentPage: string;
@@ -9,7 +9,23 @@ interface SidebarProps {
 
 export function Sidebar({ currentPage, onNavigate, onLogout }: SidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
-  
+  const [userData, setUserData] = useState<{ firstName?: string, lastName?: string }>({});
+
+  useEffect(() => {
+    const authDataStr = localStorage.getItem('agriconnect_auth');
+    if (authDataStr) {
+      try {
+        const authData = JSON.parse(authDataStr);
+        setUserData({
+          firstName: authData.firstName,
+          lastName: authData.lastName
+        });
+      } catch (e) {
+        console.error("Failed to parse auth data", e);
+      }
+    }
+  }, []);
+
   const menuItems = [
     { id: 'home', label: 'Home', icon: Home },
     { id: 'crop', label: 'Crop Data', icon: Sprout },
@@ -22,6 +38,10 @@ export function Sidebar({ currentPage, onNavigate, onLogout }: SidebarProps) {
     onNavigate(page);
     setIsOpen(false);
   };
+
+  const displayName = userData.firstName || userData.lastName
+    ? `${userData.firstName || ''} ${userData.lastName || ''}`.trim()
+    : 'Farmer';
 
   return (
     <>
@@ -66,16 +86,15 @@ export function Sidebar({ currentPage, onNavigate, onLogout }: SidebarProps) {
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentPage === item.id;
-            
+
             return (
               <button
                 key={item.id}
                 onClick={() => handleNavigate(item.id)}
-                className={`w-full flex items-center gap-3 px-6 py-4 transition-all ${
-                  isActive
+                className={`w-full flex items-center gap-3 px-6 py-4 transition-all ${isActive
                     ? 'bg-green-600/50 text-white border-r-4 border-white'
                     : 'text-green-50 hover:bg-green-600/30'
-                }`}
+                  }`}
               >
                 <Icon className="w-5 h-5" />
                 <span className="text-sm font-medium">{item.label}</span>
@@ -95,13 +114,13 @@ export function Sidebar({ currentPage, onNavigate, onLogout }: SidebarProps) {
               <User className="w-5 h-5" />
             </div>
             <div className="text-left">
-              <p className="text-sm font-medium">Ahmed Rasheed</p>
-              <p className="text-xs text-green-200">FR-2024-001234</p>
+              <p className="text-sm font-medium">{displayName}</p>
+              <p className="text-xs text-green-200">Member</p>
             </div>
           </button>
-          
+
           {/* Logout Button */}
-          <button 
+          <button
             onClick={onLogout}
             className="w-full flex items-center justify-center gap-3 px-6 py-3 transition-all text-green-50 hover:bg-green-600/50 rounded-lg border border-green-600/30"
           >
