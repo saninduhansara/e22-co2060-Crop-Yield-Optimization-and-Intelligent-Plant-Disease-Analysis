@@ -68,12 +68,13 @@ export function ReportsPage() {
         <SummaryCard
           title="Total Harvest"
           value={totalHarvest.toLocaleString()}
-          unit="tons"
+          unit="kg"
           hoverable={false}
         />
         <SummaryCard
           title="Yield per Acre"
           value={yieldPerAcre.toFixed(2)}
+          unit="kg/acre"
           hoverable={false}
         />
       </div>
