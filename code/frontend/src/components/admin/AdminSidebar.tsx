@@ -1,5 +1,6 @@
 import { Home, Users, UserPlus, Wheat, History, FileText, Shield, LogOut, Menu, X, Mail } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { userAPI } from '../../services/api';
 
 interface AdminSidebarProps {
   currentPage: string;
@@ -7,8 +8,17 @@ interface AdminSidebarProps {
   onLogout: () => void;
 }
 
+interface AdminProfile {
+  firstName: string;
+  lastName: string;
+  email: string;
+  image?: string;
+}
+
 export function AdminSidebar({ currentPage, onNavigate, onLogout }: AdminSidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [adminProfile, setAdminProfile] = useState<AdminProfile | null>(null);
+  const [loadingProfile, setLoadingProfile] = useState(true);
 
   const menuItems = [
     { id: 'dashboard', label: 'Home', icon: Home },
@@ -19,6 +29,40 @@ export function AdminSidebar({ currentPage, onNavigate, onLogout }: AdminSidebar
     { id: 'history', label: 'Harvest History', icon: History },
     { id: 'reports', label: 'Reports', icon: FileText },
   ];
+
+  // Fetch admin profile on component mount
+  useEffect(() => {
+    const fetchAdminProfile = async () => {
+      try {
+        setLoadingProfile(true);
+        const response = await userAPI.fetchProfile();
+
+        // Handle both response.user and response.data.user formats
+        const userData = response.user || response.data?.user || response;
+
+        if (userData) {
+          setAdminProfile({
+            firstName: userData.firstName || 'Admin',
+            lastName: userData.lastName || 'User',
+            email: userData.email || 'admin@agriconnect.lk',
+            image: userData.image,
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching admin profile:', error);
+        // Fallback to default admin data if fetch fails
+        setAdminProfile({
+          firstName: 'Admin',
+          lastName: 'User',
+          email: 'admin@agriconnect.lk',
+        });
+      } finally {
+        setLoadingProfile(false);
+      }
+    };
+
+    fetchAdminProfile();
+  }, []);
 
   const handleNavigate = (page: string) => {
     onNavigate(page);
@@ -92,12 +136,26 @@ export function AdminSidebar({ currentPage, onNavigate, onLogout }: AdminSidebar
             onClick={() => handleNavigate('profile')}
             className="w-full flex items-center gap-3 mb-4 p-3 rounded-lg hover:bg-green-600/30 transition-all"
           >
-            <div className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center">
-              <span className="text-sm font-semibold">AD</span>
+            <div className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
+              {adminProfile?.image ? (
+                <img
+                  src={adminProfile.image}
+                  alt="Admin Profile"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-sm font-semibold">
+                  {adminProfile?.firstName?.charAt(0)}{adminProfile?.lastName?.charAt(0)}
+                </span>
+              )}
             </div>
-            <div className="text-left">
-              <p className="text-sm font-medium">Admin User</p>
-              <p className="text-xs text-green-200">admin@agriconnect.lk</p>
+            <div className="text-left flex-1 min-w-0">
+              <p className="text-sm font-medium">
+                {loadingProfile ? 'Loading...' : (adminProfile ? `${adminProfile.firstName || 'Admin'} ${adminProfile.lastName || 'User'}` : 'Admin User')}
+              </p>
+              <p className="text-xs text-green-200 truncate">
+                {adminProfile?.email || 'admin@agriconnect.lk'}
+              </p>
             </div>
           </button>
 
