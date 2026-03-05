@@ -73,6 +73,64 @@ export async function createFarm(req, res) {
 
 
 /**
+ * Helper function to dynamically calculate points based on previous year's actual harvest data.
+ * 
+ * @param {Number} farmYield - The current harvest's yield per acre.
+ * @param {String} crop - The crop type (e.g. 'Paddy').
+ * @param {String} season - The season (e.g. 'Maha').
+ * @param {Number} prevYear - The year to fetch the average from (currentHarvestYear - 1).
+ * @returns {Number} The calculated points for this harvest.
+ */
+async function calculatePointsForHarvest(farmYield, crop, season, prevYear) {
+  const P_MAX = 1000;
+  const Y_MAX = 20000; // Hardcoded theoretical maximum yield per acre in kg
+
+  // 1. Find all farms that grew this crop
+  const farmsWithCrop = await Farm.find({ crop: new RegExp(`^${crop}$`, 'i') }).lean();
+
+  let totalPrevYield = 0;
+  let totalPrevAcres = 0;
+
+  // 2. Aggregate actual harvest yield and acres for the target season & prevYear
+  for (const farm of farmsWithCrop) {
+    if (!farm.harvests || !farm.sizeInAcres) continue;
+
+    const prevHarvest = farm.harvests.find(h =>
+      h.season && h.season.toLowerCase() === season.toLowerCase() &&
+      Number(h.year) === Number(prevYear)
+    );
+
+    if (prevHarvest && prevHarvest.harvestQty) {
+      totalPrevYield += prevHarvest.harvestQty;
+      // We assume the whole farm size was cultivated for that crop
+      totalPrevAcres += farm.sizeInAcres;
+    }
+  }
+
+  // 3. Calculate dynamic average yield
+  let avgYield = 0;
+  if (totalPrevAcres > 0) {
+    avgYield = totalPrevYield / totalPrevAcres;
+  }
+
+  // 4. If no previous year data exists, award 0 points.
+  if (avgYield === 0) {
+    return 0;
+  }
+
+  // 5. Apply the formula
+  const numerator = Math.max(0, farmYield - avgYield);
+  const denominator = (Y_MAX - avgYield);
+  let pointsEarned = 0;
+
+  if (denominator > 0) {
+    pointsEarned = P_MAX * Math.sqrt(numerator / denominator);
+  }
+
+  return Math.floor(pointsEarned); // Return rounded down points
+}
+
+/**
  * Adds a new harvest record for a farm and calculates/awards points to the farmer.
  * Uses a mathematical formula to compare the farm's yield against local/global averages.
  * 
