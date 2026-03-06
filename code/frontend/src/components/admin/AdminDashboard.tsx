@@ -42,6 +42,10 @@ export function AdminDashboard() {
   const currentYear = 2026;
   const currentSeason = 'maha';
 
+  const [selectedYear, setSelectedYear] = useState<number | 'all'>(currentYear);
+  const [selectedSeason, setSelectedSeason] = useState<string | 'all'>(currentSeason);
+  const [availableYears, setAvailableYears] = useState<number[]>([currentYear]);
+
   useEffect(() => {
     fetchCrops();
   }, []);
@@ -50,7 +54,7 @@ export function AdminDashboard() {
     if (availableCrops.length > 0 || selectedCrop === null) {
       fetchDashboardData();
     }
-  }, [selectedCrop, availableCrops.length]);
+  }, [selectedCrop, selectedYear, selectedSeason, availableCrops.length]);
 
   const fetchCrops = async () => {
     try {
@@ -103,25 +107,21 @@ export function AdminDashboard() {
         return seasonRaw;
       };
 
-      // Total Farmers should be unique NICs of all active farms (not just those with a harvest)
-      const activeFarmsList = farms.filter((f: any) => f.status === 'active' || !f.status);
-      const activeFarmerNICs = new Set(activeFarmsList.map((f: any) => f.farmerNIC).filter(Boolean));
-      setTotalFarmers(activeFarmerNICs.size);
-
-      // Active plots/farms
-      setActiveFarms(activeFarmsList.length);
-
-      // Total Farmland (Active in current season implies all active farms currently planted)
-      const totalAcres = activeFarmsList.reduce((sum: number, f: any) => sum + parseHarvestQty(f.sizeInAcres || f.farmSize || 0), 0);
-      setTotalFarmland(totalAcres);
-
-      setFarmsForProfile(farms);
-
-      // Fetch all harvests to calculate total harvest, yields, and analytics
+      // Fetch all harvests to extract available years and filter
       const harvestData = await farmAPI.getHarvestHistory();
-      let harvests = harvestData.harvests || [];
+      let allHarvests = harvestData.harvests || [];
+
+      const yearsSet = new Set<number>();
+      allHarvests.forEach((h: any) => {
+        const y = Number(h.year);
+        if (!isNaN(y)) yearsSet.add(y);
+      });
+      const yearsArray = Array.from(yearsSet).sort((a, b) => b - a);
+      if (!yearsArray.includes(currentYear)) yearsArray.unshift(currentYear);
+      setAvailableYears(yearsArray);
 
       // Filter harvests by selected crop
+      let harvests = allHarvests;
       if (selectedCrop) {
         harvests = harvests.filter((harvest: any) => {
           const harvestCrop = (harvest.crop || '').trim().toLowerCase();
@@ -129,6 +129,33 @@ export function AdminDashboard() {
           return harvestCrop === selectedCropNormalized;
         });
       }
+
+      // Filter based on selected year/season for Farmers/Plots calculation
+      let filteredHarvests = harvests;
+      if (selectedYear !== 'all') {
+        filteredHarvests = filteredHarvests.filter((h: any) => Number(h.year) === Number(selectedYear));
+      }
+      if (selectedSeason !== 'all') {
+        filteredHarvests = filteredHarvests.filter((h: any) => normalizeSeason(h.season) === selectedSeason.toLowerCase());
+      }
+
+      const isCurrentPeriod = (selectedYear === 'all' || Number(selectedYear) === currentYear) && (selectedSeason === 'all' || selectedSeason === currentSeason);
+
+      let periodFarmsList = [];
+      if (isCurrentPeriod) {
+        // If current period, active farms are those currently marked active
+        periodFarmsList = farms.filter((f: any) => f.status === 'active' || !f.status);
+      } else {
+        // If past period, active farms are those who had a harvest in that period
+        const pastNICs = new Set(filteredHarvests.map((h: any) => h.farmerNIC).filter(Boolean));
+        periodFarmsList = farms.filter((f: any) => pastNICs.has(f.farmerNIC));
+      }
+
+      const activeFarmerNICs = new Set(periodFarmsList.map((f: any) => f.farmerNIC).filter(Boolean));
+      setTotalFarmers(activeFarmerNICs.size);
+      setActiveFarms(periodFarmsList.length);
+      setTotalFarmland(periodFarmsList.reduce((sum: number, f: any) => sum + parseHarvestQty(f.sizeInAcres || f.farmSize || 0), 0));
+      setFarmsForProfile(farms);
 
       // Calculate total harvests by season & year
       const seasonMap = new Map<string, number>();
@@ -146,18 +173,41 @@ export function AdminDashboard() {
         seasonAcresMap.set(key, (seasonAcresMap.get(key) || 0) + acres);
       });
 
-      // Target the current active season exactly for dashboard view
-      const thisSeasonKey = `${currentYear}|${currentSeason}`;
-      const lastSeasonName = currentSeason === 'maha' ? 'yala' : 'maha';
-      const lastSeasonYear = currentSeason === 'maha' ? currentYear : currentYear - 1;
-      const lastSeasonKey = `${lastSeasonYear}|${lastSeasonName}`;
+      let thisSeasonTotal = 0;
+      let lastSeasonTotal = 0;
+      let thisSeasonAcres = 0;
+      let lastSeasonAcres = 0;
 
-      const thisSeasonTotal = seasonMap.get(thisSeasonKey) || 0;
-      const lastSeasonTotal = seasonMap.get(lastSeasonKey) || 0;
-      const thisSeasonAcres = seasonAcresMap.get(thisSeasonKey) || 0;
-      const lastSeasonAcres = seasonAcresMap.get(lastSeasonKey) || 0;
+      if (selectedYear !== 'all' && selectedSeason !== 'all') {
+        const targetYear = Number(selectedYear);
+        const targetSeason = selectedSeason;
+        const thisKey = `${targetYear}|${targetSeason}`;
+        const lastName = targetSeason === 'maha' ? 'yala' : 'maha';
+        const lastYear = targetSeason === 'maha' ? targetYear : targetYear - 1;
+        const lastKey = `${lastYear}|${lastName}`;
 
-      // Ensure Total Harvest directly reflects this season
+        thisSeasonTotal = seasonMap.get(thisKey) || 0;
+        lastSeasonTotal = seasonMap.get(lastKey) || 0;
+        thisSeasonAcres = seasonAcresMap.get(thisKey) || 0;
+        lastSeasonAcres = seasonAcresMap.get(lastKey) || 0;
+      } else if (selectedYear !== 'all' && selectedSeason === 'all') {
+        const y = Number(selectedYear);
+        thisSeasonTotal = (seasonMap.get(`${y}|maha`) || 0) + (seasonMap.get(`${y}|yala`) || 0);
+        lastSeasonTotal = (seasonMap.get(`${y - 1}|maha`) || 0) + (seasonMap.get(`${y - 1}|yala`) || 0);
+        thisSeasonAcres = (seasonAcresMap.get(`${y}|maha`) || 0) + (seasonAcresMap.get(`${y}|yala`) || 0);
+        lastSeasonAcres = (seasonAcresMap.get(`${y - 1}|maha`) || 0) + (seasonAcresMap.get(`${y - 1}|yala`) || 0);
+      } else if (selectedYear === 'all' && selectedSeason !== 'all') {
+        for (const [key, val] of seasonMap.entries()) {
+          if (key.includes(`|${selectedSeason}`)) thisSeasonTotal += val;
+        }
+        for (const [key, val] of seasonAcresMap.entries()) {
+          if (key.includes(`|${selectedSeason}`)) thisSeasonAcres += val;
+        }
+      } else {
+        for (const val of seasonMap.values()) thisSeasonTotal += val;
+        for (const val of seasonAcresMap.values()) thisSeasonAcres += val;
+      }
+
       setTotalHarvest(thisSeasonTotal);
 
       // Farmers 30 days ago (for month-over-month growth from ALL farms)
@@ -187,32 +237,38 @@ export function AdminDashboard() {
       }
       setFarmersLastMonthPercentage(calculatedPercentage);
 
-      // Growth formulas specifically for Last Season text comparisons
-      let harvestSeasonText = 'N/A from last season';
-      if (lastSeasonTotal <= 0.0001) {
-        harvestSeasonText = thisSeasonTotal > 0 ? 'N/A from last season' : '0.0% from last season';
+      const isComparisonValid = selectedYear !== 'all';
+      const lastLabel = selectedSeason === 'all' ? 'last year' : 'last season';
+
+      let harvestSeasonText = `N/A from ${lastLabel}`;
+      if (!isComparisonValid) {
+        harvestSeasonText = 'N/A';
+      } else if (lastSeasonTotal <= 0.0001) {
+        harvestSeasonText = thisSeasonTotal > 0 ? `+100.0% from ${lastLabel}` : `0.0% from ${lastLabel}`;
       } else {
         const harvestPercentage = ((thisSeasonTotal - lastSeasonTotal) / lastSeasonTotal) * 100;
         const cappedPercentage = Math.min(Math.max(harvestPercentage, -9999.9), 9999.9);
         const sign = cappedPercentage > 0 ? '+' : '';
-        harvestSeasonText = `${sign}${cappedPercentage.toFixed(1)}% from last season`;
+        harvestSeasonText = `${sign}${cappedPercentage.toFixed(1)}% from ${lastLabel}`;
       }
       setHarvestLastSeasonText(harvestSeasonText);
 
-      let yieldSeasonText = 'N/A from last season';
-      if (thisSeasonAcres <= 0.0001 || lastSeasonAcres <= 0.0001) {
-        yieldSeasonText = 'N/A from last season';
+      let yieldSeasonText = `N/A from ${lastLabel}`;
+      if (!isComparisonValid) {
+        yieldSeasonText = 'N/A';
+      } else if (thisSeasonAcres <= 0.0001 || lastSeasonAcres <= 0.0001) {
+        yieldSeasonText = `N/A from ${lastLabel}`;
       } else {
         const thisSeasonYieldPerAcre = thisSeasonTotal / thisSeasonAcres;
         const lastSeasonYieldPerAcre = lastSeasonTotal / lastSeasonAcres;
 
         if (lastSeasonYieldPerAcre <= 0.0001) {
-          yieldSeasonText = 'N/A from last season';
+          yieldSeasonText = `N/A from ${lastLabel}`;
         } else {
           const yieldPercentage = ((thisSeasonYieldPerAcre - lastSeasonYieldPerAcre) / lastSeasonYieldPerAcre) * 100;
           const cappedYieldPercentage = Math.min(Math.max(yieldPercentage, -9999.9), 9999.9);
           const sign = cappedYieldPercentage > 0 ? '+' : '';
-          yieldSeasonText = `${sign}${cappedYieldPercentage.toFixed(1)}% from last season`;
+          yieldSeasonText = `${sign}${cappedYieldPercentage.toFixed(1)}% from ${lastLabel}`;
         }
       }
       setYieldLastSeasonText(yieldSeasonText);
@@ -396,15 +452,22 @@ export function AdminDashboard() {
         <div className="flex items-center gap-3">
           <Layers className="w-6 h-6 text-green-200" />
           <div>
-            <p className="text-sm text-green-100 font-medium tracking-wide uppercase">Current Season</p>
-            <h2 className="text-2xl font-bold">{currentSeason.charAt(0).toUpperCase() + currentSeason.slice(1)} {currentYear}</h2>
+            <p className="text-sm text-green-100 font-medium tracking-wide uppercase">
+              {selectedYear === 'all' && selectedSeason === 'all' ? 'All Time Overview'
+                : selectedYear !== 'all' && selectedSeason === 'all' ? `Yearly Overview`
+                  : selectedYear === 'all' && selectedSeason !== 'all' ? `Seasonal Overview`
+                    : 'Selected Period'}
+            </p>
+            <h2 className="text-2xl font-bold">
+              {selectedSeason === 'all' ? 'All Seasons' : selectedSeason.charAt(0).toUpperCase() + selectedSeason.slice(1)} {selectedYear === 'all' ? 'All Years' : selectedYear}
+            </h2>
           </div>
         </div>
         <div className="hidden sm:block text-right">
           <p className="text-sm text-green-100 uppercase tracking-wide">Status</p>
           <div className="flex items-center gap-2 mt-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-green-300 animate-pulse"></span>
-            <span className="font-semibold">Active Period</span>
+            <span className={`w-2.5 h-2.5 rounded-full ${Number(selectedYear) === currentYear && selectedSeason === currentSeason ? 'bg-green-300 animate-pulse' : 'bg-gray-300'}`}></span>
+            <span className="font-semibold">{Number(selectedYear) === currentYear && selectedSeason === currentSeason ? 'Active Period' : 'Historical Data'}</span>
           </div>
         </div>
       </div>
@@ -412,10 +475,31 @@ export function AdminDashboard() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
-          <p className="text-sm md:text-base text-gray-600">Monitor and manage all farming activities strictly for the active season</p>
+          <p className="text-sm md:text-base text-gray-600">Monitor and manage all farming activities</p>
         </div>
-        <div className="flex items-center gap-2">
-          <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Filter by Crop:</label>
+        <div className="flex flex-wrap items-center gap-2">
+          <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Filter:</label>
+          <select
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm bg-white min-w-[100px]"
+          >
+            <option value="all">All Years</option>
+            {availableYears.map((year) => (
+              <option key={year} value={year}>
+                {year}
+              </option>
+            ))}
+          </select>
+          <select
+            value={selectedSeason}
+            onChange={(e) => setSelectedSeason(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm bg-white min-w-[110px]"
+          >
+            <option value="all">All Seasons</option>
+            <option value="maha">Maha</option>
+            <option value="yala">Yala</option>
+          </select>
           <select
             value={selectedCrop || ''}
             onChange={(e) => setSelectedCrop(e.target.value || null)}
@@ -480,7 +564,9 @@ export function AdminDashboard() {
             <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 my-2 break-words min-w-0">
               {loading ? '...' : formattedActiveFarms}
             </p>
-            <p className="text-xs sm:text-sm text-gray-600 mt-2">Active in {currentSeason} {currentYear}</p>
+            <p className="text-xs sm:text-sm text-gray-600 mt-2">
+              Active in {selectedSeason === 'all' ? 'All Seasons' : selectedSeason.charAt(0).toUpperCase() + selectedSeason.slice(1)} {selectedYear === 'all' ? 'All Years' : selectedYear}
+            </p>
           </div>
         </div>
 
@@ -497,7 +583,9 @@ export function AdminDashboard() {
               </p>
               <span className="text-xs sm:text-sm font-medium text-gray-600 break-words">acres</span>
             </div>
-            <p className="text-xs sm:text-sm text-gray-600 mt-2">Cultivated in {currentSeason} {currentYear}</p>
+            <p className="text-xs sm:text-sm text-gray-600 mt-2">
+              Cultivated in {selectedSeason === 'all' ? 'All Seasons' : selectedSeason.charAt(0).toUpperCase() + selectedSeason.slice(1)} {selectedYear === 'all' ? 'All Years' : selectedYear}
+            </p>
           </div>
         </div>
 
