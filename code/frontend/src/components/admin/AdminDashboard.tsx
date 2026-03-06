@@ -85,8 +85,39 @@ export function AdminDashboard() {
 
       setFarmsForProfile(farms);
 
-      // Filter farms based on whether the farmers have harvests in the current year/season
-      // We will first get all harvests for the current year/season
+      // Parse utilities that are resilient to strings for numerical values
+      const parseHarvestQty = (value: any): number => {
+        if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+        if (typeof value === 'string') {
+          const normalized = value.replace(/,/g, '').replace(/[^\d.-]/g, '');
+          const parsed = Number(normalized);
+          return Number.isFinite(parsed) ? parsed : 0;
+        }
+        return 0;
+      };
+
+      const normalizeSeason = (value: any): string => {
+        const seasonRaw = (value || '').toString().trim().toLowerCase();
+        if (seasonRaw.includes('maha')) return 'maha';
+        if (seasonRaw.includes('yala')) return 'yala';
+        return seasonRaw;
+      };
+
+      // Total Farmers should be unique NICs of all active farms (not just those with a harvest)
+      const activeFarmsList = farms.filter((f: any) => f.status === 'active' || !f.status);
+      const activeFarmerNICs = new Set(activeFarmsList.map((f: any) => f.farmerNIC).filter(Boolean));
+      setTotalFarmers(activeFarmerNICs.size);
+
+      // Active plots/farms
+      setActiveFarms(activeFarmsList.length);
+
+      // Total Farmland (Active in current season implies all active farms currently planted)
+      const totalAcres = activeFarmsList.reduce((sum: number, f: any) => sum + parseHarvestQty(f.sizeInAcres || f.farmSize || 0), 0);
+      setTotalFarmland(totalAcres);
+
+      setFarmsForProfile(farms);
+
+      // Fetch all harvests to calculate total harvest, yields, and analytics
       const harvestData = await farmAPI.getHarvestHistory();
       let harvests = harvestData.harvests || [];
 
@@ -99,91 +130,7 @@ export function AdminDashboard() {
         });
       }
 
-      // Filter harvests for current season only to determine active farmers/farms
-      const currentSeasonHarvests = harvests.filter((h: any) =>
-        h.year === currentYear && h.season?.toLowerCase() === currentSeason
-      );
-
-      // Get farmer NICs active in current season
-      const activeFarmerNICs = new Set(currentSeasonHarvests.map((h: any) => h.farmerNIC));
-
-      // Filter farms to only those active this season
-      const activeSeasonFarms = farms.filter((farm: any) => activeFarmerNICs.has(farm.farmerNIC));
-
-      setFarmsForProfile(farms);
-
-      setTotalFarmers(activeFarmerNICs.size);
-
-      // Note: `harvests` already contains all harvests, filtered by crop if selected
-      const thirtyDaysAgo = new Date();
-
-      const totalHarvestQty = currentSeasonHarvests.reduce((sum: number, harvest: any) => {
-        return sum + (harvest.harvestQty || 0);
-      }, 0);
-      setTotalHarvest(totalHarvestQty);
-
-      // Now set active farms and total farmland based on current season harvests
-      setActiveFarms(activeSeasonFarms.length);
-
-      // Calculate total cultivated acres for the CURRENT season based on actual harvest records
-      // Because farm size is total, but they might only plant a portion
-      const totalAcres = currentSeasonHarvests.reduce((sum: number, harvest: any) => {
-        return sum + (harvest.acres || 0);
-      }, 0);
-      setTotalFarmland(totalAcres);
-
-      const thirtyDaysAgo2 = new Date();
-      thirtyDaysAgo2.setDate(thirtyDaysAgo2.getDate() - 30);
-
-      const farmers30DaysAgo = new Set(
-        activeSeasonFarms
-          .filter((farm: any) => {
-            if (!farm.farmerNIC) return false;
-            if (!farm.createdDate) return true;
-
-            const createdDate = new Date(farm.createdDate);
-            if (isNaN(createdDate.getTime())) return true;
-
-            return createdDate <= thirtyDaysAgo2;
-          })
-          .map((farm: any) => farm.farmerNIC)
-      ).size;
-
-      const calculatedPercentage =
-        farmers30DaysAgo === 0
-          ? activeFarmerNICs.size > 0
-            ? 100
-            : 0
-          : (activeFarmerNICs.size / farmers30DaysAgo) * 100;
-
-      setFarmersLastMonthPercentage(calculatedPercentage);
-
-      const seasonOrder: Record<string, number> = {
-        yala: 1,
-        maha: 2,
-      };
-
-      const parseHarvestQty = (value: any): number => {
-        if (typeof value === 'number') {
-          return Number.isFinite(value) ? value : 0;
-        }
-
-        if (typeof value === 'string') {
-          const normalized = value.replace(/,/g, '').replace(/[^\d.-]/g, '');
-          const parsed = Number(normalized);
-          return Number.isFinite(parsed) ? parsed : 0;
-        }
-
-        return 0;
-      };
-
-      const normalizeSeason = (value: any): string => {
-        const seasonRaw = (value || '').toString().trim().toLowerCase();
-        if (seasonRaw.includes('maha')) return 'maha';
-        if (seasonRaw.includes('yala')) return 'yala';
-        return seasonRaw;
-      };
-
+      // Calculate total harvests by season & year
       const seasonMap = new Map<string, number>();
       const seasonAcresMap = new Map<string, number>();
       harvests.forEach((harvest: any) => {
@@ -199,42 +146,61 @@ export function AdminDashboard() {
         seasonAcresMap.set(key, (seasonAcresMap.get(key) || 0) + acres);
       });
 
-      const orderedSeasons = Array.from(seasonMap.entries()).sort(([a], [b]) => {
-        const [yearA, seasonA] = a.split('|');
-        const [yearB, seasonB] = b.split('|');
+      // Target the current active season exactly for dashboard view
+      const thisSeasonKey = `${currentYear}|${currentSeason}`;
+      const lastSeasonName = currentSeason === 'maha' ? 'yala' : 'maha';
+      const lastSeasonYear = currentSeason === 'maha' ? currentYear : currentYear - 1;
+      const lastSeasonKey = `${lastSeasonYear}|${lastSeasonName}`;
 
-        const yearDiff = Number(yearB) - Number(yearA);
-        if (yearDiff !== 0) return yearDiff;
-
-        const seasonAOrder = seasonOrder[(seasonA || '').toLowerCase()] || 0;
-        const seasonBOrder = seasonOrder[(seasonB || '').toLowerCase()] || 0;
-        return seasonBOrder - seasonAOrder;
-      });
-
-      const thisSeasonTotal = orderedSeasons[0]?.[1] || 0;
-      const lastSeasonTotal = orderedSeasons[1]?.[1] || 0;
-      const thisSeasonKey = orderedSeasons[0]?.[0] || '';
-      const lastSeasonKey = orderedSeasons[1]?.[0] || '';
+      const thisSeasonTotal = seasonMap.get(thisSeasonKey) || 0;
+      const lastSeasonTotal = seasonMap.get(lastSeasonKey) || 0;
       const thisSeasonAcres = seasonAcresMap.get(thisSeasonKey) || 0;
       const lastSeasonAcres = seasonAcresMap.get(lastSeasonKey) || 0;
 
+      // Ensure Total Harvest directly reflects this season
+      setTotalHarvest(thisSeasonTotal);
+
+      // Farmers 30 days ago (for month-over-month growth from ALL farms)
+      const thirtyDaysAgo2 = new Date();
+      thirtyDaysAgo2.setDate(thirtyDaysAgo2.getDate() - 30);
+
+      const farmers30DaysAgoNICs = new Set(
+        farms
+          .filter((farm: any) => {
+            if (!farm.farmerNIC) return false;
+            if (!farm.createdDate) return true;
+
+            const createdDate = new Date(farm.createdDate);
+            if (isNaN(createdDate.getTime())) return true;
+
+            return createdDate <= thirtyDaysAgo2;
+          })
+          .map((farm: any) => farm.farmerNIC)
+      );
+      const farmers30DaysAgo = farmers30DaysAgoNICs.size;
+
+      let calculatedPercentage = 0;
+      if (farmers30DaysAgo === 0) {
+        calculatedPercentage = activeFarmerNICs.size > 0 ? 100 : 0;
+      } else {
+        calculatedPercentage = ((activeFarmerNICs.size - farmers30DaysAgo) / farmers30DaysAgo) * 100;
+      }
+      setFarmersLastMonthPercentage(calculatedPercentage);
+
+      // Growth formulas specifically for Last Season text comparisons
       let harvestSeasonText = 'N/A from last season';
-      if (orderedSeasons.length < 2) {
-        harvestSeasonText = 'N/A from last season';
-      } else if (lastSeasonTotal <= 0.0001) {
+      if (lastSeasonTotal <= 0.0001) {
         harvestSeasonText = thisSeasonTotal > 0 ? 'N/A from last season' : '0.0% from last season';
       } else {
-        const harvestPercentage = (thisSeasonTotal / lastSeasonTotal) * 100;
-        const cappedPercentage = Math.min(harvestPercentage, 9999.9);
-        harvestSeasonText = `${cappedPercentage.toFixed(1)}% from last season`;
+        const harvestPercentage = ((thisSeasonTotal - lastSeasonTotal) / lastSeasonTotal) * 100;
+        const cappedPercentage = Math.min(Math.max(harvestPercentage, -9999.9), 9999.9);
+        const sign = cappedPercentage > 0 ? '+' : '';
+        harvestSeasonText = `${sign}${cappedPercentage.toFixed(1)}% from last season`;
       }
-
       setHarvestLastSeasonText(harvestSeasonText);
 
       let yieldSeasonText = 'N/A from last season';
-      if (orderedSeasons.length < 2) {
-        yieldSeasonText = 'N/A from last season';
-      } else if (thisSeasonAcres <= 0.0001 || lastSeasonAcres <= 0.0001) {
+      if (thisSeasonAcres <= 0.0001 || lastSeasonAcres <= 0.0001) {
         yieldSeasonText = 'N/A from last season';
       } else {
         const thisSeasonYieldPerAcre = thisSeasonTotal / thisSeasonAcres;
@@ -243,12 +209,12 @@ export function AdminDashboard() {
         if (lastSeasonYieldPerAcre <= 0.0001) {
           yieldSeasonText = 'N/A from last season';
         } else {
-          const yieldPercentage = (thisSeasonYieldPerAcre / lastSeasonYieldPerAcre) * 100;
-          const cappedYieldPercentage = Math.min(yieldPercentage, 9999.9);
-          yieldSeasonText = `${cappedYieldPercentage.toFixed(1)}% from last season`;
+          const yieldPercentage = ((thisSeasonYieldPerAcre - lastSeasonYieldPerAcre) / lastSeasonYieldPerAcre) * 100;
+          const cappedYieldPercentage = Math.min(Math.max(yieldPercentage, -9999.9), 9999.9);
+          const sign = cappedYieldPercentage > 0 ? '+' : '';
+          yieldSeasonText = `${sign}${cappedYieldPercentage.toFixed(1)}% from last season`;
         }
       }
-
       setYieldLastSeasonText(yieldSeasonText);
 
       // Get recent farmers from the filtered farms data
@@ -479,7 +445,7 @@ export function AdminDashboard() {
             </p>
             <p className="text-xs sm:text-sm text-green-700 flex items-center gap-1 mt-2">
               <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4" />
-              {loading ? '...' : `${farmersLastMonthPercentage.toFixed(1)}% from last month`}
+              {loading ? '...' : `${farmersLastMonthPercentage > 0 ? '+' : ''}${farmersLastMonthPercentage.toFixed(1)}% from last month`}
             </p>
           </div>
         </div>
