@@ -152,7 +152,7 @@ export function AddHarvest() {
                 </div>
                 <div className="bg-gradient-to-br from-green-100 to-green-200 rounded-lg p-4 border-2 border-green-400">
                   <p className="text-sm text-green-800 mb-1 font-semibold">Points Earned</p>
-                  <p className="text-3xl font-bold text-green-900">{result.pointsEarned} pts</p>
+                  <p className="text-3xl font-bold text-green-900">{Math.round(result.pointsEarned)} pts</p>
                 </div>
               </div>
             </div>

@@ -392,7 +392,7 @@ export function AdminDashboard() {
     farmSize: farm.farmSize || farm.sizeInAcres || 0,
     crop: farm.crop || 'Unknown',
     status: farm.status || 'active',
-    points: farm.points || 0,
+    points: Math.round(farm.points || 0),
     farmerImage: farm.farmerImage,
   });
 

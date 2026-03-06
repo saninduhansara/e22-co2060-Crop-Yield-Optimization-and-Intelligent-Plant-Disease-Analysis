@@ -146,8 +146,8 @@ export function AdminReports() {
   const totalHarvestTons = totalHarvestKg / 1000;
   const avgYieldPerAcre = activeFarmlandAcres > 0 ? (totalHarvestKg / activeFarmlandAcres) : 0; // standard yield is in kg/acre
 
-  // Total points for the matched farms
-  const totalPoints = periodFarmsList.reduce((s, f) => s + parseNumber(f.points), 0);
+  // Total points for the matched farms (rounded to nearest integer)
+  const totalPoints = Math.round(periodFarmsList.reduce((s, f) => s + parseNumber(f.points), 0));
 
   // growth rate calculations based on previous logical period
   const smartPrevFilters = () => {
@@ -238,11 +238,11 @@ export function AdminReports() {
   const harvestGrowthText = getGrowthText(harvestGrowth, lastLabel);
   const yieldGrowthText = getGrowthText(yieldGrowth, lastLabel);
 
-  // Create a map of farmerNIC to total points from farms data
+  // Create a map of farmerNIC to total points from farms data (rounded to integers)
   const farmerPointsMap = new Map<string, number>();
   farms.forEach((farm) => {
     if (farm.farmerNIC) {
-      farmerPointsMap.set(farm.farmerNIC, farm.points || 0);
+      farmerPointsMap.set(farm.farmerNIC, Math.round(farm.points || 0));
     }
   });
 
@@ -720,7 +720,7 @@ export function AdminReports() {
                   <td className="px-6 py-4 text-sm text-gray-700">{farmer.district}</td>
                   <td className="px-6 py-4 text-sm font-medium text-gray-800">{farmer.yield} tons</td>
                   <td className="px-6 py-4 text-sm font-medium text-gray-800">{farmer.avgYield} kg</td>
-                  <td className="px-6 py-4 text-sm font-semibold text-green-700">{farmer.points}</td>
+                  <td className="px-6 py-4 text-sm font-semibold text-green-700">{Math.round(farmer.points)}</td>
                 </tr>
               ))}
             </tbody>
