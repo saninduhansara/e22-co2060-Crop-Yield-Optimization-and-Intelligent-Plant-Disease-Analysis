@@ -149,32 +149,35 @@ export const addHarvestAndPoints = async (req, res) => {
     return res.status(403).json({ message: "Access denied. Admins only" });
   }
   const { farmId, season, year, harvestQty } = req.body;
+  
+  // Convert year and harvestQty to numbers to ensure proper type matching
+  const yearNum = Number(year);
+  const harvestQtyNum = Number(harvestQty);
 
   try {
     // Find farm by farmId
     const farm = await Farm.findOne({ farmId });
     if (!farm) return res.status(404).json({ message: "Farm not found" });
 
-    // Add or update harvest
+    // Add or update harvest (without saving yet)
     const existingHarvest = farm.harvests.find(
-      (h) => h.season === season && h.year === year
+      (h) => h.season === season && h.year === yearNum
     );
     if (existingHarvest) {
-      existingHarvest.harvestQty = harvestQty;
+      existingHarvest.harvestQty = harvestQtyNum;
     } else {
-      farm.harvests.push({ season, year, harvestQty });
+      farm.harvests.push({ season, year: yearNum, harvestQty: harvestQtyNum });
     }
-    await farm.save();
 
     // Farmer yield per acre
-    const farmYield = harvestQty / farm.sizeInAcres;
+    const farmYield = harvestQtyNum / farm.sizeInAcres;
 
     // Average yield for this farm/district
     const avgYieldRecord = await AvgYield.findOne({
       district: farm.district,
       crop: farm.crop,
       season,
-      year,
+      year: yearNum,
     });
     if (!avgYieldRecord)
       return res.status(404).json({ message: "Average yield not found" });
@@ -182,7 +185,7 @@ export const addHarvestAndPoints = async (req, res) => {
 
     // Find global maximum averageYield for season + year
     const maxYieldRecord = await AvgYield.find(
-      { season, year },
+      { season, year: yearNum },
       "averageYield"
     )
       .sort({ averageYield: -1 })
@@ -217,12 +220,14 @@ export const addHarvestAndPoints = async (req, res) => {
 
     // Update the harvest with pointsEarned
     const harvestToUpdate = farm.harvests.find(
-      (h) => h.season === season && h.year === year
+      (h) => h.season === season && h.year === yearNum
     );
     if (harvestToUpdate) {
       harvestToUpdate.pointsEarned = pointsEarned;
-      await farm.save();
     }
+
+    // Save farm once with all updates
+    await farm.save();
 
     // Update farmer points
     if (pointsEarned > 0) {
