@@ -146,7 +146,7 @@ export function HomePage({ onNavigate: onNavigateProp }: HomePageProps) {
             <div>
               <p className="text-xs md:text-sm text-gray-600">Total Points:</p>
               <p className="text-3xl md:text-4xl font-bold text-gray-800">
-                {loading ? '...' : (userProfile?.points || 0)}
+                {loading ? '...' : Math.round(Number(userProfile?.points) || 0)}
               </p>
             </div>
           </div>
