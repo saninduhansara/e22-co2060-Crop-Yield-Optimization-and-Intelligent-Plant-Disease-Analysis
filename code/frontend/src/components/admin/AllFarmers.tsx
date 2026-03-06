@@ -22,6 +22,7 @@ interface Farm {
   location: string;
 }
 
+// All farmers is changed to All Farms in the UI (admin sidebar)
 export function AllFarmers() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFarmer, setSelectedFarmer] = useState<Farm | null>(null);

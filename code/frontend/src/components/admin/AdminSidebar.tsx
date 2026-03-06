@@ -1,4 +1,4 @@
-import { Home, Users, UserPlus, Wheat, History, FileText, Shield, LogOut, Menu, X, Mail } from 'lucide-react';
+import { Home, Users, UserPlus, Wheat, History, FileText, Shield, LogOut, Menu, X, Mail, LandPlot } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { userAPI } from '../../services/api';
 
@@ -64,7 +64,7 @@ export function AdminSidebar({ currentPage, onNavigate, onLogout }: AdminSidebar
   const menuItems = [
     { id: 'dashboard', label: 'Home', icon: Home },
     { id: 'inquiries', label: 'Inquiries', icon: Mail },
-    { id: 'farmers', label: 'All Farmers', icon: Users },
+    { id: 'farmers', label: 'All Farms', icon: LandPlot },
     { id: 'register', label: 'Register Farmer', icon: UserPlus },
     { id: 'harvest', label: 'Add Harvest', icon: Wheat },
     { id: 'history', label: 'Harvest History', icon: History },
