@@ -238,6 +238,13 @@ export function AdminReports() {
   const harvestGrowthText = getGrowthText(harvestGrowth, lastLabel);
   const yieldGrowthText = getGrowthText(yieldGrowth, lastLabel);
 
+  // Create a map of farmerNIC to total points from farms data
+  const farmerPointsMap = new Map<string, number>();
+  farms.forEach((farm) => {
+    if (farm.farmerNIC) {
+      farmerPointsMap.set(farm.farmerNIC, farm.points || 0);
+    }
+  });
 
   // Top performers aggregated by farmer (based on filtered harvests)
   const performersMap: Record<string, any> = {};
@@ -259,7 +266,8 @@ export function AdminReports() {
     }
     performersMap[key].totalHarvestKg += parseNumber(h.harvestQty);
     performersMap[key].totalAcres += parseNumber(h.acres || h.farmSize);
-    performersMap[key].points += parseNumber(h.pointsEarned || h.points);
+    // Use the farmer's total points from the User model instead of accumulating from harvests
+    performersMap[key].points = farmerPointsMap.get(h.farmerNIC) || 0;
   });
 
   const topPerformers = Object.values(performersMap)
