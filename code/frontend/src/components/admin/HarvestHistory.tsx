@@ -1,4 +1,4 @@
-import { Search, Filter, Calendar, Download, Loader } from 'lucide-react';
+import { Search, Filter, Calendar, Download, Loader, RefreshCw } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { farmAPI } from '../../services/api';
 
@@ -24,10 +24,26 @@ export function HarvestHistory() {
   const [harvests, setHarvests] = useState([] as Harvest[]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null as string | null);
+  const [refreshingPoints, setRefreshingPoints] = useState(false);
+
+  const [availableCrops, setAvailableCrops] = useState<string[]>([]);
+  const [selectedCrop, setSelectedCrop] = useState<string>('');
+  const [selectedYear, setSelectedYear] = useState<string>('');
+  const [selectedSeason, setSelectedSeason] = useState<string>('');
 
   useEffect(() => {
+    fetchCrops();
     fetchHarvestHistory();
   }, []);
+
+  const fetchCrops = async () => {
+    try {
+      const data = await farmAPI.getAllCrops();
+      setAvailableCrops(data.crops || []);
+    } catch (error) {
+      console.error('Error fetching crops:', error);
+    }
+  };
 
   const fetchHarvestHistory = async () => {
     try {
@@ -42,12 +58,30 @@ export function HarvestHistory() {
     }
   };
 
-  const filteredHarvests = harvests.filter((harvest: Harvest) =>
-    harvest.farmerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    harvest.farmerNIC.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    harvest.farmName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    harvest.location.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handleRefreshPoints = async () => {
+    try {
+      setRefreshingPoints(true);
+      await farmAPI.recalculatePoints();
+      await fetchHarvestHistory();
+    } catch (err) {
+      console.error("Failed to refresh points", err);
+    } finally {
+      setRefreshingPoints(false);
+    }
+  };
+
+  const filteredHarvests = harvests.filter((harvest: Harvest) => {
+    const matchesSearch = harvest.farmerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      harvest.farmerNIC.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      harvest.farmName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      harvest.location.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesCrop = selectedCrop ? harvest.crop.toLowerCase() === selectedCrop.toLowerCase() : true;
+    const matchesYear = selectedYear ? harvest.year.toString() === selectedYear : true;
+    const matchesSeason = selectedSeason ? harvest.season.toLowerCase() === selectedSeason.toLowerCase() : true;
+
+    return matchesSearch && matchesCrop && matchesYear && matchesSeason;
+  });
 
   const totalYield = filteredHarvests.reduce((sum, h) => sum + h.harvestQty, 0) / 1000; // Convert to tons
   const avgYieldPerAcre = filteredHarvests.length > 0
@@ -75,13 +109,22 @@ export function HarvestHistory() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
-          
           <p className="text-sm md:text-base text-gray-600">View all recorded harvest data and points</p>
         </div>
-        <button className="px-6 py-3 bg-green-700 hover:bg-green-800 text-white rounded-lg flex items-center justify-center gap-2 transition-colors whitespace-nowrap">
-          <Download className="w-5 h-5" />
-          Export Data
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleRefreshPoints}
+            disabled={refreshingPoints}
+            className="px-4 py-3 sm:px-6 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg flex items-center justify-center gap-2 transition-colors whitespace-nowrap disabled:opacity-50"
+          >
+            <RefreshCw className={`w-5 h-5 ${refreshingPoints ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">{refreshingPoints ? 'Recalculating...' : 'Recalculate Points'}</span>
+          </button>
+          <button className="px-4 py-3 sm:px-6 bg-green-700 hover:bg-green-800 text-white rounded-lg flex items-center justify-center gap-2 transition-colors whitespace-nowrap">
+            <Download className="w-5 h-5" />
+            <span className="hidden sm:inline">Export Data</span>
+          </button>
+        </div>
       </div>
 
       {/* Search & Filter */}
@@ -97,15 +140,40 @@ export function HarvestHistory() {
               className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm md:text-base"
             />
           </div>
-          <div className="flex gap-2 sm:gap-4">
-            <button className="flex-1 sm:flex-none px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg flex items-center justify-center gap-2 transition-colors">
-              <Filter className="w-5 h-5" />
-              <span className="text-sm md:text-base">Filter</span>
-            </button>
-            <button className="flex-1 sm:flex-none px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg flex items-center justify-center gap-2 transition-colors">
-              <Calendar className="w-5 h-5" />
-              <span className="text-sm md:text-base">Season</span>
-            </button>
+          <div className="flex flex-wrap gap-2 sm:gap-4">
+            <select
+              value={selectedCrop}
+              onChange={(e) => setSelectedCrop(e.target.value)}
+              className="flex-1 sm:flex-none px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base text-gray-700"
+            >
+              <option value="">All Crops</option>
+              {['Paddy', 'Corn', 'Wheat', 'Tomatoes', 'Onions', 'Carrots', 'Cabbage', 'Potatoes', ...availableCrops]
+                .filter((v, i, a) => a.indexOf(v) === i) // Unique
+                .map(crop => (
+                  <option key={crop} value={crop}>{crop}</option>
+                ))}
+            </select>
+
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value)}
+              className="flex-1 sm:flex-none px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base text-gray-700"
+            >
+              <option value="">All Years</option>
+              <option value="2026">2026</option>
+              <option value="2025">2025</option>
+              <option value="2024">2024</option>
+            </select>
+
+            <select
+              value={selectedSeason}
+              onChange={(e) => setSelectedSeason(e.target.value)}
+              className="flex-1 sm:flex-none px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base text-gray-700"
+            >
+              <option value="">All Seasons</option>
+              <option value="Maha">Maha</option>
+              <option value="Yala">Yala</option>
+            </select>
           </div>
         </div>
       </div>

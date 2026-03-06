@@ -1,3 +1,8 @@
+/**
+ * Frontend API Service Layer
+ * Configures the Axios instance, HTTP interceptors for JWT auth/error handling,
+ * and exports organized objects for User, Farm, and Yield endpoints.
+ */
 import axios from 'axios';
 import { clearAuthData } from '../utils/authUtils';
 
@@ -143,6 +148,11 @@ export const farmAPI = {
     return response.data;
   },
 
+  recalculatePoints: async () => {
+    const response = await api.post('/api/farms/recalculate-points');
+    return response.data;
+  },
+
   getAllFarms: async () => {
     const response = await api.get('/api/farms');
     return response.data;
@@ -184,6 +194,28 @@ export const avgYieldAPI = {
     const response = await api.post('/api/avgYields', yieldData);
     return response.data;
   },
+};
+
+// Inquiry API endpoints
+export const inquiryAPI = {
+  createInquiry: async (inquiryData: {
+    subject: string;
+    message: string;
+    farmerId?: string;
+  }) => {
+    const response = await api.post('/api/inquiries', inquiryData);
+    return response.data;
+  },
+
+  getAllInquiries: async () => {
+    const response = await api.get('/api/inquiries');
+    return response.data;
+  },
+
+  updateStatus: async (inquiryId: string, status: string) => {
+    const response = await api.put(`/api/inquiries/${inquiryId}/status`, { status });
+    return response.data;
+  }
 };
 
 // Export the axios instance for custom requests

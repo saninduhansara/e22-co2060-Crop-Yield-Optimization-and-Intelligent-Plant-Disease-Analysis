@@ -1,5 +1,6 @@
 import { X, Save, AlertCircle } from 'lucide-react';
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { farmAPI } from '../../services/api';
 
 interface Farm {
@@ -31,7 +32,12 @@ export function EditFarmModal({ farm, onClose, onSuccess }: EditFarmModalProps) 
   });
 
   const crops = ['Paddy', 'Corn', 'Wheat', 'Tomatoes', 'Onions', 'Carrots', 'Cabbage', 'Potatoes'];
-  const districts = ['Gampaha', 'Kurunegala', 'Anuradhapura', 'Polonnaruwa', 'Ampara', 'Hambantota'];
+  const districts = [
+    'Ampara', 'Anuradhapura', 'Badulla', 'Batticaloa', 'Colombo', 'Galle', 'Gampaha', 'Hambantota',
+    'Jaffna', 'Kalutara', 'Kandy', 'Kegalle', 'Kilinochchi', 'Kurunegala', 'Mannar', 'Matale',
+    'Matara', 'Monaragala', 'Mullaitivu', 'Nuwara Eliya', 'Polonnaruwa', 'Puttalam', 'Ratnapura',
+    'Trincomalee', 'Vavuniya'
+  ];
   const statuses = ['active', 'inactive', 'abandoned'];
 
   const handleSubmit = async (e: any) => {
@@ -49,11 +55,14 @@ export function EditFarmModal({ farm, onClose, onSuccess }: EditFarmModalProps) 
         status: formData.status,
       });
 
+      toast.success('Farm details updated successfully!');
       onSuccess();
       onClose();
     } catch (err: any) {
       console.error('Error updating farm:', err);
-      setError(err.response?.data?.message || 'Failed to update farm. Please try again.');
+      const errorMessage = err.response?.data?.message || 'Failed to update farm. Please try again.';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

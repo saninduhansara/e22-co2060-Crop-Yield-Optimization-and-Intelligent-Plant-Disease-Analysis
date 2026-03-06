@@ -1,5 +1,6 @@
 import { X, AlertTriangle, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { farmAPI } from '../../services/api';
 
 interface DeleteConfirmationModalProps {
@@ -19,11 +20,14 @@ export function DeleteConfirmationModal({ farmId, farmName, onClose, onSuccess }
 
     try {
       await farmAPI.deleteFarm(farmId);
+      toast.success('Farm deleted successfully!');
       onSuccess();
       onClose();
     } catch (err: any) {
       console.error('Error deleting farm:', err);
-      setError(err.response?.data?.message || 'Failed to delete farm. Please try again.');
+      const errorMessage = err.response?.data?.message || 'Failed to delete farm. Please try again.';
+      setError(errorMessage);
+      toast.error(errorMessage);
       setLoading(false);
     }
   };
@@ -87,7 +91,7 @@ export function DeleteConfirmationModal({ farmId, farmName, onClose, onSuccess }
             disabled={loading}
             className="flex-1 py-3 px-4 bg-gray-200 hover:bg-gray-300 disabled:bg-gray-300 disabled:opacity-50 text-gray-800 font-medium rounded-lg transition-all"
           >
-             <Trash2 className="w-4 h-4 flex-shrink-0" /> delete
+            <Trash2 className="w-4 h-4 flex-shrink-0" /> delete
           </button>
         </div>
       </div>

@@ -1,3 +1,9 @@
+/**
+ * Admin Dashboard Component
+ * Displays system-wide statistics including total farmers,
+ * active plots, total farmland, and harvest yields.
+ * Fetches and aggregates real-time data from the backend.
+ */
 import { Users, TrendingUp, Wheat, AlertTriangle, BarChart3, MapPin, Layers, Scale, Link2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { farmAPI, userAPI } from '../../services/api';
@@ -32,6 +38,10 @@ export function AdminDashboard() {
   const [showMoreFarmers, setShowMoreFarmers] = useState(false);
   const [showMoreHarvests, setShowMoreHarvests] = useState(false);
 
+  // Set to current date/season based on metadata
+  const currentYear = 2026;
+  const currentSeason = 'maha';
+
   useEffect(() => {
     fetchCrops();
   }, []);
@@ -59,11 +69,11 @@ export function AdminDashboard() {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      
+
       // Fetch farms data for farmer count and active farms
       const farmsData = await farmAPI.getAllFarms();
       let farms = farmsData.farms || [];
-      
+
       // Filter by selected crop if one is selected (case-insensitive)
       if (selectedCrop) {
         farms = farms.filter((farm: any) => {
@@ -74,53 +84,13 @@ export function AdminDashboard() {
       }
 
       setFarmsForProfile(farms);
-      
-      const uniqueFarmers = new Set(farms.map((farm: any) => farm.farmerNIC));
-      setTotalFarmers(uniqueFarmers.size);
 
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-      const farmers30DaysAgo = new Set(
-        farms
-          .filter((farm: any) => {
-            if (!farm.farmerNIC) return false;
-            if (!farm.createdDate) return true;
-
-            const createdDate = new Date(farm.createdDate);
-            if (isNaN(createdDate.getTime())) return true;
-
-            return createdDate <= thirtyDaysAgo;
-          })
-          .map((farm: any) => farm.farmerNIC)
-      ).size;
-
-      const calculatedPercentage =
-        farmers30DaysAgo === 0
-          ? uniqueFarmers.size > 0
-            ? 100
-            : 0
-          : (uniqueFarmers.size / farmers30DaysAgo) * 100;
-
-      setFarmersLastMonthPercentage(calculatedPercentage);
-      
-      // Calculate active farms (status === 'Active')
-      const activeFarmsCount = farms.filter((farm: any) => 
-        farm.status && farm.status.toLowerCase() === 'active'
-      ).length;
-      setActiveFarms(activeFarmsCount);
-      
-      // Calculate total farmland in acres
-      const totalAcres = farms.reduce((sum: number, farm: any) => {
-        return sum + (farm.farmSize || farm.sizeInAcres || 0);
-      }, 0);
-      setTotalFarmland(totalAcres);
-      
-      // Fetch harvest data for total harvest
+      // Filter farms based on whether the farmers have harvests in the current year/season
+      // We will first get all harvests for the current year/season
       const harvestData = await farmAPI.getHarvestHistory();
       let harvests = harvestData.harvests || [];
-      
-      // Filter by selected crop if one is selected (case-insensitive)
+
+      // Filter harvests by selected crop
       if (selectedCrop) {
         harvests = harvests.filter((harvest: any) => {
           const harvestCrop = (harvest.crop || '').trim().toLowerCase();
@@ -128,11 +98,65 @@ export function AdminDashboard() {
           return harvestCrop === selectedCropNormalized;
         });
       }
-      
-      const totalHarvestQty = harvests.reduce((sum: number, harvest: any) => {
+
+      // Filter harvests for current season only to determine active farmers/farms
+      const currentSeasonHarvests = harvests.filter((h: any) =>
+        h.year === currentYear && h.season?.toLowerCase() === currentSeason
+      );
+
+      // Get farmer NICs active in current season
+      const activeFarmerNICs = new Set(currentSeasonHarvests.map((h: any) => h.farmerNIC));
+
+      // Filter farms to only those active this season
+      const activeSeasonFarms = farms.filter((farm: any) => activeFarmerNICs.has(farm.farmerNIC));
+
+      setFarmsForProfile(farms);
+
+      setTotalFarmers(activeFarmerNICs.size);
+
+      // Note: `harvests` already contains all harvests, filtered by crop if selected
+      const thirtyDaysAgo = new Date();
+
+      const totalHarvestQty = currentSeasonHarvests.reduce((sum: number, harvest: any) => {
         return sum + (harvest.harvestQty || 0);
       }, 0);
       setTotalHarvest(totalHarvestQty);
+
+      // Now set active farms and total farmland based on current season harvests
+      setActiveFarms(activeSeasonFarms.length);
+
+      // Calculate total cultivated acres for the CURRENT season based on actual harvest records
+      // Because farm size is total, but they might only plant a portion
+      const totalAcres = currentSeasonHarvests.reduce((sum: number, harvest: any) => {
+        return sum + (harvest.acres || 0);
+      }, 0);
+      setTotalFarmland(totalAcres);
+
+      const thirtyDaysAgo2 = new Date();
+      thirtyDaysAgo2.setDate(thirtyDaysAgo2.getDate() - 30);
+
+      const farmers30DaysAgo = new Set(
+        activeSeasonFarms
+          .filter((farm: any) => {
+            if (!farm.farmerNIC) return false;
+            if (!farm.createdDate) return true;
+
+            const createdDate = new Date(farm.createdDate);
+            if (isNaN(createdDate.getTime())) return true;
+
+            return createdDate <= thirtyDaysAgo2;
+          })
+          .map((farm: any) => farm.farmerNIC)
+      ).size;
+
+      const calculatedPercentage =
+        farmers30DaysAgo === 0
+          ? activeFarmerNICs.size > 0
+            ? 100
+            : 0
+          : (activeFarmerNICs.size / farmers30DaysAgo) * 100;
+
+      setFarmersLastMonthPercentage(calculatedPercentage);
 
       const seasonOrder: Record<string, number> = {
         yala: 1,
@@ -337,7 +361,7 @@ export function AdminDashboard() {
   // Helper functions to determine font size based on formatted string length
   const getFontSizeForFormatted = (formattedStr: string): string => {
     const length = formattedStr.length;
-    
+
     if (length <= 4) return 'text-3xl md:text-4xl'; // e.g., "123" or "9.5K"
     if (length <= 6) return 'text-2xl md:text-3xl'; // e.g., "123.4K"
     if (length <= 8) return 'text-xl md:text-2xl';  // e.g., "123.4M"
@@ -349,13 +373,13 @@ export function AdminDashboard() {
     if (!dateString) {
       return 'Unknown';
     }
-    
+
     const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
-    
+
     if (isNaN(date.getTime())) {
       return 'Unknown';
     }
-    
+
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
@@ -369,36 +393,60 @@ export function AdminDashboard() {
     } else if (dateOnly.getTime() === yesterdayOnly.getTime()) {
       return 'Yesterday';
     } else {
-      return date.toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'short', 
-        day: 'numeric' 
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
       });
     }
   };
 
-  // Calculate yield per acre
+  // Calculate yield per acre for CURRENT SEASON
   const getYieldPerAcre = () => {
+    // We reuse the already filtered `totalFarmland` (which represents cultivated acres in current season)
+    // and `totalHarvest` (which represents harvest in current season).
     if (totalFarmland === 0) return 0;
     return totalHarvest / totalFarmland;
   };
 
-  // Get formatted values
+  // Get formatted values (don't format harvest or yield with K/M)
   const formattedFarmers = formatNumber(totalFarmers);
-  const formattedHarvest = formatNumber(totalHarvest / 1000);
   const formattedActiveFarms = formatNumber(activeFarms);
   const formattedFarmland = formatNumber(totalFarmland);
-  const formattedYield = formatNumber(getYieldPerAcre() / 1000);
+
+  // Format exactly with commas but no K/M abbreviation for Harvest and Yield
+  // Harvest is internally in kg, so divide by 1000 to display as tons
+  const exactHarvest = (totalHarvest / 1000).toLocaleString(undefined, { maximumFractionDigits: 1 });
+  // Yield per acre is in kg/acre
+  const exactYield = getYieldPerAcre().toLocaleString(undefined, { maximumFractionDigits: 0 });
   const cropOptions = Array.from(new Set([...defaultCropOptions, ...availableCrops]));
   const visibleRecentFarmers = recentFarmers.slice(0, showMoreFarmers ? 10 : 5);
   const visibleRecentHarvests = recentHarvests.slice(0, showMoreHarvests ? 10 : 4);
 
   return (
     <div className="space-y-6">
+      {/* Prominent Season Label */}
+      <div className="bg-green-700 rounded-xl p-4 text-white shadow-md flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Layers className="w-6 h-6 text-green-200" />
+          <div>
+            <p className="text-sm text-green-100 font-medium tracking-wide uppercase">Current Season</p>
+            <h2 className="text-2xl font-bold">{currentSeason.charAt(0).toUpperCase() + currentSeason.slice(1)} {currentYear}</h2>
+          </div>
+        </div>
+        <div className="hidden sm:block text-right">
+          <p className="text-sm text-green-100 uppercase tracking-wide">Status</p>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="w-2.5 h-2.5 rounded-full bg-green-300 animate-pulse"></span>
+            <span className="font-semibold">Active Period</span>
+          </div>
+        </div>
+      </div>
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
-          <p className="text-sm md:text-base text-gray-600">Monitor and manage all farming activities</p>
+          <p className="text-sm md:text-base text-gray-600">Monitor and manage all farming activities strictly for the active season</p>
         </div>
         <div className="flex items-center gap-2">
           <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Filter by Crop:</label>
@@ -445,7 +493,7 @@ export function AdminDashboard() {
             </div>
             <div className="flex min-w-0 flex-wrap items-baseline gap-1 sm:gap-2 my-2">
               <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 break-words min-w-0">
-                {loading ? '...' : formattedHarvest}
+                {loading ? '...' : exactHarvest}
               </p>
               <span className="text-xs sm:text-sm font-medium text-gray-600 break-words">tons</span>
             </div>
@@ -466,7 +514,7 @@ export function AdminDashboard() {
             <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 my-2 break-words min-w-0">
               {loading ? '...' : formattedActiveFarms}
             </p>
-            <p className="text-xs sm:text-sm text-gray-600 mt-2">Across all regions</p>
+            <p className="text-xs sm:text-sm text-gray-600 mt-2">Active in {currentSeason} {currentYear}</p>
           </div>
         </div>
 
@@ -483,7 +531,7 @@ export function AdminDashboard() {
               </p>
               <span className="text-xs sm:text-sm font-medium text-gray-600 break-words">acres</span>
             </div>
-            <p className="text-xs sm:text-sm text-gray-600 mt-2">Under cultivation</p>
+            <p className="text-xs sm:text-sm text-gray-600 mt-2">Cultivated in {currentSeason} {currentYear}</p>
           </div>
         </div>
 
@@ -496,9 +544,9 @@ export function AdminDashboard() {
             </div>
             <div className="flex min-w-0 flex-wrap items-baseline gap-1 sm:gap-2 my-2">
               <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 break-words min-w-0">
-                {loading ? '...' : formattedYield}
+                {loading ? '...' : exactYield}
               </p>
-              <span className="text-xs sm:text-sm font-medium text-gray-600 break-words">tons</span>
+              <span className="text-xs sm:text-sm font-medium text-gray-600 break-words">kg</span>
             </div>
             <p className="text-xs sm:text-sm text-green-700 flex items-center gap-1 mt-2">
               <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4" />
@@ -525,7 +573,7 @@ export function AdminDashboard() {
         {/* Recent Farmers */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
           <div className="p-4 md:p-6 border-b border-gray-100 flex items-center justify-between">
-            <h3 className="text-base md:text-lg font-semibold text-gray-800">Recent Farmers</h3>
+            <h3 className="text-base md:text-lg font-semibold text-gray-800">Recently Added Farmers</h3>
             <button
               type="button"
               onClick={() => setShowMoreFarmers((prev) => !prev)}
@@ -577,7 +625,7 @@ export function AdminDashboard() {
         {/* Recent Harvests */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
           <div className="p-4 md:p-6 border-b border-gray-100 flex items-center justify-between">
-            <h3 className="text-base md:text-lg font-semibold text-gray-800">Recent Harvests</h3>
+            <h3 className="text-base md:text-lg font-semibold text-gray-800">Recently Added Harvests</h3>
             <button
               type="button"
               onClick={() => setShowMoreHarvests((prev) => !prev)}
@@ -598,7 +646,7 @@ export function AdminDashboard() {
                 const cropName = (harvest.crop || '').toLowerCase();
                 let cropBgColor = 'bg-blue-100';
                 let cropTextColor = 'text-blue-700';
-                
+
                 if (cropName.includes('paddy') || cropName.includes('rice')) {
                   cropBgColor = 'bg-yellow-100';
                   cropTextColor = 'text-yellow-700';
@@ -606,7 +654,7 @@ export function AdminDashboard() {
                   cropBgColor = 'bg-green-100';
                   cropTextColor = 'text-green-700';
                 }
-                
+
                 return (
                   <div
                     key={index}

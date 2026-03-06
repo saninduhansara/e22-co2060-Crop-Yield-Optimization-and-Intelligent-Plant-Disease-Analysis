@@ -1,4 +1,8 @@
-
+/**
+ * Mongoose Schema: Average Yields (avgYields)
+ * Stores the average crop yield calculation thresholds for calculating points.
+ * Ensures an index on district/crop/season/year to prevent duplicates.
+ */
 import mongoose from "mongoose";
 
 const avgYieldSchema = new mongoose.Schema({

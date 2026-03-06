@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { User, MapPin, Phone, IdCard, Save, Plus, Trash2, AlertCircle, CheckCircle, Upload, Camera } from 'lucide-react';
 import { userAPI, farmAPI } from '../../services/api';
 import uploadfile from '../../utils/mediaUpload';
+import { toast } from 'sonner';
 
 interface FarmData {
   farmName: string;
@@ -42,7 +43,7 @@ export function RegisterFarmer() {
   const [profileImage, setProfileImage] = useState(null as File | null);
   const [profileImagePreview, setProfileImagePreview] = useState(null as string | null);
   const [uploadingImage, setUploadingImage] = useState(false);
-  
+
   // For existing farmer mode
   const [existingFarmers, setExistingFarmers] = useState<ExistingFarmer[]>([]);
   const [selectedFarmer, setSelectedFarmer] = useState<ExistingFarmer | null>(null);
@@ -50,10 +51,10 @@ export function RegisterFarmer() {
   const [showFarmerDropdown, setShowFarmerDropdown] = useState(false);
   const [loadingFarmers, setLoadingFarmers] = useState(false);
   const [createdFarmIds, setCreatedFarmIds] = useState<string[]>([]);
-  
+
   // Ref for click-outside handling
   const farmerInputRef = useRef<HTMLDivElement>(null);
-  
+
   const [farmerData, setFarmerData] = useState({
     firstName: '',
     lastName: '',
@@ -73,11 +74,10 @@ export function RegisterFarmer() {
   const [registeredFarmerId, setRegisteredFarmerId] = useState(null as string | null);
 
   const districts = [
-    'Ampara', 'Anuradhapura', 'Badulla', 'Batticaloa', 'Colombo',
-    'Galle', 'Gampaha', 'Hambantota', 'Jaffna', 'Kalutara',
-    'Kandy', 'Kegalle', 'Kilinochchi', 'Kurunegala', 'Mannar',
-    'Matale', 'Matara', 'Monaragala', 'Mullaitivu', 'Nuwara Eliya',
-    'Polonnaruwa', 'Puttalam', 'Ratnapura', 'Trincomalee', 'Vavuniya'
+    'Ampara', 'Anuradhapura', 'Badulla', 'Batticaloa', 'Colombo', 'Galle', 'Gampaha', 'Hambantota',
+    'Jaffna', 'Kalutara', 'Kandy', 'Kegalle', 'Kilinochchi', 'Kurunegala', 'Mannar', 'Matale',
+    'Matara', 'Monaragala', 'Mullaitivu', 'Nuwara Eliya', 'Polonnaruwa', 'Puttalam', 'Ratnapura',
+    'Trincomalee', 'Vavuniya'
   ];
 
   const dsDivisions = {
@@ -107,7 +107,6 @@ export function RegisterFarmer() {
     'Trincomalee': ['Trincomalee', 'Habarana', 'Kantale', 'Kuchchaveli', 'Muttur', 'Nilaveli', 'Seruwavila', 'Trincomalee North', 'Trincomalee South', 'Verugal'],
     'Vavuniya': ['Vavuniya', 'Cheddikulam', 'Eluthumadduval', 'Vengalacheddikulam']
   } as Record<string, string[]>;
-
   const crops = ['Paddy', 'Corn', 'Wheat', 'Tomatoes', 'Onions', 'Carrots', 'Cabbage', 'Potatoes'];
 
   // Fetch existing farmers when mode changes to 'existing'
@@ -129,7 +128,7 @@ export function RegisterFarmer() {
     setMode(newMode);
     setError(null);
     setSuccess(false);
-    
+
     if (newMode === 'existing') {
       fetchExistingFarmers();
       setStep(2); // Skip to farm details step
@@ -179,9 +178,10 @@ export function RegisterFarmer() {
   // Step 1: Register Farmer
   const handleRegisterFarmer = async (e: any) => {
     e.preventDefault();
-    
+
     if (!farmerData.firstName || !farmerData.lastName || !farmerData.email) {
       setError('Please fill in all required farmer information');
+      toast.error('Please fill in all required farmer information');
       return;
     }
 
@@ -206,7 +206,7 @@ export function RegisterFarmer() {
 
       // Generate a temporary password if not provided
       const password = farmerData.password || `${farmerData.nic.slice(-4)}@2026`;
-      
+
       // Store generated password if it was auto-generated
       if (!farmerData.password) {
         setGeneratedPassword(password);
@@ -228,18 +228,22 @@ export function RegisterFarmer() {
       };
 
       const response = await userAPI.register(userData);
-      
+
       if (response.message === 'User Created Successfully') {
+        toast.success('Farmer personal details registered successfully!');
         setRegisteredFarmerId(farmerData.nic);
         setStep(2);
         setSuccess(true);
         setTimeout(() => setSuccess(false), 3000);
       } else {
+        toast.error('Failed to register farmer. Please try again.');
         setError('Failed to register farmer. Please try again.');
       }
     } catch (err: any) {
       console.error('Error registering farmer:', err);
-      setError(err.response?.data?.message || 'Failed to register farmer. Please try again.');
+      const errMessage = err.response?.data?.message || 'Failed to register farmer. Please try again.';
+      setError(errMessage);
+      toast.error(errMessage);
     } finally {
       setLoading(false);
     }
@@ -274,12 +278,13 @@ export function RegisterFarmer() {
       return;
     }
 
-    const validFarms = farms.filter((farm: FarmData) => 
+    const validFarms = farms.filter((farm: FarmData) =>
       farm.farmName && farm.crop && farm.sizeInAcres && farm.location
     );
 
     if (validFarms.length === 0) {
       setError('Please fill in at least one complete farm entry');
+      toast.error('Please fill in at least one complete farm entry');
       return;
     }
 
@@ -287,11 +292,11 @@ export function RegisterFarmer() {
     setError(null);
 
     try {
-      const farmerNIC = mode === 'existing' 
+      const farmerNIC = mode === 'existing'
         ? (selectedFarmer?.nic || '')
         : (registeredFarmerId || farmerData.nic);
-      
-      const district = mode === 'existing' 
+
+      const district = mode === 'existing'
         ? (selectedFarmer?.district || '')
         : farmerData.district;
 
@@ -307,13 +312,14 @@ export function RegisterFarmer() {
           district: district,
           status: 'active',
         });
-        
+
         // Capture farm ID from response - prioritize custom farmId over MongoDB _id
         if (response?.farm?.farmId || response?.farm?._id) {
           farmIds.push(response.farm.farmId || response.farm._id);
         }
       }
 
+      toast.success('Farmer and farms registered successfully!');
       setCreatedFarmIds(farmIds);
       setSuccess(true);
       setTimeout(() => {
@@ -322,7 +328,7 @@ export function RegisterFarmer() {
         setSuccess(false);
         setError(null);
         setCreatedFarmIds([]);
-        
+
         if (mode === 'new') {
           setFarmerData({
             firstName: '', lastName: '', nic: '', address: '',
@@ -341,7 +347,9 @@ export function RegisterFarmer() {
       }, 10000); // Display for 10 seconds to allow time to copy Farm IDs
     } catch (err: any) {
       console.error('Error creating farms:', err);
-      setError(err.response?.data?.message || 'Failed to create farms. Please try again.');
+      const errMessage = err.response?.data?.message || 'Failed to create farms. Please try again.';
+      setError(errMessage);
+      toast.error(errMessage);
     } finally {
       setLoading(false);
     }
@@ -366,11 +374,10 @@ export function RegisterFarmer() {
           <button
             type="button"
             onClick={() => handleModeChange('new')}
-            className={`p-4 rounded-lg border-2 transition-all ${
-              mode === 'new'
-                ? 'border-green-600 bg-green-50 text-green-700'
-                : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
-            }`}
+            className={`p-4 rounded-lg border-2 transition-all ${mode === 'new'
+              ? 'border-green-600 bg-green-50 text-green-700'
+              : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+              }`}
           >
             <div className="flex items-center gap-3">
               <User className="w-5 h-5" />
@@ -383,11 +390,10 @@ export function RegisterFarmer() {
           <button
             type="button"
             onClick={() => handleModeChange('existing')}
-            className={`p-4 rounded-lg border-2 transition-all ${
-              mode === 'existing'
-                ? 'border-green-600 bg-green-50 text-green-700'
-                : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
-            }`}
+            className={`p-4 rounded-lg border-2 transition-all ${mode === 'existing'
+              ? 'border-green-600 bg-green-50 text-green-700'
+              : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+              }`}
           >
             <div className="flex items-center gap-3">
               <Plus className="w-5 h-5" />
@@ -404,7 +410,7 @@ export function RegisterFarmer() {
       {mode === 'existing' && (
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
           <h3 className="text-md font-semibold text-gray-800 mb-4">Select Farmer</h3>
-          
+
           {loadingFarmers ? (
             <div className="text-center py-4">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
@@ -424,9 +430,9 @@ export function RegisterFarmer() {
                   onFocus={() => setShowFarmerDropdown(true)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 />
-                
+
                 {showFarmerDropdown && filteredFarmers.length > 0 && farmerInputRef.current && (
-                  <div 
+                  <div
                     style={{
                       position: 'fixed',
                       top: farmerInputRef.current.offsetHeight + (farmerInputRef.current.getBoundingClientRect().top + farmerInputRef.current.offsetHeight) + 8,
@@ -457,7 +463,7 @@ export function RegisterFarmer() {
                   </div>
                 )}
               </div>
-              
+
               {selectedFarmer && (
                 <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
                   <div className="flex items-start gap-3">
@@ -484,11 +490,11 @@ export function RegisterFarmer() {
           <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
           <div className="flex-1">
             <p className="text-green-700 font-medium">
-              {mode === 'new' && step === 2 
-                ? 'Farmer registered successfully! Now add their farm details.' 
+              {mode === 'new' && step === 2
+                ? 'Farmer registered successfully! Now add their farm details.'
                 : 'Farm(s) registered successfully!'}
             </p>
-            
+
             {/* Display Farm IDs */}
             {createdFarmIds.length > 0 && (
               <div className="mt-3 bg-white border border-green-300 rounded-lg p-3">
@@ -503,7 +509,7 @@ export function RegisterFarmer() {
                 <p className="text-xs text-blue-600 mt-2">💾 Farm IDs saved successfully</p>
               </div>
             )}
-            
+
             {mode === 'new' && step === 2 && generatedPassword && (
               <div className="mt-3 bg-white border border-green-300 rounded-lg p-3">
                 <p className="text-sm text-gray-700 font-medium mb-1">Auto-generated Login Credentials:</p>
@@ -531,15 +537,13 @@ export function RegisterFarmer() {
       {/* Step Indicators - Only show for new farmer registration */}
       {mode === 'new' && (
         <div className="flex items-center gap-4">
-          <div className={`flex items-center justify-center w-10 h-10 rounded-full font-medium ${
-            step >= 1 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'
-          }`}>
+          <div className={`flex items-center justify-center w-10 h-10 rounded-full font-medium ${step >= 1 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'
+            }`}>
             1
           </div>
           <div className={`flex-1 h-1 ${step >= 2 ? 'bg-green-600' : 'bg-gray-200'}`}></div>
-          <div className={`flex items-center justify-center w-10 h-10 rounded-full font-medium ${
-            step >= 2 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'
-          }`}>
+          <div className={`flex items-center justify-center w-10 h-10 rounded-full font-medium ${step >= 2 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'
+            }`}>
             2
           </div>
         </div>
@@ -618,7 +622,7 @@ export function RegisterFarmer() {
                     <input
                       type="text"
                       value={farmerData.firstName}
-                      onChange={(e) => setFarmerData({...farmerData, firstName: e.target.value})}
+                      onChange={(e) => setFarmerData({ ...farmerData, firstName: e.target.value })}
                       placeholder="Enter first name"
                       className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                       required
@@ -633,7 +637,7 @@ export function RegisterFarmer() {
                   <input
                     type="text"
                     value={farmerData.lastName}
-                    onChange={(e) => setFarmerData({...farmerData, lastName: e.target.value})}
+                    onChange={(e) => setFarmerData({ ...farmerData, lastName: e.target.value })}
                     placeholder="Enter last name"
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                     required
@@ -649,7 +653,7 @@ export function RegisterFarmer() {
                     <input
                       type="text"
                       value={farmerData.nic}
-                      onChange={(e) => setFarmerData({...farmerData, nic: e.target.value})}
+                      onChange={(e) => setFarmerData({ ...farmerData, nic: e.target.value })}
                       placeholder="e.g., 199512345678"
                       className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                       required
@@ -666,7 +670,7 @@ export function RegisterFarmer() {
                     <input
                       type="tel"
                       value={farmerData.phone}
-                      onChange={(e) => setFarmerData({...farmerData, phone: e.target.value})}
+                      onChange={(e) => setFarmerData({ ...farmerData, phone: e.target.value })}
                       placeholder="077-1234567"
                       className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                       required
@@ -681,7 +685,7 @@ export function RegisterFarmer() {
                   <input
                     type="email"
                     value={farmerData.email}
-                    onChange={(e) => setFarmerData({...farmerData, email: e.target.value})}
+                    onChange={(e) => setFarmerData({ ...farmerData, email: e.target.value })}
                     placeholder="farmer@example.com"
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                     required
@@ -695,7 +699,7 @@ export function RegisterFarmer() {
                   <input
                     type="password"
                     value={farmerData.password}
-                    onChange={(e) => setFarmerData({...farmerData, password: e.target.value})}
+                    onChange={(e) => setFarmerData({ ...farmerData, password: e.target.value })}
                     placeholder="Leave empty for auto-generated"
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                   />
@@ -713,7 +717,7 @@ export function RegisterFarmer() {
                   </label>
                   <select
                     value={farmerData.district}
-                    onChange={(e) => setFarmerData({...farmerData, district: e.target.value, division: ''})}
+                    onChange={(e) => setFarmerData({ ...farmerData, district: e.target.value, division: '' })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                     required
                   >
@@ -730,7 +734,7 @@ export function RegisterFarmer() {
                   </label>
                   <select
                     value={farmerData.division}
-                    onChange={(e) => setFarmerData({...farmerData, division: e.target.value})}
+                    onChange={(e) => setFarmerData({ ...farmerData, division: e.target.value })}
                     disabled={!farmerData.district}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                     required
@@ -752,7 +756,7 @@ export function RegisterFarmer() {
                     <MapPin className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
                     <textarea
                       value={farmerData.address}
-                      onChange={(e) => setFarmerData({...farmerData, address: e.target.value})}
+                      onChange={(e) => setFarmerData({ ...farmerData, address: e.target.value })}
                       placeholder="Enter full address"
                       rows={3}
                       className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
@@ -797,7 +801,7 @@ export function RegisterFarmer() {
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
           <div className="p-6 border-b border-gray-200">
             <h3 className="text-lg font-semibold text-gray-800">
-              {mode === 'new' 
+              {mode === 'new'
                 ? `Step 2: Farm Details for ${farmerData.firstName} ${farmerData.lastName}`
                 : `Farm Details for ${selectedFarmer ? `${selectedFarmer.firstName || ''} ${selectedFarmer.lastName || ''}` : 'Selected Farmer'}`
               }
