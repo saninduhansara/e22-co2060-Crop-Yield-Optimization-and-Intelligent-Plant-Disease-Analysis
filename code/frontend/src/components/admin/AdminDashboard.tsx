@@ -139,23 +139,98 @@ export function AdminDashboard() {
         filteredHarvests = filteredHarvests.filter((h: any) => normalizeSeason(h.season) === selectedSeason.toLowerCase());
       }
 
-      const isCurrentPeriod = (selectedYear === 'all' || Number(selectedYear) === currentYear) && (selectedSeason === 'all' || selectedSeason === currentSeason);
+      // Always base active metrics purely on the farmers who actually have harvests in the matching filter
+      const activeNICs = new Set(filteredHarvests.map((h: any) => h.farmerNIC).filter(Boolean));
+      const periodFarmsList = farms.filter((f: any) => activeNICs.has(f.farmerNIC));
 
-      let periodFarmsList = [];
-      if (isCurrentPeriod) {
-        // If current period, active farms are those currently marked active
-        periodFarmsList = farms.filter((f: any) => f.status === 'active' || !f.status);
-      } else {
-        // If past period, active farms are those who had a harvest in that period
-        const pastNICs = new Set(filteredHarvests.map((h: any) => h.farmerNIC).filter(Boolean));
-        periodFarmsList = farms.filter((f: any) => pastNICs.has(f.farmerNIC));
+      setTotalFarmers(activeNICs.size);
+      setActiveFarms(periodFarmsList.length);
+
+      // Calculate active farmland by getting the unique acres per farm in this period (so multiple harvests on one plot don't multiply the size)
+      const farmAcresMap = new Map<string, number>();
+      filteredHarvests.forEach((h: any) => {
+        const key = h.farmId || h.farmerNIC;
+        if (key) {
+          const currentAcres = farmAcresMap.get(key) || 0;
+          const harvestAcres = parseHarvestQty(h.acres || h.farmSize || 0);
+          if (harvestAcres > currentAcres) {
+            farmAcresMap.set(key, harvestAcres);
+          }
+        }
+      });
+      const calculatedActiveFarmland = Array.from(farmAcresMap.values()).reduce((sum, acres) => sum + acres, 0);
+
+      setTotalFarmland(calculatedActiveFarmland);
+      setFarmsForProfile(farms);
+
+      // Now we also calculate the previous logical period's ACTIVE metrics for comparison
+      const smartPrevFilters = () => {
+        if (selectedYear === 'all' || selectedSeason === 'all') return null;
+        let y = Number(selectedYear);
+        let s = selectedSeason.toLowerCase();
+        if (s === 'maha') {
+          s = 'yala';
+        } else if (s === 'yala') {
+          s = 'maha';
+          y = y - 1;
+        } else {
+          return null;
+        }
+        return { year: y, season: s };
+      };
+
+      const prevFilt = smartPrevFilters();
+      let prevPeriodFarmsList = [];
+      if (prevFilt) {
+        let prevFilteredHarvests = allHarvests.filter((h: any) =>
+          Number(h.year) === prevFilt.year &&
+          normalizeSeason(h.season) === prevFilt.season
+        );
+        if (selectedCrop) {
+          prevFilteredHarvests = prevFilteredHarvests.filter((harvest: any) => {
+            const harvestCrop = (harvest.crop || '').trim().toLowerCase();
+            const selectedCropNormalized = selectedCrop.trim().toLowerCase();
+            return harvestCrop === selectedCropNormalized;
+          });
+        }
+        const prevPastNICs = new Set(prevFilteredHarvests.map((h: any) => h.farmerNIC).filter(Boolean));
+        prevPeriodFarmsList = farms.filter((f: any) => prevPastNICs.has(f.farmerNIC));
       }
 
-      const activeFarmerNICs = new Set(periodFarmsList.map((f: any) => f.farmerNIC).filter(Boolean));
-      setTotalFarmers(activeFarmerNICs.size);
-      setActiveFarms(periodFarmsList.length);
-      setTotalFarmland(periodFarmsList.reduce((sum: number, f: any) => sum + parseHarvestQty(f.sizeInAcres || f.farmSize || 0), 0));
-      setFarmsForProfile(farms);
+      const prevActiveFarmerNICs = new Set(prevPeriodFarmsList.map((f: any) => f.farmerNIC).filter(Boolean));
+      const prevActiveFarmersCount = prevActiveFarmerNICs.size;
+      const prevActiveFarmsCount = prevPeriodFarmsList.length;
+      const prevActiveFarmland = prevPeriodFarmsList.reduce((sum: number, f: any) => sum + parseHarvestQty(f.sizeInAcres || f.farmSize || 0), 0);
+
+      const lastLabel = (!selectedYear || !selectedSeason) ? 'all time' : 'last season';
+
+      const getGrowthText = (current: number, previous: number) => {
+        if (!prevFilt) return `N/A from ${lastLabel}`;
+        if (previous === 0) return current > 0 ? `+100.0% from ${lastLabel}` : `0.0% from ${lastLabel}`;
+        const pct = ((current - previous) / previous) * 100;
+        const capped = Math.min(Math.max(pct, -9999.9), 9999.9);
+        const sign = capped > 0 ? '+' : '';
+        return `${sign}${capped.toFixed(1)}% from ${lastLabel}`;
+      };
+
+      // Reuse the existing state variable but it now holds season-over-season text
+      const farmersGrowthText = getGrowthText(activeNICs.size, prevActiveFarmersCount);
+      // We'll pass this via state or just calculate it. The file uses `farmersLastMonthPercentage` so let's overwrite that text.
+      // Actually, since I have to reuse existing state vars, I'll store the text strings directly if possible, or build them in render.
+      // Wait, let me just add state variables or override existing ones smartly.
+      // The file has setFarmersLastMonthPercentage(number). I will change the type implicitly or just use the number.
+      let calculatedFarmersPercentage = 0;
+      if (prevActiveFarmersCount === 0) {
+        calculatedFarmersPercentage = activeNICs.size > 0 ? 100 : 0;
+      } else {
+        calculatedFarmersPercentage = ((activeNICs.size - prevActiveFarmersCount) / prevActiveFarmersCount) * 100;
+      }
+      setFarmersLastMonthPercentage(calculatedFarmersPercentage);
+
+      // I will need to store growth text for Plots and Farmland too, but right now there's no state for it.
+      // I can just bundle it into a new state object if needed, or recalculate in render.
+      // Actually I should just calculate it here and use existing states where possible, but I can't easily add new `useState` via replace.
+      // Let's modify setFarmersLastMonthPercentage to instead just be the raw percentage, and format it in render.
 
       // Calculate total harvests by season & year
       const seasonMap = new Map<string, number>();
@@ -210,65 +285,41 @@ export function AdminDashboard() {
 
       setTotalHarvest(thisSeasonTotal);
 
-      // Farmers 30 days ago (for month-over-month growth from ALL farms)
-      const thirtyDaysAgo2 = new Date();
-      thirtyDaysAgo2.setDate(thirtyDaysAgo2.getDate() - 30);
-
-      const farmers30DaysAgoNICs = new Set(
-        farms
-          .filter((farm: any) => {
-            if (!farm.farmerNIC) return false;
-            if (!farm.createdDate) return true;
-
-            const createdDate = new Date(farm.createdDate);
-            if (isNaN(createdDate.getTime())) return true;
-
-            return createdDate <= thirtyDaysAgo2;
-          })
-          .map((farm: any) => farm.farmerNIC)
-      );
-      const farmers30DaysAgo = farmers30DaysAgoNICs.size;
-
-      let calculatedPercentage = 0;
-      if (farmers30DaysAgo === 0) {
-        calculatedPercentage = activeFarmerNICs.size > 0 ? 100 : 0;
-      } else {
-        calculatedPercentage = ((activeFarmerNICs.size - farmers30DaysAgo) / farmers30DaysAgo) * 100;
-      }
-      setFarmersLastMonthPercentage(calculatedPercentage);
+      // Instead of 30 day farmers, we already calculated calculatedFarmersPercentage above
+      // so we can delete the 30-day block.
 
       const isComparisonValid = selectedYear !== 'all';
-      const lastLabel = selectedSeason === 'all' ? 'last year' : 'last season';
+      const lastLabelForHarvest = selectedSeason === 'all' ? 'last year' : 'last season';
 
-      let harvestSeasonText = `N/A from ${lastLabel}`;
+      let harvestSeasonText = `N/A from ${lastLabelForHarvest}`;
       if (!isComparisonValid) {
         harvestSeasonText = 'N/A';
       } else if (lastSeasonTotal <= 0.0001) {
-        harvestSeasonText = thisSeasonTotal > 0 ? `+100.0% from ${lastLabel}` : `0.0% from ${lastLabel}`;
+        harvestSeasonText = thisSeasonTotal > 0 ? `+100.0% from ${lastLabelForHarvest}` : `0.0% from ${lastLabelForHarvest}`;
       } else {
         const harvestPercentage = ((thisSeasonTotal - lastSeasonTotal) / lastSeasonTotal) * 100;
         const cappedPercentage = Math.min(Math.max(harvestPercentage, -9999.9), 9999.9);
         const sign = cappedPercentage > 0 ? '+' : '';
-        harvestSeasonText = `${sign}${cappedPercentage.toFixed(1)}% from ${lastLabel}`;
+        harvestSeasonText = `${sign}${cappedPercentage.toFixed(1)}% from ${lastLabelForHarvest}`;
       }
       setHarvestLastSeasonText(harvestSeasonText);
 
-      let yieldSeasonText = `N/A from ${lastLabel}`;
+      let yieldSeasonText = `N/A from ${lastLabelForHarvest}`;
       if (!isComparisonValid) {
         yieldSeasonText = 'N/A';
       } else if (thisSeasonAcres <= 0.0001 || lastSeasonAcres <= 0.0001) {
-        yieldSeasonText = `N/A from ${lastLabel}`;
+        yieldSeasonText = `N/A from ${lastLabelForHarvest}`;
       } else {
         const thisSeasonYieldPerAcre = thisSeasonTotal / thisSeasonAcres;
         const lastSeasonYieldPerAcre = lastSeasonTotal / lastSeasonAcres;
 
         if (lastSeasonYieldPerAcre <= 0.0001) {
-          yieldSeasonText = `N/A from ${lastLabel}`;
+          yieldSeasonText = `N/A from ${lastLabelForHarvest}`;
         } else {
           const yieldPercentage = ((thisSeasonYieldPerAcre - lastSeasonYieldPerAcre) / lastSeasonYieldPerAcre) * 100;
           const cappedYieldPercentage = Math.min(Math.max(yieldPercentage, -9999.9), 9999.9);
           const sign = cappedYieldPercentage > 0 ? '+' : '';
-          yieldSeasonText = `${sign}${cappedYieldPercentage.toFixed(1)}% from ${lastLabel}`;
+          yieldSeasonText = `${sign}${cappedYieldPercentage.toFixed(1)}% from ${lastLabelForHarvest}`;
         }
       }
       setYieldLastSeasonText(yieldSeasonText);
@@ -517,11 +568,11 @@ export function AdminDashboard() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 sm:gap-5 lg:gap-6">
-        {/* Total Farmers Card */}
+        {/* Active Farmers Card */}
         <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-5 sm:p-6 shadow-md border-l-4 border-l-green-500 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group">
           <div className="flex flex-col">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">Total Farmers</p>
+              <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">Active Farmers</p>
               <Users className="w-5 h-5 text-green-600 opacity-70 group-hover:opacity-100 transition-opacity" />
             </div>
             <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 my-2 break-words min-w-0">
@@ -529,7 +580,7 @@ export function AdminDashboard() {
             </p>
             <p className="text-xs sm:text-sm text-green-700 flex items-center gap-1 mt-2">
               <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4" />
-              {loading ? '...' : `${farmersLastMonthPercentage > 0 ? '+' : ''}${farmersLastMonthPercentage.toFixed(1)}% from last month`}
+              {loading ? '...' : selectedYear === 'all' || selectedSeason === 'all' ? 'N/A from last season' : `${farmersLastMonthPercentage > 0 ? '+' : ''}${farmersLastMonthPercentage.toFixed(1)}% from last season`}
             </p>
           </div>
         </div>
@@ -570,11 +621,11 @@ export function AdminDashboard() {
           </div>
         </div>
 
-        {/* Total Farmland Card */}
+        {/* Active Farmland Card */}
         <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-5 sm:p-6 shadow-md border-l-4 border-l-green-500 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group">
           <div className="flex flex-col">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">Total Farmland</p>
+              <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">Active Farmland</p>
               <Layers className="w-5 h-5 text-green-600 opacity-70 group-hover:opacity-100 transition-opacity" />
             </div>
             <div className="flex min-w-0 flex-wrap items-baseline gap-1 sm:gap-2 my-2">
