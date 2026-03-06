@@ -139,6 +139,11 @@ async function calculatePointsForHarvest(farmYield, crop, season, prevYear) {
  * @param {Object} req - Express request object containing farmId, season, year, harvestQty.
  * @param {Object} res - Express response object.
  */
+// add harvest and update points automatically in farmers
+// y max = maximum average yield for that season and year across all districts
+// points = P max * sqrt((farm yield - average yield) / (y max - average yield)) + P max * 0.2* (farm yield / average yield) if farm yield >= average yield
+// if farm yield < average yield → points = P max * 0.2 * (farm yield / average yield)
+
 export const addHarvestAndPoints = async (req, res) => {
   if (!isAdmin(req)) {
     return res.status(403).json({ message: "Access denied. Admins only" });
@@ -189,11 +194,22 @@ export const addHarvestAndPoints = async (req, res) => {
 
     // Points calculation
     const P_MAX = 1000;
-    const numerator = Math.max(0, farmYield - avgYield);
-    const denominator = (Y_MAX - avgYield);
+    const denominator = Y_MAX - avgYield;
     let pointsEarned = 0;
-    if (denominator > 0) {
-      pointsEarned = P_MAX * Math.sqrt(numerator / denominator);
+
+    if (avgYield > 0) {
+      if (farmYield >= avgYield) {
+        const bonus = P_MAX * 0.2 * (farmYield / avgYield);
+        if (denominator > 0) {
+          const numerator = farmYield - avgYield;
+          pointsEarned = P_MAX * Math.sqrt(numerator / denominator) + bonus;
+        } else {
+          // Edge case: Y_MAX equals avgYield, award bonus points only
+          pointsEarned = bonus;
+        }
+      } else {
+        pointsEarned = P_MAX * 0.2 * (farmYield / avgYield);
+      }
     }
 
     // Update farmer points
@@ -204,14 +220,17 @@ export const addHarvestAndPoints = async (req, res) => {
     }
 
     res.json({
-      message: "Harvest added and points scheduled for calculation.",
+      message: "Harvest added and points calculated",
       farmYield,
-      pointsEarned
+      averageYield: avgYield,
+      maxYieldAcrossDistricts: Y_MAX,
+      pointsEarned: parseFloat(pointsEarned.toFixed(2)),
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
+
 
 /**
  * Sweeps through all farmers, recalculates points for every harvest they've ever made based on the new dynamic formula,
@@ -239,9 +258,8 @@ export const recalculateAllPoints = async (req, res) => {
           if (!harvest.harvestQty || !harvest.year || !harvest.season) continue;
 
           const farmYield = harvest.harvestQty / farm.sizeInAcres;
-          const prevYear = Number(harvest.year) - 1;
 
-          const points = await calculatePointsForHarvest(farmYield, farm.crop, harvest.season, prevYear);
+          const points = await calculatePointsForHarvest(farmYield, farm.crop, harvest.season, harvest.year);
 
           if (harvest.pointsEarned !== points) {
             harvest.pointsEarned = points;
