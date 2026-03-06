@@ -72,6 +72,8 @@ export async function loginUser(req, res) {
         // Verify password asynchronously
         const isPasswordCorrect = await bcrypt.compare(password, user.password)
 
+        const normalizedPoints = Math.round(Number(user.points) || 0)
+
         if (isPasswordCorrect) {
             // Validate role matches the portal they are trying to log into
             const normalizedDbRole = user.role === 'user' ? 'farmer' : user.role
@@ -92,7 +94,7 @@ export async function loginUser(req, res) {
                     isBlocked: user.isBlocked,
                     isEmailVerified: user.isEmailVerified,
                     Image: user.image,
-                    points: user.points
+                    points: normalizedPoints
                 },
                 process.env.JWT_SECRET,
                 { expiresIn: '24h' } // Token expires in 24 hours
@@ -108,7 +110,7 @@ export async function loginUser(req, res) {
                     lastName: user.lastName,
                     role: user.role,
                     type: user.role,
-                    points: user.points,
+                    points: normalizedPoints,
                     district: user.district,
                     division: user.division,
                     image: user.image
@@ -156,9 +158,14 @@ export async function fetchUser(req, res) {
             return res.status(404).json({ message: "User not found." });
         }
 
+        const normalizedUser = {
+            ...user.toObject(),
+            points: Math.round(Number(user.points) || 0),
+        };
+
         res.json({
             message: "User retrieved successfully",
-            user: user
+            user: normalizedUser
         });
     } catch (error) {
         console.error("Error fetching user profile", error);
