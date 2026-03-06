@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { X, Upload, Camera, CheckCircle, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface DiseaseReportModalProps {
   isOpen: boolean;
@@ -42,7 +43,7 @@ export function DiseaseReportModal({ isOpen, onClose }: DiseaseReportModalProps)
 
   const handleSubmit = () => {
     // In real app, this would submit to backend
-    alert('Disease report submitted successfully! Your district officer will review it shortly.');
+    toast.success('Disease report submitted successfully! Your district officer will review it shortly.');
     onClose();
     setSelectedImage(null);
     setAnalysisResult(null);
@@ -193,7 +194,7 @@ export function DiseaseReportModal({ isOpen, onClose }: DiseaseReportModalProps)
           {/* Info */}
           <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
             <p className="text-yellow-800 text-sm">
-              <strong>Note:</strong> AI analysis results will be reviewed by your district officer. 
+              <strong>Note:</strong> AI analysis results will be reviewed by your district officer.
               They may contact you for additional information or site visit if needed.
             </p>
           </div>

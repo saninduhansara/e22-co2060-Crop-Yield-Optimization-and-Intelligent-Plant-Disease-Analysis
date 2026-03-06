@@ -1,5 +1,11 @@
+/**
+ * Farmer Portal Sidebar Navigation
+ * Displays navigation links and user profile info.
+ * Handles mobile responsive states with a slide-in overlay.
+ */
 import { Home, Sprout, AlertTriangle, User, FileText, LogOut, Menu, X, MessageSquare } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { userAPI } from '../services/api';
 
 interface SidebarProps {
   currentPage: string;
@@ -9,21 +15,53 @@ interface SidebarProps {
 
 export function Sidebar({ currentPage, onNavigate, onLogout }: SidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [userData, setUserData] = useState<{ firstName?: string, lastName?: string }>({});
+  const [userData, setUserData] = useState<any>({});
 
   useEffect(() => {
-    const authDataStr = localStorage.getItem('agriconnect_auth');
-    if (authDataStr) {
-      try {
-        const authData = JSON.parse(authDataStr);
-        setUserData({
-          firstName: authData.firstName,
-          lastName: authData.lastName
-        });
-      } catch (e) {
-        console.error("Failed to parse auth data", e);
+    const loadFarmerUser = async () => {
+      // Load initially from local storage for fast render
+      const authDataStr = localStorage.getItem('agriconnect_auth');
+      if (authDataStr) {
+        try {
+          const authData = JSON.parse(authDataStr);
+          if (authData.user) {
+            setUserData(authData.user);
+          } else {
+            setUserData({
+              firstName: authData.firstName,
+              lastName: authData.lastName,
+              email: authData.email
+            });
+          }
+        } catch (e) {
+          console.error("Failed to parse auth data", e);
+        }
       }
-    }
+
+      // Fetch fresh data from backend
+      try {
+        const response = await userAPI.fetchProfile();
+        if (response && response.user) {
+          setUserData(response.user);
+          if (authDataStr) {
+            const parsed = JSON.parse(authDataStr);
+            parsed.user = { ...parsed.user, ...response.user };
+            localStorage.setItem('agriconnect_auth', JSON.stringify(parsed));
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch fresh farmer profile for sidebar", err);
+      }
+    };
+
+    loadFarmerUser();
+
+    // Listen for storage events to update immediately if edited elsewhere
+    window.addEventListener('storage', loadFarmerUser);
+
+    return () => {
+      window.removeEventListener('storage', loadFarmerUser);
+    };
   }, []);
 
   const menuItems = [
@@ -92,8 +130,8 @@ export function Sidebar({ currentPage, onNavigate, onLogout }: SidebarProps) {
                 key={item.id}
                 onClick={() => handleNavigate(item.id)}
                 className={`w-full flex items-center gap-3 px-6 py-4 transition-all ${isActive
-                    ? 'bg-green-600/50 text-white border-r-4 border-white'
-                    : 'text-green-50 hover:bg-green-600/30'
+                  ? 'bg-green-600/50 text-white border-r-4 border-white'
+                  : 'text-green-50 hover:bg-green-600/30'
                   }`}
               >
                 <Icon className="w-5 h-5" />
@@ -110,12 +148,16 @@ export function Sidebar({ currentPage, onNavigate, onLogout }: SidebarProps) {
             onClick={() => handleNavigate('profile')}
             className="w-full flex items-center gap-3 mb-4 p-3 rounded-lg hover:bg-green-600/30 transition-all"
           >
-            <div className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center">
-              <User className="w-5 h-5" />
+            <div className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center overflow-hidden border-2 border-green-500">
+              {userData?.image && !userData.image.includes('blank-profile') ? (
+                <img src={userData.image} alt={displayName} className="w-full h-full object-cover" />
+              ) : (
+                <User className="w-5 h-5" />
+              )}
             </div>
-            <div className="text-left">
-              <p className="text-sm font-medium">{displayName}</p>
-              <p className="text-xs text-green-200">Member</p>
+            <div className="text-left overflow-hidden">
+              <p className="text-sm font-medium truncate">{displayName}</p>
+              <p className="text-xs text-green-200 truncate">{userData?.email || 'Member'}</p>
             </div>
           </button>
 

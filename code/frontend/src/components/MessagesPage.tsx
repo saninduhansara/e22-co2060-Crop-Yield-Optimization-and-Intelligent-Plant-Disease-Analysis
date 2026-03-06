@@ -1,41 +1,44 @@
-import { useState } from 'react';
-import { Send, Upload, FileText, Trash2, AlertCircle, CheckCircle2, Clock } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Send, Upload, FileText, Trash2, AlertCircle, CheckCircle2, Clock, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { inquiryAPI } from '../services/api';
 
 export function MessagesPage() {
   const [subject, setSubject] = useState('');
   const [category, setCategory] = useState('');
   const [message, setMessage] = useState('');
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-  const [submittedMessages, setSubmittedMessages] = useState([
-    {
-      id: 1,
-      subject: 'Flood damage in Plot B',
-      category: 'Natural Disaster',
-      message: 'Heavy rainfall last week caused flooding in Plot B. Approximately 2 acres affected. Need assessment and support.',
-      date: '2026-02-15',
-      status: 'Under Review',
-      hasDocument: true,
-      documentName: 'flood-damage-photos.jpg',
-    },
-    {
-      id: 2,
-      subject: 'Irrigation system malfunction',
-      category: 'Technical Issue',
-      message: 'Water pump in Plot A not working properly. Reduced water pressure affecting irrigation schedule.',
-      date: '2026-02-10',
-      status: 'Resolved',
-      hasDocument: false,
-    },
-    {
-      id: 3,
-      subject: 'Fertilizer subsidy inquiry',
-      category: 'Complaint',
-      message: 'Have not received fertilizer subsidy for Maha season 2025/26. Please check status.',
-      date: '2026-02-05',
-      status: 'Pending',
-      hasDocument: false,
-    },
-  ]);
+  const [submittedMessages, setSubmittedMessages] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    fetchInquiries();
+  }, []);
+
+  const fetchInquiries = async () => {
+    try {
+      const data = await inquiryAPI.getAllInquiries();
+      // Assume the backend returns all inquiries, we need to filter if it doesn't filter by user, 
+      // but since farmer fetching all vs admin fetching all hasn't been separated in backend, 
+      // let's just get the current user ID and filter locally for now to be safe, 
+      // or assume the backend sends all and we show all (for demo purposes if farmer sees all).
+      // Wait, let's filter by the logged in user ID if available in local storage.
+      const authDataStr = localStorage.getItem('agriconnect_auth');
+      if (authDataStr) {
+        const authData = JSON.parse(authDataStr);
+        const myInquiries = data.inquiries?.filter((inq: any) =>
+          inq.farmer?._id === authData.userId || inq.farmer === authData.userId
+        ) || [];
+        setSubmittedMessages(myInquiries);
+      }
+    } catch (error) {
+      console.error("Failed to fetch inquiries", error);
+      toast.error("Failed to load your previous messages");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const categories = [
     'Natural Disaster',
@@ -52,23 +55,32 @@ export function MessagesPage() {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (subject.trim() && category && message.trim()) {
-      const newMessage = {
-        id: submittedMessages.length + 1,
-        subject: subject.trim(),
-        category: category,
-        message: message.trim(),
-        date: new Date().toISOString().split('T')[0],
-        status: 'Pending',
-        hasDocument: !!uploadedFile,
-        documentName: uploadedFile?.name,
-      };
-      setSubmittedMessages([newMessage, ...submittedMessages]);
-      setSubject('');
-      setCategory('');
-      setMessage('');
-      setUploadedFile(null);
+      setSubmitting(true);
+      try {
+        const authDataStr = localStorage.getItem('agriconnect_auth');
+        const authData = authDataStr ? JSON.parse(authDataStr) : null;
+
+        const fullSubject = `[${category}] ${subject.trim()}`;
+        const newInquiry = await inquiryAPI.createInquiry({
+          subject: fullSubject,
+          message: message.trim(),
+          farmerId: authData?.userId,
+        });
+
+        setSubmittedMessages([newInquiry, ...submittedMessages]);
+        setSubject('');
+        setCategory('');
+        setMessage('');
+        setUploadedFile(null);
+        toast.success('Message submitted successfully!');
+      } catch (error) {
+        console.error("Failed to submit inquiry", error);
+        toast.error("Failed to submit message. Please try again.");
+      } finally {
+        setSubmitting(false);
+      }
     }
   };
 
@@ -110,7 +122,7 @@ export function MessagesPage() {
       {/* Submit New Message */}
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 md:p-6">
         <h3 className="text-base md:text-lg font-semibold text-gray-800 mb-4">Contact Admin</h3>
-        
+
         <div className="space-y-4">
           {/* Subject */}
           <div>
@@ -203,11 +215,11 @@ export function MessagesPage() {
           {/* Submit Button */}
           <button
             onClick={handleSubmit}
-            disabled={!subject.trim() || !category || !message.trim()}
+            disabled={!subject.trim() || !category || !message.trim() || submitting}
             className="w-full py-2 md:py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium rounded-lg flex items-center justify-center gap-2 transition-colors text-sm md:text-base"
           >
-            <Send className="w-4 h-4 md:w-5 md:h-5" />
-            Submit Message
+            {submitting ? <Loader2 className="w-4 h-4 md:w-5 md:h-5 animate-spin" /> : <Send className="w-4 h-4 md:w-5 md:h-5" />}
+            {submitting ? 'Submitting...' : 'Submit Message'}
           </button>
         </div>
       </div>
@@ -220,36 +232,51 @@ export function MessagesPage() {
         </div>
 
         <div className="p-4 md:p-6 space-y-4">
-          {submittedMessages.length > 0 ? (
-            submittedMessages.map((msg) => (
-              <div
-                key={msg.id}
-                className="border border-gray-200 rounded-lg p-3 md:p-4 hover:border-green-300 transition-colors"
-              >
-                <div className="flex items-start justify-between gap-3 mb-3">
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-semibold text-gray-800 text-sm md:text-base mb-1">{msg.subject}</h4>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs text-gray-600">{msg.date}</span>
-                      <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs font-medium">
-                        {msg.category}
-                      </span>
-                      {msg.hasDocument && (
-                        <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs font-medium flex items-center gap-1">
-                          <FileText className="w-3 h-3" />
-                          Attachment
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="w-8 h-8 md:w-10 md:h-10 text-green-600 animate-spin" />
+            </div>
+          ) : submittedMessages.length > 0 ? (
+            submittedMessages.map((msg) => {
+              // Extract category from subject if it exists "[Category] Subject"
+              let displaySubject = msg.subject;
+              let displayCategory = "Other";
+              const match = msg.subject.match(/^\[(.*?)\] (.*)$/);
+              if (match) {
+                displayCategory = match[1];
+                displaySubject = match[2];
+              }
+
+              return (
+                <div
+                  key={msg._id || msg.id}
+                  className="border border-gray-200 rounded-lg p-3 md:p-4 hover:border-green-300 transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold text-gray-800 text-sm md:text-base mb-1">{displaySubject}</h4>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs text-gray-600">{new Date(msg.createdAt || msg.date).toLocaleDateString()}</span>
+                        <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs font-medium">
+                          {displayCategory}
                         </span>
-                      )}
+                        {msg.hasDocument && (
+                          <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs font-medium flex items-center gap-1">
+                            <FileText className="w-3 h-3" />
+                            Attachment
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(msg.status)}`}>
+                      {getStatusIcon(msg.status)}
+                      <span>{msg.status}</span>
                     </div>
                   </div>
-                  <div className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(msg.status)}`}>
-                    {getStatusIcon(msg.status)}
-                    <span>{msg.status}</span>
-                  </div>
+                  <p className="text-xs md:text-sm text-gray-700 leading-relaxed break-words">{msg.message}</p>
                 </div>
-                <p className="text-xs md:text-sm text-gray-700 leading-relaxed break-words">{msg.message}</p>
-              </div>
-            ))
+              );
+            })
           ) : (
             <div className="text-center py-12">
               <AlertCircle className="w-10 h-10 md:w-12 md:h-12 text-gray-400 mx-auto mb-3" />

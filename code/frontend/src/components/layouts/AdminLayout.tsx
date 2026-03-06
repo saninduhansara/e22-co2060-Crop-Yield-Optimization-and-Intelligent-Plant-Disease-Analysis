@@ -35,7 +35,7 @@ export function AdminLayout() {
   const resetWarningTimer = useCallback(() => {
     // Hide warning when activity detected
     setShowWarning(false);
-    
+
     // Clear existing warning timer
     if (warningTimerRef.current) {
       clearTimeout(warningTimerRef.current);
@@ -94,6 +94,7 @@ export function AdminLayout() {
   const getCurrentPage = () => {
     const path = window.location.pathname;
     if (path.includes('/dashboard')) return 'dashboard';
+    if (path.includes('/inquiries')) return 'inquiries';
     if (path.includes('/farmers')) return 'farmers';
     if (path.includes('/register-farmer')) return 'register';
     if (path.includes('/add-harvest')) return 'harvest';
@@ -106,6 +107,7 @@ export function AdminLayout() {
   const handleNavigate = (page: string) => {
     const routes: Record<string, string> = {
       dashboard: '/admin/dashboard',
+      inquiries: '/admin/inquiries',
       farmers: '/admin/farmers',
       register: '/admin/register-farmer',
       harvest: '/admin/add-harvest',
@@ -131,7 +133,7 @@ export function AdminLayout() {
                   Session Timeout Warning
                 </h3>
                 <p className="text-gray-600 mb-4">
-                  Your session will expire in <span className="font-bold text-red-600">{countdown}</span> seconds due to inactivity. 
+                  Your session will expire in <span className="font-bold text-red-600">{countdown}</span> seconds due to inactivity.
                   Click stay logged in.
                 </p>
                 <div className="flex gap-3">
@@ -157,17 +159,18 @@ export function AdminLayout() {
         </div>
       )}
 
-      <AdminSidebar 
-        currentPage={getCurrentPage()} 
-        onNavigate={handleNavigate} 
+      <AdminSidebar
+        currentPage={getCurrentPage()}
+        onNavigate={handleNavigate}
         onLogout={handleLogout}
       />
-      
+
       <div className="flex-1 w-full lg:ml-72 min-w-0">
         {/* Header */}
         <header className="bg-white border-b border-gray-200 px-4 md:px-8 py-4 flex items-center justify-between sticky top-0 z-20">
           <h1 className="text-gray-800 text-lg md:text-xl font-medium ml-12 lg:ml-0">
             {getCurrentPage() === 'dashboard' && 'Home'}
+            {getCurrentPage() === 'inquiries' && 'Farmer Inquiries'}
             {getCurrentPage() === 'farmers' && 'All Farmers'}
             {getCurrentPage() === 'register' && 'Register Farmer'}
             {getCurrentPage() === 'harvest' && 'Add Harvest'}
@@ -175,7 +178,7 @@ export function AdminLayout() {
             {getCurrentPage() === 'reports' && 'Reports'}
             {getCurrentPage() === 'profile' && 'My Profile'}
           </h1>
-          
+
           {/* Notifications Only */}
           <button className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0">
             <Bell className="w-5 h-5 md:w-6 md:h-6 text-gray-600" />

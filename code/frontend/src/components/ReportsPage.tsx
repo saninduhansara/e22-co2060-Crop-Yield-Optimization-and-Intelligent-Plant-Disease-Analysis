@@ -2,14 +2,20 @@ import { useEffect, useState } from 'react';
 import { Download, TrendingUp, BarChart3, PieChart } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart as RePieChart, Pie, Cell } from 'recharts';
 import { farmAPI } from '../services/api';
+import { useHomeDashboardData } from './HomePage';
+import { SummaryCard } from './SummaryCard';
+
+
 
 export function ReportsPage() {
   const [reportData, setReportData] = useState<{
     totalPoints: number;
     totalAcres: number;
     cropVarieties: { name: string; acres: number; value: number }[];
+    harvestTrend?: { month: string; qty: number }[];
   } | null>(null);
   const [loading, setLoading] = useState(true);
+  const { totalFarmers, totalHarvest, yieldPerAcre, loading: metricsLoading, error: metricsError } = useHomeDashboardData();
 
   useEffect(() => {
     const fetchReport = async () => {
@@ -25,14 +31,7 @@ export function ReportsPage() {
     fetchReport();
   }, []);
 
-  const pointsData = [
-    { month: 'Aug', points: 80 },
-    { month: 'Sep', points: 95 },
-    { month: 'Oct', points: 125 },
-    { month: 'Nov', points: 150 },
-    { month: 'Dec', points: 100 },
-    { month: 'Jan', points: 75 },
-  ];
+  const harvestData = reportData?.harvestTrend || [];
 
   const cropVarietyData = reportData?.cropVarieties && reportData.cropVarieties.length > 0
     ? reportData.cropVarieties
@@ -50,33 +49,85 @@ export function ReportsPage() {
     return <div className="p-8 text-center text-gray-500">Loading reports...</div>;
   }
 
+  // show any metrics loading or error states above summary cards
+  const renderMetricsSection = () => {
+    if (metricsLoading) {
+      return <div className="p-4 text-center text-gray-500">Loading metrics...</div>;
+    }
+    if (metricsError) {
+      return <div className="p-4 text-center text-red-600">Error loading metrics: {metricsError}</div>;
+    }
+
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+        <SummaryCard
+          title="Total Farmers"
+          value={totalFarmers.toLocaleString()}
+          hoverable={false}
+        />
+        <SummaryCard
+          title="Total Harvest"
+          value={totalHarvest.toLocaleString()}
+          unit="kg"
+          hoverable={false}
+        />
+        <SummaryCard
+          title="Yield per Acre"
+          value={yieldPerAcre.toFixed(2)}
+          unit="kg/acre"
+          hoverable={false}
+        />
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
+      {/* Metrics pulled from home dashboard logic */}
+      {renderMetricsSection()}
+
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white shadow-lg">
-          <TrendingUp className="w-8 h-8 mb-3 opacity-80" />
-          <p className="text-green-100 text-sm mb-1">Total Points</p>
-          <p className="text-3xl font-bold">{reportData?.totalPoints?.toLocaleString() || 0}</p>
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+        {/* Total Points Card */}
+        <SummaryCard
+          title="Total Points"
+          value={reportData?.totalPoints?.toLocaleString() || 0}
+          subtext={<span className="text-xs text-teal-600 flex items-center gap-1">This season</span>}
+          icon={<TrendingUp className="w-5 h-5 md:w-6 md:h-6 text-green-600" />}
+          iconBgClass="bg-green-50 group-hover:bg-green-100"
+          hoverable={true}
+        />
 
-        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg">
-          <BarChart3 className="w-8 h-8 mb-3 opacity-80" />
-          <p className="text-blue-100 text-sm mb-1">Total Acres</p>
-          <p className="text-3xl font-bold">{reportData?.totalAcres || 0}</p>
-        </div>
+        {/* Total Acres Card */}
+        <SummaryCard
+          title="Total Acres"
+          value={reportData?.totalAcres || 0}
+          unit="acres"
+          subtext="Under cultivation"
+          icon={<BarChart3 className="w-5 h-5 md:w-6 md:h-6 text-blue-600" />}
+          iconBgClass="bg-blue-50 group-hover:bg-blue-100"
+          hoverable={true}
+        />
 
-        <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl p-6 text-white shadow-lg">
-          <PieChart className="w-8 h-8 mb-3 opacity-80" />
-          <p className="text-amber-100 text-sm mb-1">Crop Varieties</p>
-          <p className="text-3xl font-bold">{reportData?.cropVarieties?.length || 0}</p>
-        </div>
+        {/* Crop Varieties Card */}
+        <SummaryCard
+          title="Crop Varieties"
+          value={reportData?.cropVarieties?.length || 0}
+          subtext="Total varieties"
+          icon={<PieChart className="w-5 h-5 md:w-6 md:h-6 text-amber-600" />}
+          iconBgClass="bg-amber-50 group-hover:bg-amber-100"
+          hoverable={true}
+        />
 
-        <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-6 text-white shadow-lg">
-          <BarChart3 className="w-8 h-8 mb-3 opacity-80" />
-          <p className="text-red-100 text-sm mb-1">Disease Reports</p>
-          <p className="text-3xl font-bold">12</p>
-        </div>
+        {/* Disease Reports Card */}
+        <SummaryCard
+          title="Disease Reports"
+          value={12}
+          subtext={<span className="text-xs text-red-600 font-medium">Requires attention</span>}
+          icon={<BarChart3 className="w-5 h-5 md:w-6 md:h-6 text-red-600" />}
+          iconBgClass="bg-red-50 group-hover:bg-red-100"
+          hoverable={true}
+        />
       </div>
 
       {/* Charts Row */}
@@ -84,21 +135,21 @@ export function ReportsPage() {
         {/* Points Trend */}
         <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-gray-800">Points Trend (Last 6 Months)</h3>
+            <h3 className="text-gray-800">Harvest Trend (Last 6 Months)</h3>
             <button className="text-green-600 hover:text-green-700 flex items-center gap-2 text-sm">
               <Download className="w-4 h-4" />
               Export
             </button>
           </div>
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={pointsData}>
+            <LineChart data={harvestData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis dataKey="month" stroke="#666" />
               <YAxis stroke="#666" />
               <Tooltip
                 contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px' }}
               />
-              <Line type="monotone" dataKey="points" stroke="#10b981" strokeWidth={3} dot={{ fill: '#10b981', r: 5 }} />
+              <Line type="monotone" dataKey="qty" stroke="#10b981" strokeWidth={3} dot={{ fill: '#10b981', r: 5 }} />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -134,28 +185,7 @@ export function ReportsPage() {
         </div>
       </div>
 
-      {/* Monthly Performance */}
-      <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-gray-800">Monthly Points Performance</h3>
-          <button className="text-green-600 hover:text-green-700 flex items-center gap-2 text-sm">
-            <Download className="w-4 h-4" />
-            Export
-          </button>
-        </div>
-        <ResponsiveContainer width="100%" height={350}>
-          <BarChart data={pointsData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-            <XAxis dataKey="month" stroke="#666" />
-            <YAxis stroke="#666" />
-            <Tooltip
-              contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px' }}
-            />
-            <Legend />
-            <Bar dataKey="points" fill="#10b981" radius={[8, 8, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
+
 
       {/* Summary Tables */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -242,7 +272,7 @@ export function ReportsPage() {
           </button>
           <button className="flex items-center justify-center gap-3 p-4 border-2 border-gray-200 rounded-xl hover:border-green-500 hover:bg-green-50 transition-all">
             <Download className="w-5 h-5 text-green-600" />
-            <span className="text-gray-700 font-medium">Points Summary</span>
+            <span className="text-gray-700 font-medium">Harvest Summary</span>
           </button>
           <button className="flex items-center justify-center gap-3 p-4 border-2 border-gray-200 rounded-xl hover:border-green-500 hover:bg-green-50 transition-all">
             <Download className="w-5 h-5 text-green-600" />

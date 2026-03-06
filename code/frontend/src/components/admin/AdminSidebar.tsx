@@ -1,4 +1,4 @@
-import { Home, Users, UserPlus, Wheat, History, FileText, Shield, LogOut, Menu, X } from 'lucide-react';
+import { Home, Users, UserPlus, Wheat, History, FileText, Shield, LogOut, Menu, X, Mail } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { userAPI } from '../../services/api';
 
@@ -17,11 +17,53 @@ interface AdminProfile {
 
 export function AdminSidebar({ currentPage, onNavigate, onLogout }: AdminSidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [adminProfile, setAdminProfile] = useState<AdminProfile | null>(null);
-  const [loadingProfile, setLoadingProfile] = useState(true);
-  
+  const [adminUser, setAdminUser] = useState<any>(null);
+
+  useEffect(() => {
+    const loadAdminUser = async () => {
+      // First try to load from local storage for immediate render
+      const authData = localStorage.getItem('agriconnect_auth');
+      if (authData) {
+        try {
+          const parsed = JSON.parse(authData);
+          if (parsed.user) {
+            setAdminUser(parsed.user);
+          }
+        } catch (e) {
+          console.error("Failed to parse auth data", e);
+        }
+      }
+
+      // Then fetch fresh data from backend
+      try {
+        const response = await userAPI.fetchProfile();
+        if (response && response.user) {
+          setAdminUser(response.user);
+          // Update local storage invisibly
+          if (authData) {
+            const parsed = JSON.parse(authData);
+            parsed.user = { ...parsed.user, ...response.user };
+            localStorage.setItem('agriconnect_auth', JSON.stringify(parsed));
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch fresh admin profile for sidebar", err);
+      }
+    };
+
+    loadAdminUser();
+
+    // Listen for storage events (which we trigger manually on profile save)
+    window.addEventListener('storage', loadAdminUser);
+
+    return () => {
+      window.removeEventListener('storage', loadAdminUser);
+    };
+  }, []);
+
   const menuItems = [
     { id: 'dashboard', label: 'Home', icon: Home },
+    { id: 'inquiries', label: 'Inquiries', icon: Mail },
     { id: 'farmers', label: 'All Farmers', icon: Users },
     { id: 'register', label: 'Register Farmer', icon: UserPlus },
     { id: 'harvest', label: 'Add Harvest', icon: Wheat },
@@ -29,39 +71,7 @@ export function AdminSidebar({ currentPage, onNavigate, onLogout }: AdminSidebar
     { id: 'reports', label: 'Reports', icon: FileText },
   ];
 
-  // Fetch admin profile on component mount
-  useEffect(() => {
-    const fetchAdminProfile = async () => {
-      try {
-        setLoadingProfile(true);
-        const response = await userAPI.fetchProfile();
-        
-        // Handle both response.user and response.data.user formats
-        const userData = response.user || response.data?.user || response;
-        
-        if (userData) {
-          setAdminProfile({
-            firstName: userData.firstName || 'Admin',
-            lastName: userData.lastName || 'User',
-            email: userData.email || 'admin@agriconnect.lk',
-            image: userData.image,
-          });
-        }
-      } catch (error) {
-        console.error('Error fetching admin profile:', error);
-        // Fallback to default admin data if fetch fails
-        setAdminProfile({
-          firstName: 'Admin',
-          lastName: 'User',
-          email: 'admin@agriconnect.lk',
-        });
-      } finally {
-        setLoadingProfile(false);
-      }
-    };
 
-    fetchAdminProfile();
-  }, []);
 
   const handleNavigate = (page: string) => {
     onNavigate(page);
@@ -111,16 +121,15 @@ export function AdminSidebar({ currentPage, onNavigate, onLogout }: AdminSidebar
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentPage === item.id;
-            
+
             return (
               <button
                 key={item.id}
                 onClick={() => handleNavigate(item.id)}
-                className={`w-full flex items-center gap-3 px-6 py-4 transition-all ${
-                  isActive
-                    ? 'bg-green-600/50 text-white border-r-4 border-white'
-                    : 'text-green-50 hover:bg-green-600/30'
-                }`}
+                className={`w-full flex items-center gap-3 px-6 py-4 transition-all ${isActive
+                  ? 'bg-green-600/50 text-white border-r-4 border-white'
+                  : 'text-green-50 hover:bg-green-600/30'
+                  }`}
               >
                 <Icon className="w-5 h-5" />
                 <span className="text-sm font-medium">{item.label}</span>
@@ -136,29 +145,25 @@ export function AdminSidebar({ currentPage, onNavigate, onLogout }: AdminSidebar
             onClick={() => handleNavigate('profile')}
             className="w-full flex items-center gap-3 mb-4 p-3 rounded-lg hover:bg-green-600/30 transition-all"
           >
-            <div className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
-              {adminProfile?.image ? (
-                <img 
-                  src={adminProfile.image} 
-                  alt="Admin Profile" 
-                  className="w-full h-full object-cover"
-                />
+            <div className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center overflow-hidden border-2 border-green-500">
+              {adminUser?.image && !adminUser.image.includes('blank-profile') ? (
+                <img src={adminUser.image} alt={adminUser.firstName} className="w-full h-full object-cover" />
               ) : (
-                <span className="text-sm font-semibold">
-                  {adminProfile?.firstName?.charAt(0)}{adminProfile?.lastName?.charAt(0)}
+                <span className="text-sm font-semibold uppercase">
+                  {(adminUser?.firstName?.charAt(0) || 'A') + (adminUser?.lastName?.charAt(0) || 'D')}
                 </span>
               )}
             </div>
-            <div className="text-left flex-1 min-w-0">
-              <p className="text-sm font-medium">
-                {loadingProfile ? 'Loading...' : (adminProfile ? `${adminProfile.firstName || 'Admin'} ${adminProfile.lastName || 'User'}` : 'Admin User')}
+            <div className="text-left overflow-hidden">
+              <p className="text-sm font-medium truncate">
+                {adminUser ? `${adminUser.firstName} ${adminUser.lastName}` : 'Admin User'}
               </p>
               <p className="text-xs text-green-200 truncate">
-                {adminProfile?.email || 'admin@agriconnect.lk'}
+                {adminUser?.email || 'admin@agriconnect.lk'}
               </p>
             </div>
           </button>
-          
+
           {/* Logout Button */}
           <button
             onClick={onLogout}

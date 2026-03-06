@@ -1,3 +1,8 @@
+/**
+ * Farmer Profile Page
+ * Fetches and displays the authenticated user's personal details,
+ * contact information, and assigned district officer data.
+ */
 import { User, MapPin, Phone, Mail, Calendar, FileText } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { userAPI } from '../services/api';

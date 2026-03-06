@@ -1,6 +1,14 @@
 import AvgYield from "../models/avgYield.js";
 import { isAdmin } from "./userController.js";
 
+/**
+ * Creates average yield records for different crops and districts.
+ * Supports both bulk insertion (array of objects) and single insertion.
+ * Only administrators are permitted to perform this action.
+ * 
+ * @param {Object} req - Express request object containing yield data.
+ * @param {Object} res - Express response object.
+ */
 export async function createAvgYield(req, res) {
 
    if (!isAdmin(req)) {
