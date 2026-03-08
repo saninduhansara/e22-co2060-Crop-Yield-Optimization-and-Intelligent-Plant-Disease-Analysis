@@ -1,15 +1,48 @@
 import { Download, TrendingUp, Users, Wheat, FileText, BarChart3, Link2, MapPin, Layers } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { farmAPI } from '../../services/api';
 import { FarmerProfile } from './FarmerProfile';
 import { formatNumber } from '../../utils/numberUtils';
+import { downloadReportAsPDF } from '../../utils/pdfDownload';
 
 export function AdminReports() {
+  const reportContentRef = useRef<HTMLDivElement>(null);
+  const pdfContentRef = useRef<HTMLDivElement>(null);
   const [selectedFarmer, setSelectedFarmer] = useState<any | null>(null);
   const [loadingFarmerDetails, setLoadingFarmerDetails] = useState<boolean>(false);
   // control expansion of the top performers list (5 vs 10 entries)
   const [showAllPerformers, setShowAllPerformers] = useState(false);
+  
+  // Handle PDF download
+  const handleDownloadReport = async () => {
+    if (!pdfContentRef.current) {
+      alert('Report content not found');
+      return;
+    }
+    
+    try {
+      // Make PDF content visible temporarily
+      if (pdfContentRef.current) {
+        pdfContentRef.current.style.display = 'block';
+      }
+      
+      await downloadReportAsPDF(pdfContentRef.current, 'AgriConnect_Report');
+      
+      // Hide PDF content again
+      if (pdfContentRef.current) {
+        pdfContentRef.current.style.display = 'none';
+      }
+    } catch (error) {
+      // Hide PDF content on error too
+      if (pdfContentRef.current) {
+        pdfContentRef.current.style.display = 'none';
+      }
+      alert(`Failed to generate PDF: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
+  // Helper function to handle download button click
 
   const handleSelectPerformer = async (perf: any) => {
     if (!perf.farmId) {
@@ -219,8 +252,8 @@ export function AdminReports() {
   const formattedTotalFarmers = formatNumber(displayFarmersCount);
   const formattedActivePlots = formatNumber(activePlotsCount);
   const formattedActiveFarmland = formatNumber(activeFarmlandAcres);
-  const formattedTotalHarvest = (totalHarvestTons).toLocaleString(undefined, { maximumFractionDigits: 1 });
-  const formattedAvgYield = (avgYieldPerAcre).toLocaleString(undefined, { maximumFractionDigits: 0 }); // kg/acre
+  const formattedTotalHarvest = formatNumber(totalHarvestTons);
+  const formattedAvgYield = formatNumber(avgYieldPerAcre); // kg/acre
   const formattedTotalPoints = formatNumber(totalPoints);
 
   const getGrowthText = (val: number | null, label: string) => {
@@ -395,16 +428,18 @@ export function AdminReports() {
     .sort((a, b) => b.yield - a.yield);
 
   return (
-    <div className="space-y-6">
+    <div ref={reportContentRef} className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
 
           <p className="text-gray-600">Comprehensive insights and data analysis</p>
         </div>
-        <button className="px-6 py-3 bg-green-700 hover:bg-green-800 text-white rounded-lg flex items-center gap-2 transition-colors">
+        <button 
+          onClick={handleDownloadReport}
+          className="px-6 py-3 bg-green-700 hover:bg-green-800 text-white rounded-lg flex items-center gap-2 transition-colors">
           <Download className="w-5 h-5" />
-          Export All Reports
+          Download Report
         </button>
       </div>
       {/* Filters - Year / Season / Crop (matching AddHarvest style) */}
@@ -685,8 +720,18 @@ export function AdminReports() {
 
       {/* Top Performers */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-        <div className="p-6 border-b border-gray-200">
+        <div className="p-6 border-b border-gray-200 flex items-center justify-between">
           <h3 className="text-lg font-semibold text-gray-800">Top Performing Farmers</h3>
+                  {topPerformers.length > 5 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowAllPerformers((prev) => !prev)}
+                      className="text-green-600 hover:text-green-700 text-xs font-medium flex items-center gap-1"
+                    >
+                      {showAllPerformers ? 'View Less' : 'View More'}
+                      <Link2 className="w-3 h-3" />
+                    </button>
+                  )}
         </div>
         <div className="overflow-x-auto relative">
           <table className="w-full">
@@ -730,19 +775,6 @@ export function AdminReports() {
               <span className="text-lg font-semibold">Loading farmer details...</span>
             </div>
           )}
-          {/* toggle button for expanding/collapsing list */}
-          {topPerformers.length > 5 && (
-            <div className="p-4 border-t border-gray-200 flex justify-end">
-              <button
-                type="button"
-                onClick={() => setShowAllPerformers((prev) => !prev)}
-                className="text-green-600 hover:text-green-700 text-xs font-medium flex items-center gap-1"
-              >
-                {showAllPerformers ? 'View Less' : 'View More'}
-                <Link2 className="w-3 h-3" />
-              </button>
-            </div>
-          )}
         </div>
       </div>
 
@@ -765,6 +797,222 @@ export function AdminReports() {
           onClose={() => setSelectedFarmer(null)}
         />
       )}
+
+      {/* PDF-specific content (hidden, only used for PDF generation) */}
+      <div ref={pdfContentRef} style={{ display: 'none', backgroundColor: '#ffffff', padding: '40px', width: '210mm' }}>
+        {/* PAGE 1: Two Cards + Yield by Season + Crop Variety Distribution */}
+        {/* Two Cards Row - Reduced Size */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '20px' }}>
+          {/* Left Card: Applied Filters */}
+          <div style={{ border: '2px solid #16a34a', borderRadius: '10px', padding: '12px', backgroundColor: '#f0fdf4' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: '#15803d', marginBottom: '10px', borderBottom: '2px solid #16a34a', paddingBottom: '6px' }}>
+              Applied Filters
+            </h3>
+            <div style={{ fontSize: '14px', color: '#374151', lineHeight: '1.8' }}>
+              <div style={{ marginBottom: '8px' }}>
+                <strong style={{ color: '#15803d' }}>Year:</strong> {selectedYear || 'All Years'}
+              </div>
+              <div style={{ marginBottom: '8px' }}>
+                <strong style={{ color: '#15803d' }}>Season:</strong> {selectedSeason || 'All Seasons'}
+              </div>
+              <div>
+                <strong style={{ color: '#15803d' }}>Crop:</strong> {selectedCrop || 'All Crops'}
+              </div>
+            </div>
+          </div>
+
+          {/* Right Card: Statistics */}
+          <div style={{ border: '2px solid #16a34a', borderRadius: '10px', padding: '12px', backgroundColor: '#f0fdf4' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: '#15803d', marginBottom: '10px', borderBottom: '2px solid #16a34a', paddingBottom: '6px' }}>
+              Summary Statistics
+            </h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '12px', color: '#374151' }}>
+              <div>
+                <strong style={{ color: '#15803d' }}>Active Farmers:</strong>
+                <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#111827', marginTop: '2px' }}>
+                  {formattedTotalFarmers}
+                </div>
+              </div>
+              <div>
+                <strong style={{ color: '#15803d' }}>Active Plots:</strong>
+                <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#111827', marginTop: '2px' }}>
+                  {formattedActivePlots}
+                </div>
+              </div>
+              <div>
+                <strong style={{ color: '#15803d' }}>Active Farmland:</strong>
+                <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#111827', marginTop: '2px' }}>
+                  {formattedActiveFarmland} acres
+                </div>
+              </div>
+              <div>
+                <strong style={{ color: '#15803d' }}>Total Harvest:</strong>
+                <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#111827', marginTop: '2px' }}>
+                  {formattedTotalHarvest} tons
+                </div>
+              </div>
+              <div>
+                <strong style={{ color: '#15803d' }}>Avg Yield/Acre:</strong>
+                <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#111827', marginTop: '2px' }}>
+                  {formattedAvgYield} kg
+                </div>
+              </div>
+              <div>
+                <strong style={{ color: '#15803d' }}>Total Points:</strong>
+                <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#111827', marginTop: '2px' }}>
+                  {formattedTotalPoints}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Season Comparison Chart */}
+        <div style={{ border: '1px solid #e5e7eb', borderRadius: '8px', padding: '15px', backgroundColor: '#ffffff', marginBottom: '20px' }}>
+          <h4 style={{ fontSize: '15px', fontWeight: '600', color: '#374151', marginBottom: '10px' }}>
+            Yield by Season {selectedCrop && `- ${selectedCrop}`}
+          </h4>
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={seasonData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="year" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="Maha" fill="#16a34a" name="Maha (tons)" />
+              <Bar dataKey="Yala" fill="#60a5fa" name="Yala (tons)" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Crop Variety Distribution */}
+        <div style={{ border: '1px solid #e5e7eb', borderRadius: '8px', padding: '15px', backgroundColor: '#ffffff', marginBottom: '150px' }}>
+          <h4 style={{ fontSize: '15px', fontWeight: '600', color: '#374151', marginBottom: '10px' }}>
+            Crop Variety Distribution
+          </h4>
+          <ResponsiveContainer width="100%" height={280}>
+            <PieChart>
+              <Pie
+                data={varietyData}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                label={(entry) => `${entry.name}: ${entry.value}%`}
+                outerRadius={100}
+                fill="#8884d8"
+                dataKey="value"
+              >
+                {varietyData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                ))}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* PAGE 2: Farmer Participation Growth + Yield by District */}
+        {/* Farmer Growth Chart */}
+        <div style={{ border: '1px solid #e5e7eb', borderRadius: '8px', padding: '20px', backgroundColor: '#ffffff', marginBottom: '30px' }}>
+          <h4 style={{ fontSize: '16px', fontWeight: '600', color: '#374151', marginBottom: '12px' }}>
+            Farmer Participation Growth
+          </h4>
+          <ResponsiveContainer width="100%" height={350}>
+            <LineChart data={farmerTimelineData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="season" angle={-45} textAnchor="end" height={80} />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Line type="monotone" dataKey="farmers" stroke="#16a34a" strokeWidth={2} name="Active Farmers" />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Yield by District Chart */}
+        <div style={{ border: '1px solid #e5e7eb', borderRadius: '8px', padding: '20px', backgroundColor: '#ffffff', marginBottom: '150px' }}>
+          <h4 style={{ fontSize: '16px', fontWeight: '600', color: '#374151', marginBottom: '12px' }}>
+            Yield by District
+          </h4>
+          <ResponsiveContainer width="100%" height={350}>
+            <BarChart data={districtData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="district" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="yield" fill="#16a34a" name="Yield (kg)" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* PAGE 3: Top 10 Performing Farmers */}
+        <div>
+          <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#15803d', marginBottom: '16px' }}>
+            Top 10 Performing Farmers
+          </h3>
+          <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #e5e7eb' }}>
+            <thead>
+              <tr style={{ backgroundColor: '#f9fafb', borderBottom: '2px solid #16a34a' }}>
+                <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#374151', borderRight: '1px solid #e5e7eb' }}>
+                  Rank
+                </th>
+                <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#374151', borderRight: '1px solid #e5e7eb' }}>
+                  Farmer Name
+                </th>
+                <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#374151', borderRight: '1px solid #e5e7eb' }}>
+                  District
+                </th>
+                <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#374151', borderRight: '1px solid #e5e7eb' }}>
+                  Total Yield
+                </th>
+                <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#374151', borderRight: '1px solid #e5e7eb' }}>
+                  Avg Yield/Acre
+                </th>
+                <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#374151' }}>
+                  Points
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {topPerformers.slice(0, 10).map((farmer, index) => (
+                <tr key={index} style={{ borderBottom: '1px solid #e5e7eb', backgroundColor: index % 2 === 0 ? '#ffffff' : '#f9fafb' }}>
+                  <td style={{ padding: '10px', fontSize: '14px', color: '#374151', borderRight: '1px solid #e5e7eb' }}>
+                    <span style={{ 
+                      display: 'inline-block', 
+                      width: '28px', 
+                      height: '28px', 
+                      borderRadius: '50%', 
+                      textAlign: 'center', 
+                      lineHeight: '28px',
+                      fontWeight: 'bold',
+                      backgroundColor: farmer.rank === 1 ? '#fef08a' : farmer.rank === 2 ? '#e5e7eb' : farmer.rank === 3 ? '#fed7aa' : '#f3f4f6',
+                      color: farmer.rank === 1 ? '#713f12' : farmer.rank === 2 ? '#374151' : farmer.rank === 3 ? '#9a3412' : '#6b7280'
+                    }}>
+                      {farmer.rank}
+                    </span>
+                  </td>
+                  <td style={{ padding: '10px', fontSize: '14px', fontWeight: '500', color: '#111827', borderRight: '1px solid #e5e7eb' }}>
+                    {farmer.name}
+                  </td>
+                  <td style={{ padding: '10px', fontSize: '14px', color: '#374151', borderRight: '1px solid #e5e7eb' }}>
+                    {farmer.district || 'N/A'}
+                  </td>
+                  <td style={{ padding: '10px', fontSize: '14px', fontWeight: '500', color: '#111827', borderRight: '1px solid #e5e7eb' }}>
+                    {farmer.yield} tons
+                  </td>
+                  <td style={{ padding: '10px', fontSize: '14px', fontWeight: '500', color: '#111827', borderRight: '1px solid #e5e7eb' }}>
+                    {farmer.avgYield} kg
+                  </td>
+                  <td style={{ padding: '10px', fontSize: '14px', fontWeight: '600', color: '#16a34a' }}>
+                    {Math.round(farmer.points)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }
