@@ -91,7 +91,7 @@ export function ReportsPage() {
         {/* Total Points Card */}
         <SummaryCard
           title="Total Points"
-          value={reportData?.totalPoints?.toLocaleString() || 0}
+          value={Math.round(reportData?.totalPoints || 0)?.toLocaleString()}
           subtext={<span className="text-xs text-teal-600 flex items-center gap-1">This season</span>}
           icon={<TrendingUp className="w-5 h-5 md:w-6 md:h-6 text-green-600" />}
           iconBgClass="bg-green-50 group-hover:bg-green-100"
