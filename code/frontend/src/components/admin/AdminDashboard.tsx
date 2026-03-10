@@ -5,9 +5,70 @@
  * Fetches and aggregates real-time data from the backend.
  */
 import { Users, TrendingUp, Wheat, AlertTriangle, BarChart3, MapPin, Layers, Scale, Link2 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { farmAPI, userAPI } from '../../services/api';
 import { FarmerProfile } from './FarmerProfile';
+import { formatNumber } from '../../utils/numberUtils';
+import { GlassStatCard } from './GlassStatCard';
+
+// Custom hook for count-up animation (only runs on initial load)
+function useCountUp(endValue: number, duration: number = 2500) {
+  const [count, setCount] = useState(0);
+  const startTimeRef = useRef<number | null>(null);
+  const animationFrameRef = useRef<number>();
+  const hasAnimatedRef = useRef(false);
+  const initialLoadRef = useRef(true);
+
+  useEffect(() => {
+    // If already animated once, just set the value directly
+    if (hasAnimatedRef.current) {
+      setCount(endValue);
+      return;
+    }
+
+    // Skip animation during initial load when endValue is 0
+    if (initialLoadRef.current && endValue === 0) {
+      return;
+    }
+
+    // Mark that we're past initial load
+    initialLoadRef.current = false;
+
+    const easeOutCubic = (t: number): number => {
+      return 1 - Math.pow(1 - t, 3);
+    };
+
+    const animate = (currentTime: number) => {
+      if (startTimeRef.current === null) {
+        startTimeRef.current = currentTime;
+      }
+
+      const elapsed = currentTime - startTimeRef.current;
+      const progress = Math.min(elapsed / duration, 1);
+      const easedProgress = easeOutCubic(progress);
+      const currentCount = easedProgress * endValue;
+
+      setCount(currentCount);
+
+      if (progress < 1) {
+        animationFrameRef.current = requestAnimationFrame(animate);
+      } else {
+        setCount(endValue);
+        hasAnimatedRef.current = true;
+      }
+    };
+
+    animationFrameRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [endValue, duration]);
+
+  return count;
+}
 
 export function AdminDashboard() {
   const defaultCropOptions = [
@@ -413,34 +474,6 @@ export function AdminDashboard() {
     }
   };
 
-  // Format number based on magnitude
-  const formatNumber = (num: number): string => {
-    if (num < 10000) {
-      // Display with one decimal place if necessary
-      return num % 1 === 0 ? num.toString() : num.toFixed(1);
-    } else if (num < 1000000) {
-      // Round to nearest 100, divide by 1000, show with K
-      const rounded = Math.round(num / 100) * 100;
-      const inK = rounded / 1000;
-      return inK % 1 === 0 ? `${inK}K` : `${inK.toFixed(1)}K`;
-    } else {
-      // Round to nearest lakh (100,000), divide by 1,000,000, show with M
-      const rounded = Math.round(num / 100000) * 100000;
-      const inM = rounded / 1000000;
-      return inM % 1 === 0 ? `${inM}M` : `${inM.toFixed(1)}M`;
-    }
-  };
-
-  // Helper functions to determine font size based on formatted string length
-  const getFontSizeForFormatted = (formattedStr: string): string => {
-    const length = formattedStr.length;
-
-    if (length <= 4) return 'text-3xl md:text-4xl'; // e.g., "123" or "9.5K"
-    if (length <= 6) return 'text-2xl md:text-3xl'; // e.g., "123.4K"
-    if (length <= 8) return 'text-xl md:text-2xl';  // e.g., "123.4M"
-    return 'text-lg md:text-xl';
-  };
-
   // Format date to be more readable
   const formatDate = (dateString: string | Date | undefined): string => {
     if (!dateString) {
@@ -482,22 +515,66 @@ export function AdminDashboard() {
     return totalHarvest / totalFarmland;
   };
 
-  // Get formatted values (don't format harvest or yield with K/M)
+  // Helper to extract percentage from text like "+12.5% from last season"
+  const extractPercentage = (text: string): number | undefined => {
+    const match = text.match(/([+-]?\d+\.?\d*)%/);
+    return match ? parseFloat(match[1]) : undefined;
+  };
+
+  // Apply compact formatter to all dashboard KPIs.
   const formattedFarmers = formatNumber(totalFarmers);
   const formattedActiveFarms = formatNumber(activeFarms);
   const formattedFarmland = formatNumber(totalFarmland);
-
-  // Format exactly with commas but no K/M abbreviation for Harvest and Yield
-  // Harvest is internally in kg, so divide by 1000 to display as tons
-  const exactHarvest = (totalHarvest / 1000).toLocaleString(undefined, { maximumFractionDigits: 1 });
-  // Yield per acre is in kg/acre
-  const exactYield = getYieldPerAcre().toLocaleString(undefined, { maximumFractionDigits: 0 });
+  // Harvest is internally in kg, so convert to tons before formatting.
+  const formattedHarvest = formatNumber(totalHarvest / 1000);
+  const formattedYield = formatNumber(getYieldPerAcre());
   const cropOptions = Array.from(new Set([...defaultCropOptions, ...availableCrops]));
   const visibleRecentFarmers = recentFarmers.slice(0, showMoreFarmers ? 10 : 5);
   const visibleRecentHarvests = recentHarvests.slice(0, showMoreHarvests ? 10 : 4);
 
+  const harvestPercentage = extractPercentage(harvestLastSeasonText);
+  const yieldPercentage = extractPercentage(yieldLastSeasonText);
+  const isActivePeriod = Number(selectedYear) === currentYear && selectedSeason === currentSeason;
+
+  // Count-up animations for all 6 stat cards
+  const animatedFarmers = useCountUp(loading ? 0 : totalFarmers);
+  const animatedHarvest = useCountUp(loading ? 0 : totalHarvest / 1000);
+  const animatedActiveFarms = useCountUp(loading ? 0 : activeFarms);
+  const animatedFarmland = useCountUp(loading ? 0 : totalFarmland);
+  const animatedYield = useCountUp(loading ? 0 : getYieldPerAcre());
+  const animatedDiseaseReports = useCountUp(loading ? 0 : 23);
+
+  const displayFarmers = loading ? '...' : formatNumber(animatedFarmers);
+  const displayHarvest = loading ? '...' : formatNumber(animatedHarvest);
+  const displayActiveFarms = loading ? '...' : formatNumber(animatedActiveFarms);
+  const displayFarmland = loading ? '...' : formatNumber(animatedFarmland);
+  const displayYield = loading ? '...' : formatNumber(animatedYield);
+  const displayDiseaseReports = loading ? '...' : Math.round(animatedDiseaseReports).toString();
+
   return (
     <div className="space-y-6">
+      <style>{`
+        @keyframes slideInFromLeft {
+          from {
+            opacity: 0;
+            transform: translateX(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+        
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+      `}</style>
+      
       {/* Prominent Season Label */}
       <div className="bg-green-700 rounded-xl p-4 text-white shadow-md flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -567,7 +644,7 @@ export function AdminDashboard() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 sm:gap-5 lg:gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 md:gap-5 lg:gap-6">
         {/* Active Farmers Card */}
         <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-5 sm:p-6 shadow-md border-l-4 border-l-green-500 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group">
           <div className="flex flex-col">
@@ -576,11 +653,11 @@ export function AdminDashboard() {
               <Users className="w-5 h-5 text-green-600 opacity-70 group-hover:opacity-100 transition-opacity" />
             </div>
             <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 my-2 break-words min-w-0">
-              {loading ? '...' : formattedFarmers}
+              {displayFarmers}
             </p>
             <p className="text-xs sm:text-sm text-green-700 flex items-center gap-1 mt-2">
               <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4" />
-              {loading ? '...' : selectedYear === 'all' || selectedSeason === 'all' ? 'N/A from last season' : `${farmersLastMonthPercentage > 0 ? '+' : ''}${farmersLastMonthPercentage.toFixed(1)}% from last season`}
+              {loading ? '...' : `${farmersLastMonthPercentage >= 0 ? '+' : ''}${farmersLastMonthPercentage.toFixed(1)}% from last season`}
             </p>
           </div>
         </div>
@@ -594,7 +671,7 @@ export function AdminDashboard() {
             </div>
             <div className="flex min-w-0 flex-wrap items-baseline gap-1 sm:gap-2 my-2">
               <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 break-words min-w-0">
-                {loading ? '...' : exactHarvest}
+                {displayHarvest}
               </p>
               <span className="text-xs sm:text-sm font-medium text-gray-600 break-words">tons</span>
             </div>
@@ -613,10 +690,10 @@ export function AdminDashboard() {
               <MapPin className="w-5 h-5 text-green-600 opacity-70 group-hover:opacity-100 transition-opacity" />
             </div>
             <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 my-2 break-words min-w-0">
-              {loading ? '...' : formattedActiveFarms}
+              {displayActiveFarms}
             </p>
             <p className="text-xs sm:text-sm text-gray-600 mt-2">
-              Active in {selectedSeason === 'all' ? 'All Seasons' : selectedSeason.charAt(0).toUpperCase() + selectedSeason.slice(1)} {selectedYear === 'all' ? 'All Years' : selectedYear}
+              {loading ? '...' : `Active in ${selectedSeason === 'all' ? 'All Seasons' : selectedSeason.charAt(0).toUpperCase() + selectedSeason.slice(1)} ${selectedYear === 'all' ? 'All Years' : selectedYear}`}
             </p>
           </div>
         </div>
@@ -630,17 +707,17 @@ export function AdminDashboard() {
             </div>
             <div className="flex min-w-0 flex-wrap items-baseline gap-1 sm:gap-2 my-2">
               <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 break-words min-w-0">
-                {loading ? '...' : formattedFarmland}
+                {displayFarmland}
               </p>
               <span className="text-xs sm:text-sm font-medium text-gray-600 break-words">acres</span>
             </div>
             <p className="text-xs sm:text-sm text-gray-600 mt-2">
-              Cultivated in {selectedSeason === 'all' ? 'All Seasons' : selectedSeason.charAt(0).toUpperCase() + selectedSeason.slice(1)} {selectedYear === 'all' ? 'All Years' : selectedYear}
+              {loading ? '...' : `Cultivated in ${selectedSeason === 'all' ? 'All Seasons' : selectedSeason.charAt(0).toUpperCase() + selectedSeason.slice(1)} ${selectedYear === 'all' ? 'All Years' : selectedYear}`}
             </p>
           </div>
         </div>
 
-        {/* Yield Per Acre Card */}
+        {/* Yield per Acre Card */}
         <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-5 sm:p-6 shadow-md border-l-4 border-l-green-500 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group">
           <div className="flex flex-col">
             <div className="flex items-center justify-between mb-3">
@@ -649,7 +726,7 @@ export function AdminDashboard() {
             </div>
             <div className="flex min-w-0 flex-wrap items-baseline gap-1 sm:gap-2 my-2">
               <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 break-words min-w-0">
-                {loading ? '...' : exactYield}
+                {displayYield}
               </p>
               <span className="text-xs sm:text-sm font-medium text-gray-600 break-words">kg</span>
             </div>
@@ -661,14 +738,18 @@ export function AdminDashboard() {
         </div>
 
         {/* Disease Reports Card */}
-        <div className="bg-gradient-to-br from-red-50 to-orange-100 rounded-2xl p-5 sm:p-6 shadow-md border-l-4 border-l-red-500 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group">
+        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-5 sm:p-6 shadow-md border-l-4 border-l-green-500 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group">
           <div className="flex flex-col">
             <div className="flex items-center justify-between mb-3">
               <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">Disease Reports</p>
-              <AlertTriangle className="w-5 h-5 text-red-600 opacity-70 group-hover:opacity-100 transition-opacity" />
+              <AlertTriangle className="w-5 h-5 text-green-600 opacity-70 group-hover:opacity-100 transition-opacity" />
             </div>
-            <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 my-2 break-words min-w-0">23</p>
-            <p className="text-xs sm:text-sm text-red-700 mt-2 font-medium">Requires attention</p>
+            <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 my-2 break-words min-w-0">
+              {displayDiseaseReports}
+            </p>
+            <p className="text-xs sm:text-sm text-green-700 mt-2">
+              {loading ? '...' : 'Requires attention'}
+            </p>
           </div>
         </div>
       </div>
@@ -676,7 +757,7 @@ export function AdminDashboard() {
       {/* Recent Activity & Quick Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Farmers */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
+        <div className="rounded-2xl shadow-sm border border-gray-100" style={{ backgroundColor: '#f0f7f0' }}>
           <div className="p-4 md:p-6 border-b border-gray-100 flex items-center justify-between">
             <h3 className="text-base md:text-lg font-semibold text-gray-800">Recently Added Farmers</h3>
             <button
@@ -688,7 +769,7 @@ export function AdminDashboard() {
               <Link2 className="w-3 h-3" />
             </button>
           </div>
-          <div className="divide-y divide-gray-100">
+          <div>
             {loading ? (
               <div className="flex justify-center py-8 px-4 md:px-6">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-600"></div>
@@ -697,7 +778,14 @@ export function AdminDashboard() {
               visibleRecentFarmers.map((farmer, index) => (
                 <div
                   key={index}
-                  className="px-4 py-3 hover:bg-gray-50 transition-colors cursor-pointer flex items-center justify-between"
+                  className="px-4 py-3 hover:bg-green-50 transition-all duration-200 cursor-pointer flex items-center justify-between"
+                  style={{
+                    animation: 'slideInFromLeft 0.5s ease-out forwards',
+                    animationDelay: `${index * 100}ms`,
+                    opacity: 0,
+                    transform: 'translateX(-20px)',
+                    borderBottom: '1px solid #d9e8d9'
+                  }}
                   onClick={() => openFarmerProfileByNic(farmer.nic)}
                 >
                   <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -707,8 +795,8 @@ export function AdminDashboard() {
                       </span>
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-gray-800 text-sm truncate">{farmer.name}</p>
-                      <p className="text-xs text-gray-400 truncate flex items-center gap-1">
+                      <p className="font-semibold text-sm truncate" style={{ fontSize: '16px', color: '#111827' }}>{farmer.name}</p>
+                      <p className="text-gray-400 truncate flex items-center gap-1" style={{ fontSize: '13px' }}>
                         <MapPin className="w-3 h-3" />
                         {farmer.location} • {formatDate(farmer.date)}
                       </p>
@@ -728,7 +816,7 @@ export function AdminDashboard() {
         </div>
 
         {/* Recent Harvests */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
+        <div className="rounded-2xl shadow-sm border border-gray-100" style={{ backgroundColor: '#f0f7f0' }}>
           <div className="p-4 md:p-6 border-b border-gray-100 flex items-center justify-between">
             <h3 className="text-base md:text-lg font-semibold text-gray-800">Recently Added Harvests</h3>
             <button
@@ -740,42 +828,73 @@ export function AdminDashboard() {
               <Link2 className="w-3 h-3" />
             </button>
           </div>
-          <div className="divide-y divide-gray-100">
+          <div>
             {loading ? (
               <div className="flex justify-center py-8 px-4 md:px-6">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-600"></div>
               </div>
             ) : visibleRecentHarvests.length > 0 ? (
               visibleRecentHarvests.map((harvest, index) => {
-                // Determine crop badge color
+                // Determine crop badge color with exact color specifications
                 const cropName = (harvest.crop || '').toLowerCase();
-                let cropBgColor = 'bg-blue-100';
-                let cropTextColor = 'text-blue-700';
+                let cropBgColor = '';
+                let cropTextColor = '';
 
                 if (cropName.includes('paddy') || cropName.includes('rice')) {
-                  cropBgColor = 'bg-yellow-100';
-                  cropTextColor = 'text-yellow-700';
-                } else if (cropName.includes('green gram') || cropName.includes('mung')) {
-                  cropBgColor = 'bg-green-100';
-                  cropTextColor = 'text-green-700';
+                  cropBgColor = '#FEF08A';
+                  cropTextColor = '#713F12';
+                } else if (cropName.includes('corn')) {
+                  cropBgColor = '#FED7AA';
+                  cropTextColor = '#9A3412';
+                } else if (cropName.includes('wheat')) {
+                  cropBgColor = '#FDE68A';
+                  cropTextColor = '#92400E';
+                } else if (cropName.includes('tomato')) {
+                  cropBgColor = '#FECACA';
+                  cropTextColor = '#991B1B';
+                } else if (cropName.includes('onion')) {
+                  cropBgColor = '#E9D5FF';
+                  cropTextColor = '#6B21A8';
+                } else if (cropName.includes('carrot')) {
+                  cropBgColor = '#FFEDD5';
+                  cropTextColor = '#C2410C';
+                } else if (cropName.includes('cabbage')) {
+                  cropBgColor = '#BBF7D0';
+                  cropTextColor = '#166534';
+                } else if (cropName.includes('potato')) {
+                  cropBgColor = '#D6D3D1';
+                  cropTextColor = '#44403C';
+                } else {
+                  // Default for unknown crops
+                  cropBgColor = '#DBEAFE';
+                  cropTextColor = '#1E40AF';
                 }
 
                 return (
                   <div
                     key={index}
-                    className="px-4 py-3 hover:bg-gray-50 transition-colors cursor-pointer flex items-start justify-between"
+                    className="px-4 py-3 hover:bg-green-50 transition-all duration-200 cursor-pointer flex items-start justify-between"
+                    style={{
+                      animation: 'fadeInUp 0.5s ease-out forwards',
+                      animationDelay: `${index * 100}ms`,
+                      opacity: 0,
+                      borderBottom: '1px solid #d9e8d9'
+                    }}
                     onClick={() => openFarmerProfileByName(harvest.farmerName)}
                   >
                     <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-gray-800 text-sm truncate">{harvest.farmerName}</p>
+                      <p className="font-semibold text-sm truncate" style={{ fontSize: '16px', color: '#111827' }}>{harvest.farmerName}</p>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${cropBgColor} ${cropTextColor}`}>
+                        <span 
+                          className="text-xs px-2 py-0.5 rounded-full font-medium"
+                          style={{ backgroundColor: cropBgColor, color: cropTextColor }}
+                        >
                           {harvest.crop}
                         </span>
                       </div>
-                      <p className="text-xs text-gray-400 mt-1">{formatDate(harvest.harvestDate)}</p>
+                      <p className="text-gray-400 mt-1" style={{ fontSize: '13px' }}>{formatDate(harvest.harvestDate)}</p>
                     </div>
-                    <div className="flex items-center gap-1 font-bold text-sm text-green-700 whitespace-nowrap ml-2 flex-shrink-0">
+                    <div className="flex items-center gap-1 font-bold text-green-700 whitespace-nowrap ml-2 flex-shrink-0" style={{ fontSize: '15px' }}>
                       {harvest.harvestQty} kg
                     </div>
                   </div>
