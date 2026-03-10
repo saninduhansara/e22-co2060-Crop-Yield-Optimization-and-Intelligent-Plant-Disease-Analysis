@@ -3,6 +3,68 @@ import User from "../models/user.js";
 import { isAdmin } from "./userController.js";
 import AvgYield from "../models/avgYield.js";
 
+function normalizeText(value) {
+  return (value || "").trim().toLowerCase();
+}
+
+async function computePointsFromAverageYield(farm, season, yearNum, harvestQtyNum) {
+  const farmYield = harvestQtyNum / farm.sizeInAcres;
+
+  const avgYieldRecord = await AvgYield.findOne({
+    district: farm.district,
+    crop: farm.crop,
+    season,
+    year: yearNum,
+  });
+
+  if (!avgYieldRecord) {
+    return {
+      farmYield,
+      averageYield: null,
+      maxYieldAcrossDistricts: null,
+      pointsEarned: null,
+      pointsPending: true,
+    };
+  }
+
+  const avgYield = avgYieldRecord.averageYield;
+
+  const maxYieldRecord = await AvgYield.find(
+    { season, year: yearNum, crop: farm.crop },
+    "averageYield"
+  )
+    .sort({ averageYield: -1 })
+    .limit(1);
+
+  const Y_MAX = maxYieldRecord.length ? maxYieldRecord[0].averageYield : avgYield;
+
+  const P_MAX = 1000;
+  const denominator = Y_MAX - avgYield;
+  let pointsEarned = 0;
+
+  if (avgYield > 0) {
+    if (farmYield >= avgYield) {
+      const bonus = P_MAX * 0.2 * (farmYield / avgYield);
+      if (denominator > 0) {
+        const numerator = farmYield - avgYield;
+        pointsEarned = P_MAX * Math.sqrt(numerator / denominator) + bonus;
+      } else {
+        pointsEarned = bonus;
+      }
+    } else {
+      pointsEarned = P_MAX * 0.2 * (farmYield / avgYield);
+    }
+  }
+
+  return {
+    farmYield,
+    averageYield: avgYield,
+    maxYieldAcrossDistricts: Y_MAX,
+    pointsEarned: Math.round(pointsEarned),
+    pointsPending: false,
+  };
+}
+
 /**
  * Creates a new farm profile and associates it with a farmer via their NIC.
  * Automatically generates a sequential Farm ID (FAMXXXXX).
@@ -163,90 +225,135 @@ export const addHarvestAndPoints = async (req, res) => {
     const existingHarvest = farm.harvests.find(
       (h) => h.season === season && h.year === yearNum
     );
+    const previousPoints = Number(existingHarvest?.pointsEarned || 0);
+
     if (existingHarvest) {
       existingHarvest.harvestQty = harvestQtyNum;
     } else {
       farm.harvests.push({ season, year: yearNum, harvestQty: harvestQtyNum });
     }
 
-    // Farmer yield per acre
-    const farmYield = harvestQtyNum / farm.sizeInAcres;
-
-    // Average yield for this farm/district
-    const avgYieldRecord = await AvgYield.findOne({
-      district: farm.district,
-      crop: farm.crop,
-      season,
-      year: yearNum,
-    });
-    if (!avgYieldRecord)
-      return res.status(404).json({ message: "Average yield not found" });
-    const avgYield = avgYieldRecord.averageYield;
-
-    // Find global maximum averageYield for season + year
-    const maxYieldRecord = await AvgYield.find(
-      { season, year: yearNum },
-      "averageYield"
-    )
-      .sort({ averageYield: -1 })
-      .limit(1);
-
-    const Y_MAX = maxYieldRecord.length
-      ? maxYieldRecord[0].averageYield
-      : avgYield; // fallback to local average
-
-    // Points calculation
-    const P_MAX = 1000;
-    const denominator = Y_MAX - avgYield;
-    let pointsEarned = 0;
-
-    if (avgYield > 0) {
-      if (farmYield >= avgYield) {
-        const bonus = P_MAX * 0.2 * (farmYield / avgYield);
-        if (denominator > 0) {
-          const numerator = farmYield - avgYield;
-          pointsEarned = P_MAX * Math.sqrt(numerator / denominator) + bonus;
-        } else {
-          // Edge case: Y_MAX equals avgYield, award bonus points only
-          pointsEarned = bonus;
-        }
-      } else {
-        pointsEarned = P_MAX * 0.2 * (farmYield / avgYield);
-      }
-    }
-
-    // Round points to nearest integer
-    pointsEarned = Math.round(pointsEarned);
+    const {
+      farmYield,
+      averageYield,
+      maxYieldAcrossDistricts,
+      pointsEarned,
+      pointsPending,
+    } = await computePointsFromAverageYield(farm, season, yearNum, harvestQtyNum);
 
     // Update the harvest with pointsEarned
     const harvestToUpdate = farm.harvests.find(
       (h) => h.season === season && h.year === yearNum
     );
     if (harvestToUpdate) {
-      harvestToUpdate.pointsEarned = pointsEarned;
+      harvestToUpdate.pointsEarned = pointsPending ? null : pointsEarned;
     }
 
     // Save farm once with all updates
     await farm.save();
 
-    // Update farmer points
-    if (pointsEarned > 0) {
+    const nextPoints = pointsPending ? 0 : Number(pointsEarned || 0);
+    const delta = nextPoints - previousPoints;
+
+    // Update farmer points by delta to keep totals accurate on edits/retries.
+    if (delta !== 0) {
       await User.findByIdAndUpdate(farm.farmer, {
-        $inc: { points: pointsEarned },
+        $inc: { points: delta },
       });
     }
 
     res.json({
-      message: "Harvest added and points calculated",
+      message: pointsPending
+        ? "Harvest added. Points pending until average yield is available"
+        : "Harvest added and points calculated",
       farmYield,
-      averageYield: avgYield,
-      maxYieldAcrossDistricts: Y_MAX,
-      pointsEarned: pointsEarned,
+      averageYield,
+      maxYieldAcrossDistricts,
+      pointsEarned,
+      pointsPending,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
+
+export async function recalculatePendingPointsForAverage({ district, crop, season, year }) {
+  const yearNum = Number(year);
+  const districtNormalized = normalizeText(district);
+  const cropNormalized = normalizeText(crop);
+
+  const farms = await Farm.find({
+    harvests: {
+      $elemMatch: {
+        season,
+        year: yearNum,
+      },
+    },
+  });
+
+  let farmsUpdated = 0;
+  let harvestsUpdated = 0;
+  let pointsApplied = 0;
+
+  for (const farm of farms) {
+    if (
+      normalizeText(farm.district) !== districtNormalized ||
+      normalizeText(farm.crop) !== cropNormalized
+    ) {
+      continue;
+    }
+
+    let farmChanged = false;
+    let farmerDelta = 0;
+
+    for (const harvest of farm.harvests) {
+      if (harvest.season !== season || Number(harvest.year) !== yearNum) {
+        continue;
+      }
+
+      const isPending = harvest.pointsEarned === null || harvest.pointsEarned === undefined;
+      if (!isPending) {
+        continue;
+      }
+
+      const computed = await computePointsFromAverageYield(
+        farm,
+        season,
+        yearNum,
+        Number(harvest.harvestQty)
+      );
+
+      if (computed.pointsPending) {
+        continue;
+      }
+
+      harvest.pointsEarned = computed.pointsEarned;
+      farmChanged = true;
+      harvestsUpdated += 1;
+      farmerDelta += Number(computed.pointsEarned || 0);
+    }
+
+    if (!farmChanged) {
+      continue;
+    }
+
+    await farm.save();
+    farmsUpdated += 1;
+
+    if (farmerDelta !== 0) {
+      await User.findByIdAndUpdate(farm.farmer, {
+        $inc: { points: farmerDelta },
+      });
+      pointsApplied += farmerDelta;
+    }
+  }
+
+  return {
+    farmsUpdated,
+    harvestsUpdated,
+    pointsApplied,
+  };
+}
 
 
 /**
@@ -274,16 +381,27 @@ export const recalculateAllPoints = async (req, res) => {
         for (const harvest of farm.harvests) {
           if (!harvest.harvestQty || !harvest.year || !harvest.season) continue;
 
-          const farmYield = harvest.harvestQty / farm.sizeInAcres;
+          const computed = await computePointsFromAverageYield(
+            farm,
+            harvest.season,
+            Number(harvest.year),
+            Number(harvest.harvestQty)
+          );
 
-          const points = await calculatePointsForHarvest(farmYield, farm.crop, harvest.season, harvest.year);
+          const nextPoints = computed.pointsPending ? null : Number(computed.pointsEarned || 0);
+          const currentPoints =
+            harvest.pointsEarned === null || harvest.pointsEarned === undefined
+              ? null
+              : Number(harvest.pointsEarned);
 
-          if (harvest.pointsEarned !== points) {
-            harvest.pointsEarned = points;
+          if (currentPoints !== nextPoints) {
+            harvest.pointsEarned = nextPoints;
             farmModified = true;
           }
 
-          totalUserPoints += points;
+          if (nextPoints !== null) {
+            totalUserPoints += nextPoints;
+          }
         }
 
         if (farmModified) {
@@ -302,7 +420,7 @@ export const recalculateAllPoints = async (req, res) => {
     }
 
     res.json({
-      message: "Points recalculated successfully based on previous year data.",
+      message: "Points recalculated successfully from available average yield data.",
       usersProcessed: processedCount
     });
 
@@ -523,7 +641,10 @@ export const getHarvestHistory = async (req, res) => {
             acres: farm.sizeInAcres,
             harvestQty: harvest.harvestQty,
             yieldPerAcre: parseFloat(yieldPerAcre.toFixed(2)),
-            pointsEarned: Math.round(harvest.pointsEarned || 0),
+            pointsEarned:
+              harvest.pointsEarned === null || harvest.pointsEarned === undefined
+                ? null
+                : Math.round(harvest.pointsEarned),
             harvestDate: harvest.createdDate
           });
         });

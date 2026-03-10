@@ -215,7 +215,11 @@ export function FarmerDetails({ farmer, onClose }: FarmerDetailsProps) {
                     <div className="mt-4 pt-4 border-t border-gray-200">
                       <div className="flex items-center justify-between">
                         <p className="text-xs md:text-sm text-gray-600">Points Earned</p>
-                        <p className="text-lg md:text-xl font-bold text-green-600">+{Math.round(record.pointsEarned || 0)} points</p>
+                        <p className="text-lg md:text-xl font-bold text-green-600">
+                          {record.pointsEarned === null || record.pointsEarned === undefined
+                            ? 'Pending'
+                            : `+${Math.round(record.pointsEarned)} points`}
+                        </p>
                       </div>
                     </div>
                   </div>

@@ -53,7 +53,7 @@ const farmSchema = new mongoose.Schema({
             },
             pointsEarned: {
                 type: Number,
-                default: 0
+                default: null
             },
             createdDate: {
                 type: Date,
