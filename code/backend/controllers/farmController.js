@@ -127,7 +127,7 @@ async function calculatePointsForHarvest(farmYield, crop, season, prevYear) {
     pointsEarned = P_MAX * Math.sqrt(numerator / denominator);
   }
 
-  return Math.floor(pointsEarned); // Return rounded down points
+  return Math.round(pointsEarned); // Return rounded to nearest integer
 }
 
 /**
@@ -149,32 +149,35 @@ export const addHarvestAndPoints = async (req, res) => {
     return res.status(403).json({ message: "Access denied. Admins only" });
   }
   const { farmId, season, year, harvestQty } = req.body;
+  
+  // Convert year and harvestQty to numbers to ensure proper type matching
+  const yearNum = Number(year);
+  const harvestQtyNum = Number(harvestQty);
 
   try {
     // Find farm by farmId
     const farm = await Farm.findOne({ farmId });
     if (!farm) return res.status(404).json({ message: "Farm not found" });
 
-    // Add or update harvest
+    // Add or update harvest (without saving yet)
     const existingHarvest = farm.harvests.find(
-      (h) => h.season === season && h.year === year
+      (h) => h.season === season && h.year === yearNum
     );
     if (existingHarvest) {
-      existingHarvest.harvestQty = harvestQty;
+      existingHarvest.harvestQty = harvestQtyNum;
     } else {
-      farm.harvests.push({ season, year, harvestQty });
+      farm.harvests.push({ season, year: yearNum, harvestQty: harvestQtyNum });
     }
-    await farm.save();
 
     // Farmer yield per acre
-    const farmYield = harvestQty / farm.sizeInAcres;
+    const farmYield = harvestQtyNum / farm.sizeInAcres;
 
     // Average yield for this farm/district
     const avgYieldRecord = await AvgYield.findOne({
       district: farm.district,
       crop: farm.crop,
       season,
-      year,
+      year: yearNum,
     });
     if (!avgYieldRecord)
       return res.status(404).json({ message: "Average yield not found" });
@@ -182,7 +185,7 @@ export const addHarvestAndPoints = async (req, res) => {
 
     // Find global maximum averageYield for season + year
     const maxYieldRecord = await AvgYield.find(
-      { season, year },
+      { season, year: yearNum },
       "averageYield"
     )
       .sort({ averageYield: -1 })
@@ -212,6 +215,20 @@ export const addHarvestAndPoints = async (req, res) => {
       }
     }
 
+    // Round points to nearest integer
+    pointsEarned = Math.round(pointsEarned);
+
+    // Update the harvest with pointsEarned
+    const harvestToUpdate = farm.harvests.find(
+      (h) => h.season === season && h.year === yearNum
+    );
+    if (harvestToUpdate) {
+      harvestToUpdate.pointsEarned = pointsEarned;
+    }
+
+    // Save farm once with all updates
+    await farm.save();
+
     // Update farmer points
     if (pointsEarned > 0) {
       await User.findByIdAndUpdate(farm.farmer, {
@@ -224,7 +241,7 @@ export const addHarvestAndPoints = async (req, res) => {
       farmYield,
       averageYield: avgYield,
       maxYieldAcrossDistricts: Y_MAX,
-      pointsEarned: parseFloat(pointsEarned.toFixed(2)),
+      pointsEarned: pointsEarned,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -274,9 +291,10 @@ export const recalculateAllPoints = async (req, res) => {
         }
       }
 
-      // Update User total points exact
-      if (user.points !== totalUserPoints) {
-        user.points = totalUserPoints;
+      // Update User total points exact (rounded to nearest integer)
+      const roundedTotalPoints = Math.round(totalUserPoints);
+      if (user.points !== roundedTotalPoints) {
+        user.points = roundedTotalPoints;
         await user.save();
       }
 
@@ -329,7 +347,7 @@ export const getAllFarms = async (req, res) => {
       farmSize: farm.sizeInAcres,
       crop: farm.crop,
       status: farm.status,
-      points: farm.farmer?.points || 0,
+      points: Math.round(farm.farmer?.points || 0),
       farmerImage: farm.farmer?.image || 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png',
       createdDate: farm.createdDate,
       harvests: farm.harvests || []
@@ -376,7 +394,7 @@ export const getFarmById = async (req, res) => {
       farmSize: farm.sizeInAcres,
       crop: farm.crop,
       status: farm.status,
-      points: farm.farmer?.points || 0,
+      points: Math.round(farm.farmer?.points || 0),
       createdDate: farm.createdDate,
       harvests: farm.harvests || [],
       farmerDetails: farm.farmer
@@ -505,7 +523,7 @@ export const getHarvestHistory = async (req, res) => {
             acres: farm.sizeInAcres,
             harvestQty: harvest.harvestQty,
             yieldPerAcre: parseFloat(yieldPerAcre.toFixed(2)),
-            pointsEarned: harvest.pointsEarned || 0,
+            pointsEarned: Math.round(harvest.pointsEarned || 0),
             harvestDate: harvest.createdDate
           });
         });
@@ -621,7 +639,7 @@ export const getFarmerReport = async (req, res) => {
 
     res.json({
       message: "Report retrieved successfully",
-      totalPoints: user.points || 0,
+      totalPoints: Math.round(user.points || 0),
       totalAcres: parseFloat(totalAcres.toFixed(1)),
       cropVarieties: cropVarieties,
       harvestTrend

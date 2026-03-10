@@ -10,8 +10,8 @@ export function AdminLayout() {
   const [showWarning, setShowWarning] = useState(false);
   const [countdown, setCountdown] = useState(60);
 
-  const TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
-  const WARNING_TIME_MS = 14 * 60 * 1000; // Show warning 1 minute before logout
+  const TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+  const WARNING_TIME_MS = 4 * 60 * 1000; // Show warning 1 minute before logout
 
   const handleLogout = useCallback(() => {
     // Clear all timers before logout
@@ -23,7 +23,7 @@ export function AdminLayout() {
     navigate('/', { replace: true });
   }, [navigate]);
 
-  // Session timeout due to inactivity (15 minutes)
+  // Session timeout due to inactivity (5 minutes)
   useInactivityTimeout({
     timeout: TIMEOUT_MS,
     onTimeout: handleLogout,

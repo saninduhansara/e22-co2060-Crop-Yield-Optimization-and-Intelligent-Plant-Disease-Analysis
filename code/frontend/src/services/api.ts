@@ -42,6 +42,11 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Avoid triggering global unauthenticated redirects if the user is currently trying to log in
+    if (error.config?.url?.includes('/api/users/login')) {
+      return Promise.reject(error);
+    }
+
     if (error.response?.status === 403 || error.response?.status === 401) {
       // Token expired or invalid - clear auth and redirect to root login page
       clearAuthData();

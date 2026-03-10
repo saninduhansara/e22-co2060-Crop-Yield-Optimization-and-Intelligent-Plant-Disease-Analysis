@@ -61,7 +61,7 @@ export function FarmerDetails({ farmer, onClose }: FarmerDetailsProps) {
             <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
               <Star className="w-6 h-6 md:w-8 md:h-8 text-green-700 mb-2" />
               <p className="text-xs md:text-sm text-green-700 mb-1">Total Points</p>
-              <p className="text-2xl md:text-3xl font-bold text-green-900">{farmer.points}</p>
+              <p className="text-2xl md:text-3xl font-bold text-green-900">{Math.round(farmer.points)}</p>
             </div>
 
             <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
@@ -215,7 +215,7 @@ export function FarmerDetails({ farmer, onClose }: FarmerDetailsProps) {
                     <div className="mt-4 pt-4 border-t border-gray-200">
                       <div className="flex items-center justify-between">
                         <p className="text-xs md:text-sm text-gray-600">Points Earned</p>
-                        <p className="text-lg md:text-xl font-bold text-green-600">+{record.pointsEarned || 0} points</p>
+                        <p className="text-lg md:text-xl font-bold text-green-600">+{Math.round(record.pointsEarned || 0)} points</p>
                       </div>
                     </div>
                   </div>

@@ -5,9 +5,70 @@
  * Fetches and aggregates real-time data from the backend.
  */
 import { Users, TrendingUp, Wheat, AlertTriangle, BarChart3, MapPin, Layers, Scale, Link2 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { farmAPI, userAPI } from '../../services/api';
 import { FarmerProfile } from './FarmerProfile';
+import { formatNumber } from '../../utils/numberUtils';
+import { GlassStatCard } from './GlassStatCard';
+
+// Custom hook for count-up animation (only runs on initial load)
+function useCountUp(endValue: number, duration: number = 2500) {
+  const [count, setCount] = useState(0);
+  const startTimeRef = useRef<number | null>(null);
+  const animationFrameRef = useRef<number>();
+  const hasAnimatedRef = useRef(false);
+  const initialLoadRef = useRef(true);
+
+  useEffect(() => {
+    // If already animated once, just set the value directly
+    if (hasAnimatedRef.current) {
+      setCount(endValue);
+      return;
+    }
+
+    // Skip animation during initial load when endValue is 0
+    if (initialLoadRef.current && endValue === 0) {
+      return;
+    }
+
+    // Mark that we're past initial load
+    initialLoadRef.current = false;
+
+    const easeOutCubic = (t: number): number => {
+      return 1 - Math.pow(1 - t, 3);
+    };
+
+    const animate = (currentTime: number) => {
+      if (startTimeRef.current === null) {
+        startTimeRef.current = currentTime;
+      }
+
+      const elapsed = currentTime - startTimeRef.current;
+      const progress = Math.min(elapsed / duration, 1);
+      const easedProgress = easeOutCubic(progress);
+      const currentCount = easedProgress * endValue;
+
+      setCount(currentCount);
+
+      if (progress < 1) {
+        animationFrameRef.current = requestAnimationFrame(animate);
+      } else {
+        setCount(endValue);
+        hasAnimatedRef.current = true;
+      }
+    };
+
+    animationFrameRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [endValue, duration]);
+
+  return count;
+}
 
 export function AdminDashboard() {
   const defaultCropOptions = [
@@ -42,6 +103,10 @@ export function AdminDashboard() {
   const currentYear = 2026;
   const currentSeason = 'maha';
 
+  const [selectedYear, setSelectedYear] = useState<number | 'all'>(currentYear);
+  const [selectedSeason, setSelectedSeason] = useState<string | 'all'>(currentSeason);
+  const [availableYears, setAvailableYears] = useState<number[]>([currentYear]);
+
   useEffect(() => {
     fetchCrops();
   }, []);
@@ -50,7 +115,7 @@ export function AdminDashboard() {
     if (availableCrops.length > 0 || selectedCrop === null) {
       fetchDashboardData();
     }
-  }, [selectedCrop, availableCrops.length]);
+  }, [selectedCrop, selectedYear, selectedSeason, availableCrops.length]);
 
   const fetchCrops = async () => {
     try {
@@ -85,95 +150,14 @@ export function AdminDashboard() {
 
       setFarmsForProfile(farms);
 
-      // Filter farms based on whether the farmers have harvests in the current year/season
-      // We will first get all harvests for the current year/season
-      const harvestData = await farmAPI.getHarvestHistory();
-      let harvests = harvestData.harvests || [];
-
-      // Filter harvests by selected crop
-      if (selectedCrop) {
-        harvests = harvests.filter((harvest: any) => {
-          const harvestCrop = (harvest.crop || '').trim().toLowerCase();
-          const selectedCropNormalized = selectedCrop.trim().toLowerCase();
-          return harvestCrop === selectedCropNormalized;
-        });
-      }
-
-      // Filter harvests for current season only to determine active farmers/farms
-      const currentSeasonHarvests = harvests.filter((h: any) =>
-        h.year === currentYear && h.season?.toLowerCase() === currentSeason
-      );
-
-      // Get farmer NICs active in current season
-      const activeFarmerNICs = new Set(currentSeasonHarvests.map((h: any) => h.farmerNIC));
-
-      // Filter farms to only those active this season
-      const activeSeasonFarms = farms.filter((farm: any) => activeFarmerNICs.has(farm.farmerNIC));
-
-      setFarmsForProfile(farms);
-
-      setTotalFarmers(activeFarmerNICs.size);
-
-      // Note: `harvests` already contains all harvests, filtered by crop if selected
-      const thirtyDaysAgo = new Date();
-
-      const totalHarvestQty = currentSeasonHarvests.reduce((sum: number, harvest: any) => {
-        return sum + (harvest.harvestQty || 0);
-      }, 0);
-      setTotalHarvest(totalHarvestQty);
-
-      // Now set active farms and total farmland based on current season harvests
-      setActiveFarms(activeSeasonFarms.length);
-
-      // Calculate total cultivated acres for the CURRENT season based on actual harvest records
-      // Because farm size is total, but they might only plant a portion
-      const totalAcres = currentSeasonHarvests.reduce((sum: number, harvest: any) => {
-        return sum + (harvest.acres || 0);
-      }, 0);
-      setTotalFarmland(totalAcres);
-
-      const thirtyDaysAgo2 = new Date();
-      thirtyDaysAgo2.setDate(thirtyDaysAgo2.getDate() - 30);
-
-      const farmers30DaysAgo = new Set(
-        activeSeasonFarms
-          .filter((farm: any) => {
-            if (!farm.farmerNIC) return false;
-            if (!farm.createdDate) return true;
-
-            const createdDate = new Date(farm.createdDate);
-            if (isNaN(createdDate.getTime())) return true;
-
-            return createdDate <= thirtyDaysAgo2;
-          })
-          .map((farm: any) => farm.farmerNIC)
-      ).size;
-
-      const calculatedPercentage =
-        farmers30DaysAgo === 0
-          ? activeFarmerNICs.size > 0
-            ? 100
-            : 0
-          : (activeFarmerNICs.size / farmers30DaysAgo) * 100;
-
-      setFarmersLastMonthPercentage(calculatedPercentage);
-
-      const seasonOrder: Record<string, number> = {
-        yala: 1,
-        maha: 2,
-      };
-
+      // Parse utilities that are resilient to strings for numerical values
       const parseHarvestQty = (value: any): number => {
-        if (typeof value === 'number') {
-          return Number.isFinite(value) ? value : 0;
-        }
-
+        if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
         if (typeof value === 'string') {
           const normalized = value.replace(/,/g, '').replace(/[^\d.-]/g, '');
           const parsed = Number(normalized);
           return Number.isFinite(parsed) ? parsed : 0;
         }
-
         return 0;
       };
 
@@ -184,6 +168,132 @@ export function AdminDashboard() {
         return seasonRaw;
       };
 
+      // Fetch all harvests to extract available years and filter
+      const harvestData = await farmAPI.getHarvestHistory();
+      let allHarvests = harvestData.harvests || [];
+
+      const yearsSet = new Set<number>();
+      allHarvests.forEach((h: any) => {
+        const y = Number(h.year);
+        if (!isNaN(y)) yearsSet.add(y);
+      });
+      const yearsArray = Array.from(yearsSet).sort((a, b) => b - a);
+      if (!yearsArray.includes(currentYear)) yearsArray.unshift(currentYear);
+      setAvailableYears(yearsArray);
+
+      // Filter harvests by selected crop
+      let harvests = allHarvests;
+      if (selectedCrop) {
+        harvests = harvests.filter((harvest: any) => {
+          const harvestCrop = (harvest.crop || '').trim().toLowerCase();
+          const selectedCropNormalized = selectedCrop.trim().toLowerCase();
+          return harvestCrop === selectedCropNormalized;
+        });
+      }
+
+      // Filter based on selected year/season for Farmers/Plots calculation
+      let filteredHarvests = harvests;
+      if (selectedYear !== 'all') {
+        filteredHarvests = filteredHarvests.filter((h: any) => Number(h.year) === Number(selectedYear));
+      }
+      if (selectedSeason !== 'all') {
+        filteredHarvests = filteredHarvests.filter((h: any) => normalizeSeason(h.season) === selectedSeason.toLowerCase());
+      }
+
+      // Always base active metrics purely on the farmers who actually have harvests in the matching filter
+      const activeNICs = new Set(filteredHarvests.map((h: any) => h.farmerNIC).filter(Boolean));
+      const periodFarmsList = farms.filter((f: any) => activeNICs.has(f.farmerNIC));
+
+      setTotalFarmers(activeNICs.size);
+      setActiveFarms(periodFarmsList.length);
+
+      // Calculate active farmland by getting the unique acres per farm in this period (so multiple harvests on one plot don't multiply the size)
+      const farmAcresMap = new Map<string, number>();
+      filteredHarvests.forEach((h: any) => {
+        const key = h.farmId || h.farmerNIC;
+        if (key) {
+          const currentAcres = farmAcresMap.get(key) || 0;
+          const harvestAcres = parseHarvestQty(h.acres || h.farmSize || 0);
+          if (harvestAcres > currentAcres) {
+            farmAcresMap.set(key, harvestAcres);
+          }
+        }
+      });
+      const calculatedActiveFarmland = Array.from(farmAcresMap.values()).reduce((sum, acres) => sum + acres, 0);
+
+      setTotalFarmland(calculatedActiveFarmland);
+      setFarmsForProfile(farms);
+
+      // Now we also calculate the previous logical period's ACTIVE metrics for comparison
+      const smartPrevFilters = () => {
+        if (selectedYear === 'all' || selectedSeason === 'all') return null;
+        let y = Number(selectedYear);
+        let s = selectedSeason.toLowerCase();
+        if (s === 'maha') {
+          s = 'yala';
+        } else if (s === 'yala') {
+          s = 'maha';
+          y = y - 1;
+        } else {
+          return null;
+        }
+        return { year: y, season: s };
+      };
+
+      const prevFilt = smartPrevFilters();
+      let prevPeriodFarmsList = [];
+      if (prevFilt) {
+        let prevFilteredHarvests = allHarvests.filter((h: any) =>
+          Number(h.year) === prevFilt.year &&
+          normalizeSeason(h.season) === prevFilt.season
+        );
+        if (selectedCrop) {
+          prevFilteredHarvests = prevFilteredHarvests.filter((harvest: any) => {
+            const harvestCrop = (harvest.crop || '').trim().toLowerCase();
+            const selectedCropNormalized = selectedCrop.trim().toLowerCase();
+            return harvestCrop === selectedCropNormalized;
+          });
+        }
+        const prevPastNICs = new Set(prevFilteredHarvests.map((h: any) => h.farmerNIC).filter(Boolean));
+        prevPeriodFarmsList = farms.filter((f: any) => prevPastNICs.has(f.farmerNIC));
+      }
+
+      const prevActiveFarmerNICs = new Set(prevPeriodFarmsList.map((f: any) => f.farmerNIC).filter(Boolean));
+      const prevActiveFarmersCount = prevActiveFarmerNICs.size;
+      const prevActiveFarmsCount = prevPeriodFarmsList.length;
+      const prevActiveFarmland = prevPeriodFarmsList.reduce((sum: number, f: any) => sum + parseHarvestQty(f.sizeInAcres || f.farmSize || 0), 0);
+
+      const lastLabel = (!selectedYear || !selectedSeason) ? 'all time' : 'last season';
+
+      const getGrowthText = (current: number, previous: number) => {
+        if (!prevFilt) return `N/A from ${lastLabel}`;
+        if (previous === 0) return current > 0 ? `+100.0% from ${lastLabel}` : `0.0% from ${lastLabel}`;
+        const pct = ((current - previous) / previous) * 100;
+        const capped = Math.min(Math.max(pct, -9999.9), 9999.9);
+        const sign = capped > 0 ? '+' : '';
+        return `${sign}${capped.toFixed(1)}% from ${lastLabel}`;
+      };
+
+      // Reuse the existing state variable but it now holds season-over-season text
+      const farmersGrowthText = getGrowthText(activeNICs.size, prevActiveFarmersCount);
+      // We'll pass this via state or just calculate it. The file uses `farmersLastMonthPercentage` so let's overwrite that text.
+      // Actually, since I have to reuse existing state vars, I'll store the text strings directly if possible, or build them in render.
+      // Wait, let me just add state variables or override existing ones smartly.
+      // The file has setFarmersLastMonthPercentage(number). I will change the type implicitly or just use the number.
+      let calculatedFarmersPercentage = 0;
+      if (prevActiveFarmersCount === 0) {
+        calculatedFarmersPercentage = activeNICs.size > 0 ? 100 : 0;
+      } else {
+        calculatedFarmersPercentage = ((activeNICs.size - prevActiveFarmersCount) / prevActiveFarmersCount) * 100;
+      }
+      setFarmersLastMonthPercentage(calculatedFarmersPercentage);
+
+      // I will need to store growth text for Plots and Farmland too, but right now there's no state for it.
+      // I can just bundle it into a new state object if needed, or recalculate in render.
+      // Actually I should just calculate it here and use existing states where possible, but I can't easily add new `useState` via replace.
+      // Let's modify setFarmersLastMonthPercentage to instead just be the raw percentage, and format it in render.
+
+      // Calculate total harvests by season & year
       const seasonMap = new Map<string, number>();
       const seasonAcresMap = new Map<string, number>();
       harvests.forEach((harvest: any) => {
@@ -199,56 +309,80 @@ export function AdminDashboard() {
         seasonAcresMap.set(key, (seasonAcresMap.get(key) || 0) + acres);
       });
 
-      const orderedSeasons = Array.from(seasonMap.entries()).sort(([a], [b]) => {
-        const [yearA, seasonA] = a.split('|');
-        const [yearB, seasonB] = b.split('|');
+      let thisSeasonTotal = 0;
+      let lastSeasonTotal = 0;
+      let thisSeasonAcres = 0;
+      let lastSeasonAcres = 0;
 
-        const yearDiff = Number(yearB) - Number(yearA);
-        if (yearDiff !== 0) return yearDiff;
+      if (selectedYear !== 'all' && selectedSeason !== 'all') {
+        const targetYear = Number(selectedYear);
+        const targetSeason = selectedSeason;
+        const thisKey = `${targetYear}|${targetSeason}`;
+        const lastName = targetSeason === 'maha' ? 'yala' : 'maha';
+        const lastYear = targetSeason === 'maha' ? targetYear : targetYear - 1;
+        const lastKey = `${lastYear}|${lastName}`;
 
-        const seasonAOrder = seasonOrder[(seasonA || '').toLowerCase()] || 0;
-        const seasonBOrder = seasonOrder[(seasonB || '').toLowerCase()] || 0;
-        return seasonBOrder - seasonAOrder;
-      });
-
-      const thisSeasonTotal = orderedSeasons[0]?.[1] || 0;
-      const lastSeasonTotal = orderedSeasons[1]?.[1] || 0;
-      const thisSeasonKey = orderedSeasons[0]?.[0] || '';
-      const lastSeasonKey = orderedSeasons[1]?.[0] || '';
-      const thisSeasonAcres = seasonAcresMap.get(thisSeasonKey) || 0;
-      const lastSeasonAcres = seasonAcresMap.get(lastSeasonKey) || 0;
-
-      let harvestSeasonText = 'N/A from last season';
-      if (orderedSeasons.length < 2) {
-        harvestSeasonText = 'N/A from last season';
-      } else if (lastSeasonTotal <= 0.0001) {
-        harvestSeasonText = thisSeasonTotal > 0 ? 'N/A from last season' : '0.0% from last season';
+        thisSeasonTotal = seasonMap.get(thisKey) || 0;
+        lastSeasonTotal = seasonMap.get(lastKey) || 0;
+        thisSeasonAcres = seasonAcresMap.get(thisKey) || 0;
+        lastSeasonAcres = seasonAcresMap.get(lastKey) || 0;
+      } else if (selectedYear !== 'all' && selectedSeason === 'all') {
+        const y = Number(selectedYear);
+        thisSeasonTotal = (seasonMap.get(`${y}|maha`) || 0) + (seasonMap.get(`${y}|yala`) || 0);
+        lastSeasonTotal = (seasonMap.get(`${y - 1}|maha`) || 0) + (seasonMap.get(`${y - 1}|yala`) || 0);
+        thisSeasonAcres = (seasonAcresMap.get(`${y}|maha`) || 0) + (seasonAcresMap.get(`${y}|yala`) || 0);
+        lastSeasonAcres = (seasonAcresMap.get(`${y - 1}|maha`) || 0) + (seasonAcresMap.get(`${y - 1}|yala`) || 0);
+      } else if (selectedYear === 'all' && selectedSeason !== 'all') {
+        for (const [key, val] of seasonMap.entries()) {
+          if (key.includes(`|${selectedSeason}`)) thisSeasonTotal += val;
+        }
+        for (const [key, val] of seasonAcresMap.entries()) {
+          if (key.includes(`|${selectedSeason}`)) thisSeasonAcres += val;
+        }
       } else {
-        const harvestPercentage = (thisSeasonTotal / lastSeasonTotal) * 100;
-        const cappedPercentage = Math.min(harvestPercentage, 9999.9);
-        harvestSeasonText = `${cappedPercentage.toFixed(1)}% from last season`;
+        for (const val of seasonMap.values()) thisSeasonTotal += val;
+        for (const val of seasonAcresMap.values()) thisSeasonAcres += val;
       }
 
+      setTotalHarvest(thisSeasonTotal);
+
+      // Instead of 30 day farmers, we already calculated calculatedFarmersPercentage above
+      // so we can delete the 30-day block.
+
+      const isComparisonValid = selectedYear !== 'all';
+      const lastLabelForHarvest = selectedSeason === 'all' ? 'last year' : 'last season';
+
+      let harvestSeasonText = `N/A from ${lastLabelForHarvest}`;
+      if (!isComparisonValid) {
+        harvestSeasonText = 'N/A';
+      } else if (lastSeasonTotal <= 0.0001) {
+        harvestSeasonText = thisSeasonTotal > 0 ? `+100.0% from ${lastLabelForHarvest}` : `0.0% from ${lastLabelForHarvest}`;
+      } else {
+        const harvestPercentage = ((thisSeasonTotal - lastSeasonTotal) / lastSeasonTotal) * 100;
+        const cappedPercentage = Math.min(Math.max(harvestPercentage, -9999.9), 9999.9);
+        const sign = cappedPercentage > 0 ? '+' : '';
+        harvestSeasonText = `${sign}${cappedPercentage.toFixed(1)}% from ${lastLabelForHarvest}`;
+      }
       setHarvestLastSeasonText(harvestSeasonText);
 
-      let yieldSeasonText = 'N/A from last season';
-      if (orderedSeasons.length < 2) {
-        yieldSeasonText = 'N/A from last season';
+      let yieldSeasonText = `N/A from ${lastLabelForHarvest}`;
+      if (!isComparisonValid) {
+        yieldSeasonText = 'N/A';
       } else if (thisSeasonAcres <= 0.0001 || lastSeasonAcres <= 0.0001) {
-        yieldSeasonText = 'N/A from last season';
+        yieldSeasonText = `N/A from ${lastLabelForHarvest}`;
       } else {
         const thisSeasonYieldPerAcre = thisSeasonTotal / thisSeasonAcres;
         const lastSeasonYieldPerAcre = lastSeasonTotal / lastSeasonAcres;
 
         if (lastSeasonYieldPerAcre <= 0.0001) {
-          yieldSeasonText = 'N/A from last season';
+          yieldSeasonText = `N/A from ${lastLabelForHarvest}`;
         } else {
-          const yieldPercentage = (thisSeasonYieldPerAcre / lastSeasonYieldPerAcre) * 100;
-          const cappedYieldPercentage = Math.min(yieldPercentage, 9999.9);
-          yieldSeasonText = `${cappedYieldPercentage.toFixed(1)}% from last season`;
+          const yieldPercentage = ((thisSeasonYieldPerAcre - lastSeasonYieldPerAcre) / lastSeasonYieldPerAcre) * 100;
+          const cappedYieldPercentage = Math.min(Math.max(yieldPercentage, -9999.9), 9999.9);
+          const sign = cappedYieldPercentage > 0 ? '+' : '';
+          yieldSeasonText = `${sign}${cappedYieldPercentage.toFixed(1)}% from ${lastLabelForHarvest}`;
         }
       }
-
       setYieldLastSeasonText(yieldSeasonText);
 
       // Get recent farmers from the filtered farms data
@@ -319,7 +453,7 @@ export function AdminDashboard() {
     farmSize: farm.farmSize || farm.sizeInAcres || 0,
     crop: farm.crop || 'Unknown',
     status: farm.status || 'active',
-    points: farm.points || 0,
+    points: Math.round(farm.points || 0),
     farmerImage: farm.farmerImage,
   });
 
@@ -338,34 +472,6 @@ export function AdminDashboard() {
     if (matchedFarm) {
       setSelectedFarmerProfile(toFarmerProfileData(matchedFarm));
     }
-  };
-
-  // Format number based on magnitude
-  const formatNumber = (num: number): string => {
-    if (num < 10000) {
-      // Display with one decimal place if necessary
-      return num % 1 === 0 ? num.toString() : num.toFixed(1);
-    } else if (num < 1000000) {
-      // Round to nearest 100, divide by 1000, show with K
-      const rounded = Math.round(num / 100) * 100;
-      const inK = rounded / 1000;
-      return inK % 1 === 0 ? `${inK}K` : `${inK.toFixed(1)}K`;
-    } else {
-      // Round to nearest lakh (100,000), divide by 1,000,000, show with M
-      const rounded = Math.round(num / 100000) * 100000;
-      const inM = rounded / 1000000;
-      return inM % 1 === 0 ? `${inM}M` : `${inM.toFixed(1)}M`;
-    }
-  };
-
-  // Helper functions to determine font size based on formatted string length
-  const getFontSizeForFormatted = (formattedStr: string): string => {
-    const length = formattedStr.length;
-
-    if (length <= 4) return 'text-3xl md:text-4xl'; // e.g., "123" or "9.5K"
-    if (length <= 6) return 'text-2xl md:text-3xl'; // e.g., "123.4K"
-    if (length <= 8) return 'text-xl md:text-2xl';  // e.g., "123.4M"
-    return 'text-lg md:text-xl';
   };
 
   // Format date to be more readable
@@ -409,36 +515,87 @@ export function AdminDashboard() {
     return totalHarvest / totalFarmland;
   };
 
-  // Get formatted values (don't format harvest or yield with K/M)
+  // Helper to extract percentage from text like "+12.5% from last season"
+  const extractPercentage = (text: string): number | undefined => {
+    const match = text.match(/([+-]?\d+\.?\d*)%/);
+    return match ? parseFloat(match[1]) : undefined;
+  };
+
+  // Apply compact formatter to all dashboard KPIs.
   const formattedFarmers = formatNumber(totalFarmers);
   const formattedActiveFarms = formatNumber(activeFarms);
   const formattedFarmland = formatNumber(totalFarmland);
-
-  // Format exactly with commas but no K/M abbreviation for Harvest and Yield
-  // Harvest is internally in kg, so divide by 1000 to display as tons
-  const exactHarvest = (totalHarvest / 1000).toLocaleString(undefined, { maximumFractionDigits: 1 });
-  // Yield per acre is in kg/acre
-  const exactYield = getYieldPerAcre().toLocaleString(undefined, { maximumFractionDigits: 0 });
+  // Harvest is internally in kg, so convert to tons before formatting.
+  const formattedHarvest = formatNumber(totalHarvest / 1000);
+  const formattedYield = formatNumber(getYieldPerAcre());
   const cropOptions = Array.from(new Set([...defaultCropOptions, ...availableCrops]));
   const visibleRecentFarmers = recentFarmers.slice(0, showMoreFarmers ? 10 : 5);
   const visibleRecentHarvests = recentHarvests.slice(0, showMoreHarvests ? 10 : 4);
 
+  const harvestPercentage = extractPercentage(harvestLastSeasonText);
+  const yieldPercentage = extractPercentage(yieldLastSeasonText);
+  const isActivePeriod = Number(selectedYear) === currentYear && selectedSeason === currentSeason;
+
+  // Count-up animations for all 6 stat cards
+  const animatedFarmers = useCountUp(loading ? 0 : totalFarmers);
+  const animatedHarvest = useCountUp(loading ? 0 : totalHarvest / 1000);
+  const animatedActiveFarms = useCountUp(loading ? 0 : activeFarms);
+  const animatedFarmland = useCountUp(loading ? 0 : totalFarmland);
+  const animatedYield = useCountUp(loading ? 0 : getYieldPerAcre());
+  const animatedDiseaseReports = useCountUp(loading ? 0 : 23);
+
+  const displayFarmers = loading ? '...' : formatNumber(animatedFarmers);
+  const displayHarvest = loading ? '...' : formatNumber(animatedHarvest);
+  const displayActiveFarms = loading ? '...' : formatNumber(animatedActiveFarms);
+  const displayFarmland = loading ? '...' : formatNumber(animatedFarmland);
+  const displayYield = loading ? '...' : formatNumber(animatedYield);
+  const displayDiseaseReports = loading ? '...' : Math.round(animatedDiseaseReports).toString();
+
   return (
     <div className="space-y-6">
+      <style>{`
+        @keyframes slideInFromLeft {
+          from {
+            opacity: 0;
+            transform: translateX(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+        
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+      `}</style>
+      
       {/* Prominent Season Label */}
       <div className="bg-green-700 rounded-xl p-4 text-white shadow-md flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Layers className="w-6 h-6 text-green-200" />
           <div>
-            <p className="text-sm text-green-100 font-medium tracking-wide uppercase">Current Season</p>
-            <h2 className="text-2xl font-bold">{currentSeason.charAt(0).toUpperCase() + currentSeason.slice(1)} {currentYear}</h2>
+            <p className="text-sm text-green-100 font-medium tracking-wide uppercase">
+              {selectedYear === 'all' && selectedSeason === 'all' ? 'All Time Overview'
+                : selectedYear !== 'all' && selectedSeason === 'all' ? `Yearly Overview`
+                  : selectedYear === 'all' && selectedSeason !== 'all' ? `Seasonal Overview`
+                    : 'Selected Period'}
+            </p>
+            <h2 className="text-2xl font-bold">
+              {selectedSeason === 'all' ? 'All Seasons' : selectedSeason.charAt(0).toUpperCase() + selectedSeason.slice(1)} {selectedYear === 'all' ? 'All Years' : selectedYear}
+            </h2>
           </div>
         </div>
         <div className="hidden sm:block text-right">
           <p className="text-sm text-green-100 uppercase tracking-wide">Status</p>
           <div className="flex items-center gap-2 mt-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-green-300 animate-pulse"></span>
-            <span className="font-semibold">Active Period</span>
+            <span className={`w-2.5 h-2.5 rounded-full ${Number(selectedYear) === currentYear && selectedSeason === currentSeason ? 'bg-green-300 animate-pulse' : 'bg-gray-300'}`}></span>
+            <span className="font-semibold">{Number(selectedYear) === currentYear && selectedSeason === currentSeason ? 'Active Period' : 'Historical Data'}</span>
           </div>
         </div>
       </div>
@@ -446,10 +603,31 @@ export function AdminDashboard() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
-          <p className="text-sm md:text-base text-gray-600">Monitor and manage all farming activities strictly for the active season</p>
+          <p className="text-sm md:text-base text-gray-600">Monitor and manage all farming activities</p>
         </div>
-        <div className="flex items-center gap-2">
-          <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Filter by Crop:</label>
+        <div className="flex flex-wrap items-center gap-2">
+          <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Filter:</label>
+          <select
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm bg-white min-w-[100px]"
+          >
+            <option value="all">All Years</option>
+            {availableYears.map((year) => (
+              <option key={year} value={year}>
+                {year}
+              </option>
+            ))}
+          </select>
+          <select
+            value={selectedSeason}
+            onChange={(e) => setSelectedSeason(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm bg-white min-w-[110px]"
+          >
+            <option value="all">All Seasons</option>
+            <option value="maha">Maha</option>
+            <option value="yala">Yala</option>
+          </select>
           <select
             value={selectedCrop || ''}
             onChange={(e) => setSelectedCrop(e.target.value || null)}
@@ -466,20 +644,20 @@ export function AdminDashboard() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 sm:gap-5 lg:gap-6">
-        {/* Total Farmers Card */}
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 md:gap-5 lg:gap-6">
+        {/* Active Farmers Card */}
         <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-5 sm:p-6 shadow-md border-l-4 border-l-green-500 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group">
           <div className="flex flex-col">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">Total Farmers</p>
+              <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">Active Farmers</p>
               <Users className="w-5 h-5 text-green-600 opacity-70 group-hover:opacity-100 transition-opacity" />
             </div>
             <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 my-2 break-words min-w-0">
-              {loading ? '...' : formattedFarmers}
+              {displayFarmers}
             </p>
             <p className="text-xs sm:text-sm text-green-700 flex items-center gap-1 mt-2">
               <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4" />
-              {loading ? '...' : `${farmersLastMonthPercentage.toFixed(1)}% from last month`}
+              {loading ? '...' : `${farmersLastMonthPercentage >= 0 ? '+' : ''}${farmersLastMonthPercentage.toFixed(1)}% from last season`}
             </p>
           </div>
         </div>
@@ -493,7 +671,7 @@ export function AdminDashboard() {
             </div>
             <div className="flex min-w-0 flex-wrap items-baseline gap-1 sm:gap-2 my-2">
               <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 break-words min-w-0">
-                {loading ? '...' : exactHarvest}
+                {displayHarvest}
               </p>
               <span className="text-xs sm:text-sm font-medium text-gray-600 break-words">tons</span>
             </div>
@@ -512,30 +690,34 @@ export function AdminDashboard() {
               <MapPin className="w-5 h-5 text-green-600 opacity-70 group-hover:opacity-100 transition-opacity" />
             </div>
             <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 my-2 break-words min-w-0">
-              {loading ? '...' : formattedActiveFarms}
+              {displayActiveFarms}
             </p>
-            <p className="text-xs sm:text-sm text-gray-600 mt-2">Active in {currentSeason} {currentYear}</p>
+            <p className="text-xs sm:text-sm text-gray-600 mt-2">
+              {loading ? '...' : `Active in ${selectedSeason === 'all' ? 'All Seasons' : selectedSeason.charAt(0).toUpperCase() + selectedSeason.slice(1)} ${selectedYear === 'all' ? 'All Years' : selectedYear}`}
+            </p>
           </div>
         </div>
 
-        {/* Total Farmland Card */}
+        {/* Active Farmland Card */}
         <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-5 sm:p-6 shadow-md border-l-4 border-l-green-500 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group">
           <div className="flex flex-col">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">Total Farmland</p>
+              <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">Active Farmland</p>
               <Layers className="w-5 h-5 text-green-600 opacity-70 group-hover:opacity-100 transition-opacity" />
             </div>
             <div className="flex min-w-0 flex-wrap items-baseline gap-1 sm:gap-2 my-2">
               <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 break-words min-w-0">
-                {loading ? '...' : formattedFarmland}
+                {displayFarmland}
               </p>
               <span className="text-xs sm:text-sm font-medium text-gray-600 break-words">acres</span>
             </div>
-            <p className="text-xs sm:text-sm text-gray-600 mt-2">Cultivated in {currentSeason} {currentYear}</p>
+            <p className="text-xs sm:text-sm text-gray-600 mt-2">
+              {loading ? '...' : `Cultivated in ${selectedSeason === 'all' ? 'All Seasons' : selectedSeason.charAt(0).toUpperCase() + selectedSeason.slice(1)} ${selectedYear === 'all' ? 'All Years' : selectedYear}`}
+            </p>
           </div>
         </div>
 
-        {/* Yield Per Acre Card */}
+        {/* Yield per Acre Card */}
         <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-5 sm:p-6 shadow-md border-l-4 border-l-green-500 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group">
           <div className="flex flex-col">
             <div className="flex items-center justify-between mb-3">
@@ -544,7 +726,7 @@ export function AdminDashboard() {
             </div>
             <div className="flex min-w-0 flex-wrap items-baseline gap-1 sm:gap-2 my-2">
               <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 break-words min-w-0">
-                {loading ? '...' : exactYield}
+                {displayYield}
               </p>
               <span className="text-xs sm:text-sm font-medium text-gray-600 break-words">kg</span>
             </div>
@@ -556,14 +738,18 @@ export function AdminDashboard() {
         </div>
 
         {/* Disease Reports Card */}
-        <div className="bg-gradient-to-br from-red-50 to-orange-100 rounded-2xl p-5 sm:p-6 shadow-md border-l-4 border-l-red-500 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group">
+        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-5 sm:p-6 shadow-md border-l-4 border-l-green-500 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group">
           <div className="flex flex-col">
             <div className="flex items-center justify-between mb-3">
               <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">Disease Reports</p>
-              <AlertTriangle className="w-5 h-5 text-red-600 opacity-70 group-hover:opacity-100 transition-opacity" />
+              <AlertTriangle className="w-5 h-5 text-green-600 opacity-70 group-hover:opacity-100 transition-opacity" />
             </div>
-            <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 my-2 break-words min-w-0">23</p>
-            <p className="text-xs sm:text-sm text-red-700 mt-2 font-medium">Requires attention</p>
+            <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 my-2 break-words min-w-0">
+              {displayDiseaseReports}
+            </p>
+            <p className="text-xs sm:text-sm text-green-700 mt-2">
+              {loading ? '...' : 'Requires attention'}
+            </p>
           </div>
         </div>
       </div>
@@ -571,7 +757,7 @@ export function AdminDashboard() {
       {/* Recent Activity & Quick Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Farmers */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
+        <div className="rounded-2xl shadow-sm border border-gray-100" style={{ backgroundColor: '#f0f7f0' }}>
           <div className="p-4 md:p-6 border-b border-gray-100 flex items-center justify-between">
             <h3 className="text-base md:text-lg font-semibold text-gray-800">Recently Added Farmers</h3>
             <button
@@ -583,7 +769,7 @@ export function AdminDashboard() {
               <Link2 className="w-3 h-3" />
             </button>
           </div>
-          <div className="divide-y divide-gray-100">
+          <div>
             {loading ? (
               <div className="flex justify-center py-8 px-4 md:px-6">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-600"></div>
@@ -592,7 +778,14 @@ export function AdminDashboard() {
               visibleRecentFarmers.map((farmer, index) => (
                 <div
                   key={index}
-                  className="px-4 py-3 hover:bg-gray-50 transition-colors cursor-pointer flex items-center justify-between"
+                  className="px-4 py-3 hover:bg-green-50 transition-all duration-200 cursor-pointer flex items-center justify-between"
+                  style={{
+                    animation: 'slideInFromLeft 0.5s ease-out forwards',
+                    animationDelay: `${index * 100}ms`,
+                    opacity: 0,
+                    transform: 'translateX(-20px)',
+                    borderBottom: '1px solid #d9e8d9'
+                  }}
                   onClick={() => openFarmerProfileByNic(farmer.nic)}
                 >
                   <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -602,8 +795,8 @@ export function AdminDashboard() {
                       </span>
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-gray-800 text-sm truncate">{farmer.name}</p>
-                      <p className="text-xs text-gray-400 truncate flex items-center gap-1">
+                      <p className="font-semibold text-sm truncate" style={{ fontSize: '16px', color: '#111827' }}>{farmer.name}</p>
+                      <p className="text-gray-400 truncate flex items-center gap-1" style={{ fontSize: '13px' }}>
                         <MapPin className="w-3 h-3" />
                         {farmer.location} • {formatDate(farmer.date)}
                       </p>
@@ -623,7 +816,7 @@ export function AdminDashboard() {
         </div>
 
         {/* Recent Harvests */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
+        <div className="rounded-2xl shadow-sm border border-gray-100" style={{ backgroundColor: '#f0f7f0' }}>
           <div className="p-4 md:p-6 border-b border-gray-100 flex items-center justify-between">
             <h3 className="text-base md:text-lg font-semibold text-gray-800">Recently Added Harvests</h3>
             <button
@@ -635,42 +828,73 @@ export function AdminDashboard() {
               <Link2 className="w-3 h-3" />
             </button>
           </div>
-          <div className="divide-y divide-gray-100">
+          <div>
             {loading ? (
               <div className="flex justify-center py-8 px-4 md:px-6">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-600"></div>
               </div>
             ) : visibleRecentHarvests.length > 0 ? (
               visibleRecentHarvests.map((harvest, index) => {
-                // Determine crop badge color
+                // Determine crop badge color with exact color specifications
                 const cropName = (harvest.crop || '').toLowerCase();
-                let cropBgColor = 'bg-blue-100';
-                let cropTextColor = 'text-blue-700';
+                let cropBgColor = '';
+                let cropTextColor = '';
 
                 if (cropName.includes('paddy') || cropName.includes('rice')) {
-                  cropBgColor = 'bg-yellow-100';
-                  cropTextColor = 'text-yellow-700';
-                } else if (cropName.includes('green gram') || cropName.includes('mung')) {
-                  cropBgColor = 'bg-green-100';
-                  cropTextColor = 'text-green-700';
+                  cropBgColor = '#FEF08A';
+                  cropTextColor = '#713F12';
+                } else if (cropName.includes('corn')) {
+                  cropBgColor = '#FED7AA';
+                  cropTextColor = '#9A3412';
+                } else if (cropName.includes('wheat')) {
+                  cropBgColor = '#FDE68A';
+                  cropTextColor = '#92400E';
+                } else if (cropName.includes('tomato')) {
+                  cropBgColor = '#FECACA';
+                  cropTextColor = '#991B1B';
+                } else if (cropName.includes('onion')) {
+                  cropBgColor = '#E9D5FF';
+                  cropTextColor = '#6B21A8';
+                } else if (cropName.includes('carrot')) {
+                  cropBgColor = '#FFEDD5';
+                  cropTextColor = '#C2410C';
+                } else if (cropName.includes('cabbage')) {
+                  cropBgColor = '#BBF7D0';
+                  cropTextColor = '#166534';
+                } else if (cropName.includes('potato')) {
+                  cropBgColor = '#D6D3D1';
+                  cropTextColor = '#44403C';
+                } else {
+                  // Default for unknown crops
+                  cropBgColor = '#DBEAFE';
+                  cropTextColor = '#1E40AF';
                 }
 
                 return (
                   <div
                     key={index}
-                    className="px-4 py-3 hover:bg-gray-50 transition-colors cursor-pointer flex items-start justify-between"
+                    className="px-4 py-3 hover:bg-green-50 transition-all duration-200 cursor-pointer flex items-start justify-between"
+                    style={{
+                      animation: 'fadeInUp 0.5s ease-out forwards',
+                      animationDelay: `${index * 100}ms`,
+                      opacity: 0,
+                      borderBottom: '1px solid #d9e8d9'
+                    }}
                     onClick={() => openFarmerProfileByName(harvest.farmerName)}
                   >
                     <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-gray-800 text-sm truncate">{harvest.farmerName}</p>
+                      <p className="font-semibold text-sm truncate" style={{ fontSize: '16px', color: '#111827' }}>{harvest.farmerName}</p>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${cropBgColor} ${cropTextColor}`}>
+                        <span 
+                          className="text-xs px-2 py-0.5 rounded-full font-medium"
+                          style={{ backgroundColor: cropBgColor, color: cropTextColor }}
+                        >
                           {harvest.crop}
                         </span>
                       </div>
-                      <p className="text-xs text-gray-400 mt-1">{formatDate(harvest.harvestDate)}</p>
+                      <p className="text-gray-400 mt-1" style={{ fontSize: '13px' }}>{formatDate(harvest.harvestDate)}</p>
                     </div>
-                    <div className="flex items-center gap-1 font-bold text-sm text-green-700 whitespace-nowrap ml-2 flex-shrink-0">
+                    <div className="flex items-center gap-1 font-bold text-green-700 whitespace-nowrap ml-2 flex-shrink-0" style={{ fontSize: '15px' }}>
                       {harvest.harvestQty} kg
                     </div>
                   </div>
