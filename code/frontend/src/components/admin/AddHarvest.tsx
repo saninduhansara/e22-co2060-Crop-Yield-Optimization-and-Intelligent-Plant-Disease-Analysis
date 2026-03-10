@@ -15,9 +15,10 @@ interface Farm {
 
 interface HarvestResult {
   farmYield: number;
-  averageYield: number;
-  maxYieldAcrossDistricts: number;
-  pointsEarned: number;
+  averageYield: number | null;
+  maxYieldAcrossDistricts: number | null;
+  pointsEarned: number | null;
+  pointsPending: boolean;
 }
 
 export function AddHarvest() {
@@ -80,9 +81,14 @@ export function AddHarvest() {
         averageYield: response.averageYield,
         maxYieldAcrossDistricts: response.maxYieldAcrossDistricts,
         pointsEarned: response.pointsEarned,
+        pointsPending: Boolean(response.pointsPending),
       });
       setShowResult(true);
-      toast.success('Harvest recorded successfully!');
+      toast.success(
+        response.pointsPending
+          ? 'Harvest recorded. Points are pending until average yield is available.'
+          : 'Harvest recorded successfully!'
+      );
 
       // Reset form after 10 seconds
       setTimeout(() => {
@@ -144,15 +150,21 @@ export function AddHarvest() {
                 </div>
                 <div className="bg-white rounded-lg p-4 border border-green-200">
                   <p className="text-sm text-gray-600 mb-1">District Average Yield</p>
-                  <p className="text-2xl font-bold text-gray-900">{result.averageYield.toFixed(2)} kg</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {result.averageYield === null ? 'Pending' : `${result.averageYield.toFixed(2)} kg`}
+                  </p>
                 </div>
                 <div className="bg-white rounded-lg p-4 border border-green-200">
                   <p className="text-sm text-gray-600 mb-1">Maximum Yield (All Districts)</p>
-                  <p className="text-2xl font-bold text-gray-900">{result.maxYieldAcrossDistricts.toFixed(2)} kg</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {result.maxYieldAcrossDistricts === null ? 'Pending' : `${result.maxYieldAcrossDistricts.toFixed(2)} kg`}
+                  </p>
                 </div>
                 <div className="bg-gradient-to-br from-green-100 to-green-200 rounded-lg p-4 border-2 border-green-400">
                   <p className="text-sm text-green-800 mb-1 font-semibold">Points Earned</p>
-                  <p className="text-3xl font-bold text-green-900">{Math.round(result.pointsEarned)} pts</p>
+                  <p className="text-3xl font-bold text-green-900">
+                    {result.pointsPending || result.pointsEarned === null ? 'Pending' : `${Math.round(result.pointsEarned)} pts`}
+                  </p>
                 </div>
               </div>
             </div>
