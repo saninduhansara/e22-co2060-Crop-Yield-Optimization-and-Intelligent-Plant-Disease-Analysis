@@ -85,3 +85,7 @@ app.use("/api/inquiries", inquiryRouter)
 app.listen(5000, () => {
     console.log("server started at port 5000")
 })
+
+app.get("/health", (req,res)=>{
+  res.status(200).json({status:"ok"});
+});
