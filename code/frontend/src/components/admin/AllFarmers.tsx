@@ -250,14 +250,14 @@ export function AllFarmers() {
             </div>
 
             {/* Search Results Info */}
-            {(searchTerm || activeStatusFilter !== 'all' || activeCropFilter) && (
-              <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm text-blue-700">
-                  <span className="font-semibold">{filteredFarms.length}</span> result{filteredFarms.length !== 1 ? 's' : ''} found 
-                  {searchTerm && ` for "<span className="font-semibold">${searchTerm}</span>"`}
-                  {activeStatusFilter !== 'all' && ` • Status: ${activeStatusFilter}`}
-                  {activeCropFilter && ` • Crop: ${activeCropFilter}`}
-                </p>
+            {searchTerm && (
+              <div style={{
+                fontSize: '13px',
+                color: '#6B7280',
+                marginTop: '8px',
+                marginBottom: '4px'
+              }}>
+                Showing {filteredFarms.length} result{filteredFarms.length !== 1 ? 's' : ''} for "<strong style={{ color: '#111827', fontWeight: '600' }}>{searchTerm}</strong>"
               </div>
             )}
           </div>
