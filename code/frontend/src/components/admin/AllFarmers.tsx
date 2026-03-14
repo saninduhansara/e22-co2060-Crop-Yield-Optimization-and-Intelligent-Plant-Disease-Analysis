@@ -38,6 +38,30 @@ const getCropBadgeColor = (crop: string): { background: string; color: string } 
   return cropColors[crop] || { background: '#D1D5DB', color: '#374151' };
 };
 
+// Helper function to get crop swatch color
+const getCropSwatchColor = (crop: string): string => {
+  const cropSwatches: { [key: string]: string } = {
+    'Paddy': '#FEF08A',
+    'Corn': '#FED7AA',
+    'Wheat': '#FDE68A',
+    'Tomatoes': '#FECACA',
+    'Onions': '#E9D5FF',
+    'Carrots': '#FFEDD5',
+    'Cabbage': '#BBF7D0',
+    'Potatoes': '#D6D3D1'
+  };
+  return cropSwatches[crop] || '#D1D5DB';
+};
+
+// Helper function to get status dot color
+const getStatusDotColor = (status: string): string => {
+  switch (status) {
+    case 'active': return '#16A34A';
+    case 'abandoned': return '#DC2626';
+    default: return '#9CA3AF';
+  }
+};
+
 // All farmers is changed to All Farms in the UI (admin sidebar)
 export function AllFarmers() {
   const navigate = useNavigate();
@@ -51,6 +75,8 @@ export function AllFarmers() {
   const [activeStatusFilter, setActiveStatusFilter] = useState<'all' | 'active' | 'abandoned' | string>('all');
   const [activeCropFilter, setActiveCropFilter] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
+  const [cropDropdownOpen, setCropDropdownOpen] = useState(false);
   const pageSize = 20;
 
   // Fetch farms on component mount
@@ -134,130 +160,352 @@ export function AllFarmers() {
         </div>
       ) : (
         <>
-          {/* Search & Filter */}
-          <div className="bg-white rounded-xl border border-gray-200 p-4">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1 relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search by Farm ID, farmer name, NIC, or phone..."
+          {/* Search & Filter - Unified Search Block */}
+          <div>
+            {/* Main Search Container */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0,
+                background: 'white',
+                border: '1px solid #E5E7EB',
+                borderRadius: '12px',
+                padding: '6px 8px',
+                boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+                transition: 'all 0.2s ease',
+                height: '44px'
+              }}
+              onFocus={() => {}} // placeholder for focus handling
+              onBlur={() => {}} // placeholder for blur handling
+            >
+              {/* Search Icon and Input */}
+              <Search style={{
+                width: '16px',
+                height: '16px',
+                color: '#9CA3AF',
+                marginLeft: '4px',
+                flexShrink: 0
+              }} />
+              
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search by Farm ID, farmer name, NIC, or phone..."
+                style={{
+                  flex: 1,
+                  border: 'none',
+                  outline: 'none',
+                  background: 'transparent',
+                  fontSize: '14px',
+                  color: '#111827',
+                  padding: '6px 10px',
+                  boxSizing: 'border-box'
+                }}
+                onFocus={(e) => {
+                  (e.currentTarget.parentElement as HTMLElement).style.borderColor = '#16A34A';
+                  (e.currentTarget.parentElement as HTMLElement).style.boxShadow = '0 0 0 3px rgba(22,163,74,0.08)';
+                }}
+                onBlur={(e) => {
+                  (e.currentTarget.parentElement as HTMLElement).style.borderColor = '#E5E7EB';
+                  (e.currentTarget.parentElement as HTMLElement).style.boxShadow = '0 1px 4px rgba(0,0,0,0.06)';
+                }}
+              />
+
+              {/* Clear Button or Keyboard Hint */}
+              {searchTerm ? (
+                <button
+                  onClick={() => setSearchTerm('')}
                   style={{
-                    width: '100%',
-                    paddingLeft: '40px',
-                    paddingRight: searchTerm ? '40px' : '16px',
-                    paddingTop: '10px',
-                    paddingBottom: '10px',
-                    height: '42px',
-                    border: '1px solid #E5E7EB',
-                    borderRadius: '10px',
-                    fontSize: '14px',
-                    outline: 'none',
-                    transition: 'all 0.2s ease',
-                    boxSizing: 'border-box'
+                    background: '#F3F4F6',
+                    border: 'none',
+                    borderRadius: '50%',
+                    width: '20px',
+                    height: '20px',
+                    cursor: 'pointer',
+                    color: '#6B7280',
+                    fontSize: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                    transition: 'background 0.2s ease'
                   }}
-                  onFocus={(e) => {
-                    e.currentTarget.style.borderColor = '#16A34A';
-                    e.currentTarget.style.boxShadow = '0 0 0 3px rgba(22,163,74,0.1)';
+                  onMouseEnter={(e) => e.currentTarget.style.background = '#E5E7EB'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = '#F3F4F6'}
+                  title="Clear search"
+                >
+                  ✕
+                </button>
+              ) : (
+                <div style={{
+                  fontSize: '11px',
+                  color: '#D1D5DB',
+                  marginRight: '4px',
+                  flexShrink: 0,
+                  whiteSpace: 'nowrap'
+                }}>
+                  ⌘K
+                </div>
+              )}
+
+              {/* Divider 1 */}
+              <div style={{
+                width: '1px',
+                height: '24px',
+                background: '#E5E7EB',
+                flexShrink: 0,
+                margin: '0 4px'
+              }} />
+
+              {/* Status Dropdown */}
+              <div style={{ position: 'relative' }}>
+                <button
+                  onClick={() => {
+                    setStatusDropdownOpen(!statusDropdownOpen);
+                    setCropDropdownOpen(false);
                   }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.borderColor = '#E5E7EB';
-                    e.currentTarget.style.boxShadow = 'none';
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '6px 12px',
+                    border: 'none',
+                    background: 'transparent',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    fontWeight: '500',
+                    whiteSpace: 'nowrap',
+                    color: '#374151',
+                    height: '32px'
                   }}
-                  className="placeholder-gray-400"
-                />
-                {searchTerm && (
-                  <button
-                    onClick={() => setSearchTerm('')}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 flex items-center justify-center w-5 h-5"
-                    title="Clear search"
+                >
+                  <div
+                    style={{
+                      width: '7px',
+                      height: '7px',
+                      borderRadius: '50%',
+                      background: getStatusDotColor(activeStatusFilter),
+                      flexShrink: 0
+                    }}
+                  />
+                  {activeStatusFilter === 'all' ? 'All' : activeStatusFilter.charAt(0).toUpperCase() + activeStatusFilter.slice(1)}
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: '#9CA3AF', flexShrink: 0 }}>
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </button>
+
+                {/* Status Dropdown Menu */}
+                {statusDropdownOpen && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 'calc(100% + 6px)',
+                      left: 0,
+                      background: 'white',
+                      border: '1px solid #E5E7EB',
+                      borderRadius: '10px',
+                      boxShadow: '0 8px 24px rgba(0,0,0,0.10)',
+                      minWidth: '140px',
+                      zIndex: 50,
+                      overflow: 'hidden'
+                    }}
                   >
-                    ✕
-                  </button>
+                    {['all', 'active', 'abandoned'].map((status) => (
+                      <div
+                        key={status}
+                        onClick={() => {
+                          setActiveStatusFilter(status as any);
+                          setStatusDropdownOpen(false);
+                        }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '9px 14px',
+                          fontSize: '13px',
+                          cursor: 'pointer',
+                          color: activeStatusFilter === status ? '#15803D' : '#374151',
+                          background: activeStatusFilter === status ? '#F0FDF4' : '#FFFFFF',
+                          fontWeight: activeStatusFilter === status ? '500' : '400',
+                          transition: 'all 0.15s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (activeStatusFilter !== status) {
+                            e.currentTarget.style.background = '#F9FAFB';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = activeStatusFilter === status ? '#F0FDF4' : '#FFFFFF';
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: '7px',
+                            height: '7px',
+                            borderRadius: '50%',
+                            background: getStatusDotColor(status),
+                            flexShrink: 0
+                          }}
+                        />
+                        {status === 'all' ? 'All' : status.charAt(0).toUpperCase() + status.slice(1)}
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
 
-              {/* Status Dropdown */}
-              <select
-                value={activeStatusFilter}
-                onChange={(e) => {
-                  setActiveStatusFilter(e.target.value as any);
-                  setActiveCropFilter(null);
-                }}
-                style={{
-                  padding: '10px 14px',
-                  borderRadius: '10px',
-                  border: '1px solid #E5E7EB',
-                  background: 'white',
-                  color: '#374151',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  outline: 'none',
-                  transition: 'all 0.2s ease',
-                  minWidth: '140px'
-                }}
-                onFocus={(e) => {
-                  e.currentTarget.style.borderColor = '#16A34A';
-                  e.currentTarget.style.boxShadow = '0 0 0 3px rgba(22,163,74,0.1)';
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.borderColor = '#E5E7EB';
-                  e.currentTarget.style.boxShadow = 'none';
-                }}
-              >
-                <option value="all">All</option>
-                <option value="active">Active</option>
-                <option value="abandoned">Abandoned</option>
-              </select>
+              {/* Divider 2 */}
+              <div style={{
+                width: '1px',
+                height: '24px',
+                background: '#E5E7EB',
+                flexShrink: 0,
+                margin: '0 4px'
+              }} />
 
               {/* Crop Dropdown */}
-              <select
-                value={activeCropFilter || ''}
-                onChange={(e) => {
-                  setActiveCropFilter(e.target.value || null);
-                  setActiveStatusFilter('all');
-                }}
-                style={{
-                  padding: '10px 14px',
-                  borderRadius: '10px',
-                  border: '1px solid #E5E7EB',
-                  background: 'white',
-                  color: '#374151',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  outline: 'none',
-                  transition: 'all 0.2s ease',
-                  minWidth: '150px'
-                }}
-                onFocus={(e) => {
-                  e.currentTarget.style.borderColor = '#16A34A';
-                  e.currentTarget.style.boxShadow = '0 0 0 3px rgba(22,163,74,0.1)';
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.borderColor = '#E5E7EB';
-                  e.currentTarget.style.boxShadow = 'none';
-                }}
-              >
-                <option value="">All Crops</option>
-                {Array.from(new Set(farms.map(f => f.crop))).sort().map((crop) => (
-                  <option key={crop} value={crop}>{crop}</option>
-                ))}
-              </select>
+              <div style={{ position: 'relative' }}>
+                <button
+                  onClick={() => {
+                    setCropDropdownOpen(!cropDropdownOpen);
+                    setStatusDropdownOpen(false);
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '6px 12px',
+                    border: 'none',
+                    background: 'transparent',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    fontWeight: '500',
+                    whiteSpace: 'nowrap',
+                    color: '#374151',
+                    height: '32px'
+                  }}
+                >
+                  {activeCropFilter && (
+                    <div
+                      style={{
+                        width: '6px',
+                        height: '6px',
+                        borderRadius: '2px',
+                        background: getCropSwatchColor(activeCropFilter),
+                        flexShrink: 0
+                      }}
+                    />
+                  )}
+                  {activeCropFilter || 'All Crops'}
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: '#9CA3AF', flexShrink: 0 }}>
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </button>
+
+                {/* Crop Dropdown Menu */}
+                {cropDropdownOpen && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 'calc(100% + 6px)',
+                      left: 0,
+                      background: 'white',
+                      border: '1px solid #E5E7EB',
+                      borderRadius: '10px',
+                      boxShadow: '0 8px 24px rgba(0,0,0,0.10)',
+                      minWidth: '160px',
+                      zIndex: 50,
+                      overflow: 'hidden',
+                      maxHeight: '300px',
+                      overflowY: 'auto'
+                    }}
+                  >
+                    {/* All Crops Option */}
+                    <div
+                      onClick={() => {
+                        setActiveCropFilter(null);
+                        setCropDropdownOpen(false);
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '9px 14px',
+                        fontSize: '13px',
+                        cursor: 'pointer',
+                        color: !activeCropFilter ? '#15803D' : '#374151',
+                        background: !activeCropFilter ? '#F0FDF4' : '#FFFFFF',
+                        fontWeight: !activeCropFilter ? '500' : '400',
+                        transition: 'all 0.15s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (activeCropFilter) {
+                          e.currentTarget.style.background = '#F9FAFB';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = !activeCropFilter ? '#F0FDF4' : '#FFFFFF';
+                      }}
+                    >
+                      All Crops
+                    </div>
+
+                    {/* Individual Crop Options */}
+                    {Array.from(new Set(farms.map(f => f.crop))).sort().map((crop) => (
+                      <div
+                        key={crop}
+                        onClick={() => {
+                          setActiveCropFilter(crop);
+                          setCropDropdownOpen(false);
+                        }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '9px 14px',
+                          fontSize: '13px',
+                          cursor: 'pointer',
+                          color: activeCropFilter === crop ? '#15803D' : '#374151',
+                          background: activeCropFilter === crop ? '#F0FDF4' : '#FFFFFF',
+                          fontWeight: activeCropFilter === crop ? '500' : '400',
+                          transition: 'all 0.15s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (activeCropFilter !== crop) {
+                            e.currentTarget.style.background = '#F9FAFB';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = activeCropFilter === crop ? '#F0FDF4' : '#FFFFFF';
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: '6px',
+                            height: '6px',
+                            borderRadius: '2px',
+                            background: getCropSwatchColor(crop),
+                            flexShrink: 0
+                          }}
+                        />
+                        {crop}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Search Results Info */}
+            {/* Search Results Info - Below the search block */}
             {searchTerm && (
               <div style={{
                 fontSize: '13px',
                 color: '#6B7280',
-                marginTop: '8px',
-                marginBottom: '4px'
+                marginTop: '10px'
               }}>
-                Showing {filteredFarms.length} result{filteredFarms.length !== 1 ? 's' : ''} for "<strong style={{ color: '#111827', fontWeight: '600' }}>{searchTerm}</strong>"
+                Showing <strong style={{ color: '#111827', fontWeight: '600' }}>{filteredFarms.length}</strong> result{filteredFarms.length !== 1 ? 's' : ''} for <strong style={{ color: '#111827', fontWeight: '600' }}>"{searchTerm}"</strong>
               </div>
             )}
           </div>
