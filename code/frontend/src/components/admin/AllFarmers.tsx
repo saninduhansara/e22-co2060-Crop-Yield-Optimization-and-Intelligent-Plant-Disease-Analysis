@@ -1,6 +1,5 @@
 import { Search, Eye, Edit, Trash2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router';
 import { FarmerProfile } from './FarmerProfile';
 import { EditFarmModal } from './EditFarmModal';
 import { DeleteConfirmationModal } from './DeleteConfirmationModal';
@@ -64,7 +63,6 @@ const getStatusDotColor = (status: string): string => {
 
 // All farmers is changed to All Farms in the UI (admin sidebar)
 export function AllFarmers() {
-  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFarmer, setSelectedFarmer] = useState<Farm | null>(null);
   const [farmToEdit, setFarmToEdit] = useState<Farm | null>(null);
@@ -575,7 +573,7 @@ export function AllFarmers() {
                             height: '52px',
                             transition: 'all 0.15s ease'
                           }}
-                          onClick={() => navigate(`/admin/farmer-profile/${farm.farmId}`, { state: { farm } })}
+                          onClick={() => setSelectedFarmer(farm)}
                           onMouseEnter={(e) => {
                             const row = e.currentTarget;
                             row.style.background = '#F0FDF4';
@@ -778,7 +776,7 @@ export function AllFarmers() {
                   <div
                     key={farm.farmId}
                     className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
-                    onClick={() => navigate(`/admin/farmer-profile/${farm.farmId}`, { state: { farm } })}
+                    onClick={() => setSelectedFarmer(farm)}
                   >
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-3 flex-1 min-w-0">
