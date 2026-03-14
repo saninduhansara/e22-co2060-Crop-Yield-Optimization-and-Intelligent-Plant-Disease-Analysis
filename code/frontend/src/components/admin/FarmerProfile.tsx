@@ -157,27 +157,27 @@ export function FarmerProfile({ farm, onClose }: FarmerProfileProps) {
           </div>
 
           {/* Farmer Contact Information */}
-          <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
-            <h3 className="text-base font-semibold text-gray-800 mb-3 flex items-center gap-2">
+          <div style={{ background: '#F9FAFB', borderRadius: '0.5rem', border: '1px solid #E5E7EB', padding: '12px 16px' }}>
+            <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '10px', paddingBottom: '8px', fontSize: '0.875rem', fontWeight: '600', color: '#111827', borderBottom: '1px solid #F9FAFB' }}>
               <User className="w-4 h-4 text-green-700" />
               Contact Info
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
-                <p className="text-xs text-gray-600 mb-0.5">Full Name</p>
-                <p className="text-xs font-medium text-gray-800 flex items-center gap-2">
-                  <User className="w-3 h-3 text-gray-500" />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0 }}>
+              <div style={{ padding: '6px 0', borderBottom: '1px solid #F9FAFB', paddingRight: '8px' }}>
+                <p style={{ fontSize: '11px', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '1px' }}>Full Name</p>
+                <p style={{ fontSize: '13px', fontWeight: '500', color: '#111827', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <User style={{ width: '13px', height: '13px', color: '#9CA3AF' }} />
                   {farm.farmerName}
                 </p>
               </div>
-              <div>
-                <p className="text-xs text-gray-600 mb-0.5">NIC Number</p>
-                <p className="text-xs font-medium text-gray-800">{farm.farmerNIC}</p>
+              <div style={{ padding: '6px 0', borderBottom: '1px solid #F9FAFB', paddingLeft: '8px' }}>
+                <p style={{ fontSize: '11px', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '1px' }}>NIC Number</p>
+                <p style={{ fontSize: '13px', fontWeight: '500', color: '#111827' }}>{farm.farmerNIC}</p>
               </div>
-              <div className="md:col-span-2">
-                <p className="text-xs text-gray-600 mb-0.5">Phone Number</p>
-                <p className="text-xs font-medium text-gray-800 flex items-center gap-2">
-                  <Phone className="w-3 h-3 text-gray-500" />
+              <div style={{ padding: '6px 0', borderBottom: '1px solid #F9FAFB', gridColumn: '1 / -1' }}>
+                <p style={{ fontSize: '11px', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '1px' }}>Phone Number</p>
+                <p style={{ fontSize: '13px', fontWeight: '500', color: '#111827', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Phone style={{ width: '13px', height: '13px', color: '#9CA3AF' }} />
                   {farm.phone}
                 </p>
               </div>
