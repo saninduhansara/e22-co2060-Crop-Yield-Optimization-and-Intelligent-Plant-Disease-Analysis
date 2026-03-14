@@ -36,11 +36,17 @@ export function HarvestHistory() {
   const [selectedSeason, setSelectedSeason] = useState<string>('');
   const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [exportingFormat, setExportingFormat] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 20;
 
   useEffect(() => {
     fetchCrops();
     fetchHarvestHistory();
   }, []);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedCrop, selectedYear, selectedSeason]);
 
   const fetchCrops = async () => {
     try {
@@ -433,9 +439,26 @@ export function HarvestHistory() {
           </button>
           <button 
             onClick={handleExportData}
-            className="px-4 py-3 sm:px-6 bg-green-700 hover:bg-green-800 text-white rounded-lg flex items-center justify-center gap-2 transition-colors whitespace-nowrap">
-            <Download className="w-5 h-5" />
-            <span className="hidden sm:inline">Export Data</span>
+            title="Export as CSV"
+            style={{
+              background: '#15803D',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '8px 14px',
+              color: 'white',
+              fontSize: '13px',
+              fontWeight: '500',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'background 0.2s ease'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = '#166534'}
+            onMouseLeave={(e) => e.currentTarget.style.background = '#15803D'}
+          >
+            <Download className="w-4 h-4" />
+            <span>Export</span>
           </button>
         </div>
       </div>
@@ -638,7 +661,7 @@ export function HarvestHistory() {
               </tr>
             </thead>
             <tbody>
-              {filteredHarvests.map((harvest, index) => (
+              {filteredHarvests.slice((currentPage - 1) * pageSize, currentPage * pageSize).map((harvest, index) => (
                 <tr 
                   key={harvest.harvestId} 
                   style={{
@@ -696,6 +719,97 @@ export function HarvestHistory() {
               ))}
             </tbody>
           </table>
+        </div>
+        
+        {/* Pagination */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '12px 16px',
+          background: '#F9FAFB',
+          borderRadius: '10px',
+          border: '1px solid #E5E7EB',
+          marginTop: '16px'
+        }}>
+          <div style={{ fontSize: '13px', color: '#6B7280' }}>
+            Showing <span style={{ fontWeight: '600', color: '#111827' }}>{Math.min((currentPage - 1) * pageSize + 1, filteredHarvests.length)}</span>–<span style={{ fontWeight: '600', color: '#111827' }}>{Math.min(currentPage * pageSize, filteredHarvests.length)}</span> of <span style={{ fontWeight: '600', color: '#111827' }}>{filteredHarvests.length}</span> records
+          </div>
+          
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+            <button
+              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+              disabled={currentPage === 1}
+              style={{
+                padding: '6px 12px',
+                background: 'white',
+                border: '1px solid #E5E7EB',
+                borderRadius: '6px',
+                color: '#374151',
+                cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                opacity: currentPage === 1 ? '0.4' : '1',
+                fontSize: '13px',
+                fontWeight: '500',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              Previous
+            </button>
+            
+            {Array.from({ length: Math.ceil(filteredHarvests.length / pageSize) }, (_, i) => {
+              const pageNum = i + 1;
+              const isCurrentPage = pageNum === currentPage;
+              const shouldShow = pageNum === 1 || pageNum === Math.ceil(filteredHarvests.length / pageSize) || Math.abs(pageNum - currentPage) <= 1;
+              
+              if (!shouldShow) return null;
+              if (pageNum > 1 && pageNum < Math.ceil(filteredHarvests.length / pageSize) && Math.abs(pageNum - currentPage) > 1) {
+                if (pageNum === currentPage - 2 || pageNum === currentPage + 2) {
+                  return <span key={`dots-${pageNum}`} style={{ color: '#9CA3AF' }}>...</span>;
+                }
+                return null;
+              }
+              
+              return (
+                <button
+                  key={pageNum}
+                  onClick={() => setCurrentPage(pageNum)}
+                  style={{
+                    background: isCurrentPage ? '#15803D' : 'white',
+                    color: isCurrentPage ? 'white' : '#374151',
+                    border: isCurrentPage ? 'none' : '1px solid #E5E7EB',
+                    borderRadius: '6px',
+                    width: '32px',
+                    height: '32px',
+                    cursor: 'pointer',
+                    fontWeight: '500',
+                    fontSize: '13px',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  {pageNum}
+                </button>
+              );
+            }).filter(Boolean)}
+            
+            <button
+              onClick={() => setCurrentPage(Math.min(Math.ceil(filteredHarvests.length / pageSize), currentPage + 1))}
+              disabled={currentPage >= Math.ceil(filteredHarvests.length / pageSize)}
+              style={{
+                padding: '6px 12px',
+                background: 'white',
+                border: '1px solid #E5E7EB',
+                borderRadius: '6px',
+                color: '#374151',
+                cursor: currentPage >= Math.ceil(filteredHarvests.length / pageSize) ? 'not-allowed' : 'pointer',
+                opacity: currentPage >= Math.ceil(filteredHarvests.length / pageSize) ? '0.4' : '1',
+                fontSize: '13px',
+                fontWeight: '500',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              Next
+            </button>
+          </div>
         </div>
       </div>
 
