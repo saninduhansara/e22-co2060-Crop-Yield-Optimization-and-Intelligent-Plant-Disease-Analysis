@@ -1,4 +1,4 @@
-import { Search, Filter, Eye, Edit, Trash2 } from 'lucide-react';
+import { Search, Eye, Edit, Trash2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { FarmerProfile } from './FarmerProfile';
@@ -178,115 +178,75 @@ export function AllFarmers() {
                   </button>
                 )}
               </div>
-              <button 
+
+              {/* Status Dropdown */}
+              <select
+                value={activeStatusFilter}
+                onChange={(e) => {
+                  setActiveStatusFilter(e.target.value as any);
+                  setActiveCropFilter(null);
+                }}
                 style={{
-                  background: '#16A34A',
-                  color: 'white',
-                  border: 'none',
+                  padding: '10px 14px',
                   borderRadius: '10px',
-                  padding: '10px 20px',
-                  fontWeight: '500',
+                  border: '1px solid #E5E7EB',
+                  background: 'white',
+                  color: '#374151',
                   fontSize: '14px',
+                  fontWeight: '500',
                   cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  transition: 'background 0.2s ease',
-                  whiteSpace: 'nowrap'
+                  outline: 'none',
+                  transition: 'all 0.2s ease',
+                  minWidth: '140px'
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.background = '#15803D'}
-                onMouseLeave={(e) => e.currentTarget.style.background = '#16A34A'}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = '#16A34A';
+                  e.currentTarget.style.boxShadow = '0 0 0 3px rgba(22,163,74,0.1)';
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = '#E5E7EB';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
               >
-                <Filter className="w-5 h-5" />
-                <span>Filter</span>
-              </button>
-            </div>
+                <option value="all">All</option>
+                <option value="active">Active</option>
+                <option value="abandoned">Abandoned</option>
+              </select>
 
-            {/* Quick Filter Chips */}
-            <div style={{ marginTop: '12px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              {/* Status Filters */}
-              <button
-                onClick={() => {
+              {/* Crop Dropdown */}
+              <select
+                value={activeCropFilter || ''}
+                onChange={(e) => {
+                  setActiveCropFilter(e.target.value || null);
                   setActiveStatusFilter('all');
-                  setActiveCropFilter(null);
                 }}
                 style={{
-                  padding: '5px 14px',
-                  borderRadius: '999px',
-                  fontSize: '12px',
+                  padding: '10px 14px',
+                  borderRadius: '10px',
+                  border: '1px solid #E5E7EB',
+                  background: 'white',
+                  color: '#374151',
+                  fontSize: '14px',
                   fontWeight: '500',
-                  border: activeStatusFilter === 'all' ? 'none' : '1px solid #E5E7EB',
-                  background: activeStatusFilter === 'all' ? '#16A34A' : '#F3F4F6',
-                  color: activeStatusFilter === 'all' ? 'white' : '#374151',
                   cursor: 'pointer',
-                  transition: 'all 0.2s ease'
+                  outline: 'none',
+                  transition: 'all 0.2s ease',
+                  minWidth: '150px'
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = '#16A34A';
+                  e.currentTarget.style.boxShadow = '0 0 0 3px rgba(22,163,74,0.1)';
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = '#E5E7EB';
+                  e.currentTarget.style.boxShadow = 'none';
                 }}
               >
-                All
-              </button>
-              <button
-                onClick={() => {
-                  setActiveStatusFilter('active');
-                  setActiveCropFilter(null);
-                }}
-                style={{
-                  padding: '5px 14px',
-                  borderRadius: '999px',
-                  fontSize: '12px',
-                  fontWeight: '500',
-                  border: activeStatusFilter === 'active' ? 'none' : '1px solid #E5E7EB',
-                  background: activeStatusFilter === 'active' ? '#16A34A' : '#F3F4F6',
-                  color: activeStatusFilter === 'active' ? 'white' : '#374151',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                Active
-              </button>
-              <button
-                onClick={() => {
-                  setActiveStatusFilter('abandoned');
-                  setActiveCropFilter(null);
-                }}
-                style={{
-                  padding: '5px 14px',
-                  borderRadius: '999px',
-                  fontSize: '12px',
-                  fontWeight: '500',
-                  border: activeStatusFilter === 'abandoned' ? 'none' : '1px solid #E5E7EB',
-                  background: activeStatusFilter === 'abandoned' ? '#16A34A' : '#F3F4F6',
-                  color: activeStatusFilter === 'abandoned' ? 'white' : '#374151',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                Abandoned
-              </button>
-
-              {/* Crop Filters */}
-              {Array.from(new Set(farms.map(f => f.crop))).sort().map((crop) => (
-                <button
-                  key={crop}
-                  onClick={() => {
-                    setActiveCropFilter(activeCropFilter === crop ? null : crop);
-                    setActiveStatusFilter('all');
-                  }}
-                  style={{
-                    padding: '5px 14px',
-                    borderRadius: '999px',
-                    fontSize: '12px',
-                    fontWeight: '500',
-                    border: activeCropFilter === crop ? 'none' : '1px solid #E5E7EB',
-                    background: activeCropFilter === crop ? '#16A34A' : '#F3F4F6',
-                    color: activeCropFilter === crop ? 'white' : '#374151',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease'
-                  }}
-                >
-                  {crop}
-                </button>
-              ))}
+                <option value="">All Crops</option>
+                {Array.from(new Set(farms.map(f => f.crop))).sort().map((crop) => (
+                  <option key={crop} value={crop}>{crop}</option>
+                ))}
+              </select>
             </div>
 
             {/* Search Results Info */}
