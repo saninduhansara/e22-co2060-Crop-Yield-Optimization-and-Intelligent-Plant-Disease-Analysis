@@ -589,58 +589,74 @@ export function HarvestHistory() {
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead style={{ position: 'sticky', top: 0, zIndex: 10, background: '#F3F4F6' }}>
               <tr>
-                <th className="px-3 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider whitespace-nowrap">
+                <th style={{ fontSize: '11px', fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '12px 16px', borderBottom: '2px solid #E5E7EB' }} className="text-left whitespace-nowrap">
                   Farmer
                 </th>
-                <th className="px-3 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider whitespace-nowrap">
+                <th style={{ fontSize: '11px', fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '12px 16px', borderBottom: '2px solid #E5E7EB' }} className="text-left whitespace-nowrap">
                   Farm Name
                 </th>
-                <th className="px-3 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider whitespace-nowrap">
+                <th style={{ fontSize: '11px', fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '12px 16px', borderBottom: '2px solid #E5E7EB' }} className="text-left whitespace-nowrap">
                   Location
                 </th>
-                <th className="px-3 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider whitespace-nowrap">
+                <th style={{ fontSize: '11px', fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '12px 16px', borderBottom: '2px solid #E5E7EB' }} className="text-left whitespace-nowrap">
                   Season
                 </th>
-                <th className="px-3 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider whitespace-nowrap">
+                <th style={{ fontSize: '11px', fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '12px 16px', borderBottom: '2px solid #E5E7EB' }} className="text-left whitespace-nowrap">
                   Year
                 </th>
-                <th className="px-3 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider whitespace-nowrap">
+                <th style={{ fontSize: '11px', fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '12px 16px', borderBottom: '2px solid #E5E7EB' }} className="text-left whitespace-nowrap">
                   Crop
                 </th>
-                <th className="px-3 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider whitespace-nowrap">
+                <th style={{ fontSize: '11px', fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '12px 16px', borderBottom: '2px solid #E5E7EB' }} className="text-left whitespace-nowrap">
                   Acres
                 </th>
-                <th className="px-3 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider whitespace-nowrap">
+                <th style={{ fontSize: '11px', fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '12px 16px', borderBottom: '2px solid #E5E7EB' }} className="text-left whitespace-nowrap">
                   Harvest Qty
                 </th>
-                <th className="px-3 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider whitespace-nowrap">
+                <th style={{ fontSize: '11px', fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '12px 16px', borderBottom: '2px solid #E5E7EB' }} className="text-left whitespace-nowrap">
                   Yield/Acre
                 </th>
-                <th className="px-3 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider whitespace-nowrap">
+                <th style={{ fontSize: '11px', fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '12px 16px', borderBottom: '2px solid #E5E7EB' }} className="text-left whitespace-nowrap">
                   Date
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
-              {filteredHarvests.map((harvest) => (
-                <tr key={harvest.harvestId} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-3 py-3">
+            <tbody>
+              {filteredHarvests.map((harvest, index) => (
+                <tr 
+                  key={harvest.harvestId} 
+                  style={{
+                    background: index % 2 === 0 ? '#FFFFFF' : '#F9FAFB',
+                    transition: 'all 0.15s ease',
+                    cursor: 'pointer'
+                  }}
+                  className="group hover:border-l-4"
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#F0FDF4';
+                    e.currentTarget.style.borderLeft = '3px solid #16A34A';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = index % 2 === 0 ? '#FFFFFF' : '#F9FAFB';
+                    e.currentTarget.style.borderLeft = 'none';
+                  }}
+                >
+                  <td style={{ fontSize: '13px', color: '#374151', padding: '11px 16px' }} className="whitespace-nowrap">
                     <div>
-                      <p className="font-medium text-gray-800 text-sm whitespace-nowrap">{harvest.farmerName}</p>
+                      <p className="font-medium whitespace-nowrap">{harvest.farmerName}</p>
                       <p className="text-xs text-gray-600 whitespace-nowrap">{harvest.farmerNIC}</p>
                     </div>
                   </td>
-                  <td className="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">{harvest.farmName}</td>
-                  <td className="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">{harvest.location}</td>
-                  <td className="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">{harvest.season}</td>
-                  <td className="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">{harvest.year}</td>
-                  <td className="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">{harvest.crop}</td>
-                  <td className="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">{harvest.acres}</td>
-                  <td className="px-3 py-3 text-xs font-medium text-gray-800 whitespace-nowrap">{harvest.harvestQty} kg</td>
-                  <td className="px-3 py-3 text-xs font-medium text-gray-800 whitespace-nowrap">{harvest.yieldPerAcre.toFixed(2)} kg</td>
-                  <td className="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">
+                  <td style={{ fontSize: '13px', color: '#374151', padding: '11px 16px' }} className="whitespace-nowrap">{harvest.farmName}</td>
+                  <td style={{ fontSize: '13px', color: '#374151', padding: '11px 16px' }} className="whitespace-nowrap">{harvest.location}</td>
+                  <td style={{ fontSize: '13px', color: '#374151', padding: '11px 16px' }} className="whitespace-nowrap">{harvest.season}</td>
+                  <td style={{ fontSize: '13px', color: '#374151', padding: '11px 16px' }} className="whitespace-nowrap">{harvest.year}</td>
+                  <td style={{ fontSize: '13px', color: '#374151', padding: '11px 16px' }} className="whitespace-nowrap">{harvest.crop}</td>
+                  <td style={{ fontSize: '13px', color: '#374151', padding: '11px 16px' }} className="whitespace-nowrap">{harvest.acres}</td>
+                  <td style={{ fontSize: '13px', color: '#374151', padding: '11px 16px', fontWeight: '500' }} className="whitespace-nowrap">{harvest.harvestQty} kg</td>
+                  <td style={{ fontSize: '13px', color: '#374151', padding: '11px 16px', fontWeight: '500' }} className="whitespace-nowrap">{harvest.yieldPerAcre.toFixed(2)} kg</td>
+                  <td style={{ fontSize: '13px', color: '#374151', padding: '11px 16px' }} className="whitespace-nowrap">
                     {new Date(harvest.harvestDate).toLocaleDateString()}
                   </td>
                 </tr>
