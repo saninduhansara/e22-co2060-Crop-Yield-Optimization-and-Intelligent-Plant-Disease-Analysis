@@ -943,9 +943,17 @@ export function HarvestHistory() {
       </div>
 
       {/* Results text */}
-      {(selectedCrop || selectedYear || selectedSeason) && (
+      {(searchTerm || selectedCrop || selectedYear || selectedSeason) && (
         <div style={{ fontSize: '13px', color: '#6B7280', marginTop: '8px' }}>
-          Showing <span style={{ fontWeight: '600', color: '#111827' }}>{filteredHarvests.length}</span> results
+          {searchTerm ? (
+            <>
+              Showing <span style={{ fontWeight: '600', color: '#111827' }}>{filteredHarvests.length}</span> results for "{searchTerm}"
+            </>
+          ) : (
+            <>
+              Showing <span style={{ fontWeight: '600', color: '#111827' }}>{filteredHarvests.length}</span> results
+            </>
+          )}
         </div>
       )}
 
