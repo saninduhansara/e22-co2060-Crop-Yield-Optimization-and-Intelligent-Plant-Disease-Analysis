@@ -268,15 +268,43 @@ export function AllFarmers() {
                             })()}
                           </td>
                           <td style={{ padding: '12px 16px', fontSize: '14px', color: '#374151', whiteSpace: 'nowrap' }}>
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${farm.status === 'active'
-                              ? 'bg-green-100 text-green-700'
-                              : 'bg-yellow-100 text-yellow-700'
-                              }`}>
-                              {farm.status.charAt(0).toUpperCase() + farm.status.slice(1)}
-                            </span>
+                            {(() => {
+                              const statusMap: { [key: string]: { bg: string; color: string; border: string } } = {
+                                'active': { bg: '#DCFCE7', color: '#166534', border: '1px solid #86EFAC' },
+                                'abandoned': { bg: '#FEE2E2', color: '#991B1B', border: '1px solid #FCA5A5' },
+                                'inactive': { bg: '#F3F4F6', color: '#4B5563', border: '1px solid #D1D5DB' }
+                              };
+                              const status = farm.status.toLowerCase();
+                              const statusStyle = statusMap[status] || statusMap['inactive'];
+                              return (
+                                <span style={{
+                                  padding: '3px 10px',
+                                  borderRadius: '999px',
+                                  fontSize: '12px',
+                                  fontWeight: '600',
+                                  background: statusStyle.bg,
+                                  color: statusStyle.color,
+                                  border: statusStyle.border,
+                                  display: 'inline-block'
+                                }}>
+                                  {farm.status.charAt(0).toUpperCase() + farm.status.slice(1)}
+                                </span>
+                              );
+                            })()}
                           </td>
-                          <td style={{ padding: '12px 16px', fontSize: '14px', color: '#374151', fontWeight: '600', whiteSpace: 'nowrap' }}>
-                            {Math.round(farm.points)}
+                          <td style={{ padding: '12px 16px', fontSize: '14px', whiteSpace: 'nowrap', textAlign: 'right' }}>
+                            <span style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              fontWeight: farm.points >= 10000 ? '700' : farm.points >= 1000 ? '600' : '400',
+                              color: farm.points >= 10000 ? '#B45309' : farm.points >= 1000 ? '#374151' : '#9CA3AF'
+                            }}>
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style={{ opacity: 0.8 }}>
+                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                              </svg>
+                              {Math.round(farm.points)}
+                            </span>
                           </td>
                           <td style={{ padding: '12px 16px', fontSize: '14px', color: '#374151', whiteSpace: 'nowrap' }} onClick={(e) => e.stopPropagation()}>
                             <div className="flex items-center gap-1">
@@ -329,10 +357,20 @@ export function AllFarmers() {
                           <p className="text-sm text-green-600 font-medium">{farm.farmId}</p>
                         </div>
                       </div>
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ml-2 ${farm.status === 'active'
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-yellow-100 text-yellow-700'
-                        }`}>
+                      <span style={{
+                        padding: '3px 10px',
+                        borderRadius: '999px',
+                        fontSize: '12px',
+                        fontWeight: '600',
+                        whiteSpace: 'nowrap',
+                        marginLeft: '8px',
+                        display: 'inline-block',
+                        ...(farm.status.toLowerCase() === 'active' 
+                          ? { background: '#DCFCE7', color: '#166534', border: '1px solid #86EFAC' }
+                          : farm.status.toLowerCase() === 'abandoned'
+                          ? { background: '#FEE2E2', color: '#991B1B', border: '1px solid #FCA5A5' }
+                          : { background: '#F3F4F6', color: '#4B5563', border: '1px solid #D1D5DB' })
+                      }}>
                         {farm.status.charAt(0).toUpperCase() + farm.status.slice(1)}
                       </span>
                     </div>
@@ -373,7 +411,19 @@ export function AllFarmers() {
                             </span>
                           );
                         })()}
-                        <span className="text-sm font-semibold text-green-700">{Math.round(farm.points)} pts</span>
+                        <span style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          fontSize: '14px',
+                          fontWeight: farm.points >= 10000 ? '700' : farm.points >= 1000 ? '600' : '400',
+                          color: farm.points >= 10000 ? '#B45309' : farm.points >= 1000 ? '#374151' : '#9CA3AF'
+                        }}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style={{ opacity: 0.8 }}>
+                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                          </svg>
+                          {Math.round(farm.points)}
+                        </span>
                       </div>
                       <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                         <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="View" onClick={() => setSelectedFarmer(farm)}>
