@@ -2,6 +2,7 @@ import { ArrowLeft, User, MapPin, Phone, Mail, Calendar, Star, TrendingUp, Wheat
 import { useParams, useNavigate } from 'react-router';
 import { useState, useEffect } from 'react';
 import { farmAPI } from '../../services/api';
+import { EditFarmModal } from './EditFarmModal';
 
 export function FarmerDetails() {
   const { farmerId } = useParams<{ farmerId: string }>();
@@ -9,6 +10,8 @@ export function FarmerDetails() {
   const [farmer, setFarmer] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [farmData, setFarmData] = useState<any>(null);
 
   useEffect(() => {
     if (!farmerId) {
@@ -40,6 +43,17 @@ export function FarmerDetails() {
           harvests: farm.harvests || [],
           farmerImage: farm.farmerImage
         };
+        
+        // Store farm data in format needed for EditFarmModal
+        setFarmData({
+          farmId: farm.farmId || farm.id,
+          farmName: farm.farmerName || farm.name,
+          location: farm.division,
+          crop: farm.crop,
+          farmSize: farm.farmSize,
+          district: farm.district,
+          status: farm.status
+        });
         
         setFarmer(farmerData);
       } catch (err: any) {
@@ -111,7 +125,7 @@ export function FarmerDetails() {
           </div>
           <div className="flex-1">
             <h2 className="text-2xl md:text-3xl font-bold mb-2">{farmer.name}</h2>
-            <div className="flex flex-wrap gap-3 md:gap-4">
+            <div className="flex flex-wrap gap-3 md:gap-4 items-center mb-4">
               <span className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs md:text-sm font-medium">
                 Farm ID: {farmer.id}
               </span>
@@ -121,6 +135,21 @@ export function FarmerDetails() {
                 }`}>
                 {farmer.status.charAt(0).toUpperCase() + farmer.status.slice(1)}
               </span>
+            </div>
+            {/* Action Buttons in Header */}
+            <div className="flex flex-col sm:flex-row gap-2 md:gap-3">
+              <button
+                onClick={() => setShowEditModal(true)}
+                className="px-4 py-2 bg-white text-green-700 rounded-lg font-medium hover:bg-gray-100 transition-colors text-sm md:text-base"
+              >
+                Edit Farmer Details
+              </button>
+              <button
+                onClick={() => navigate('/admin/add-harvest', { state: { farmerId: farmer.id } })}
+                className="px-4 py-2 bg-blue-400 text-white rounded-lg font-medium hover:bg-blue-500 transition-colors text-sm md:text-base"
+              >
+                Add New Harvest Record
+              </button>
             </div>
           </div>
         </div>
@@ -303,12 +332,6 @@ export function FarmerDetails() {
 
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
-            <button className="flex-1 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors text-sm md:text-base">
-              Edit Farmer Details
-            </button>
-            <button className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors text-sm md:text-base">
-              Add New Harvest Record
-            </button>
             <button
               onClick={() => navigate('/admin/farmers')}
               className="flex-1 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg font-medium transition-colors text-sm md:text-base"
@@ -318,6 +341,45 @@ export function FarmerDetails() {
           </div>
         </div>
       </div>
+
+      {/* Edit Farm Modal */}
+      {showEditModal && farmData && (
+        <EditFarmModal
+          farm={farmData}
+          onClose={() => setShowEditModal(false)}
+          onSuccess={() => {
+            setShowEditModal(false);
+            // Refresh farmer data
+            if (farmerId) {
+              const fetchFarmerData = async () => {
+                try {
+                  const response = await farmAPI.getFarmById(farmerId);
+                  const farm = response.farm || response;
+                  const farmerData = {
+                    name: farm.farmerName || farm.name,
+                    id: farm.farmId || farm.id,
+                    nic: farm.farmerNIC || farm.nic,
+                    phone: farm.phone,
+                    email: farm.email,
+                    division: farm.division,
+                    district: farm.district,
+                    crop: farm.crop,
+                    farmSize: farm.farmSize,
+                    status: farm.status,
+                    points: farm.points || 0,
+                    harvests: farm.harvests || [],
+                    farmerImage: farm.farmerImage
+                  };
+                  setFarmer(farmerData);
+                } catch (err: any) {
+                  console.error('Error refreshing farmer data:', err);
+                }
+              };
+              fetchFarmerData();
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
