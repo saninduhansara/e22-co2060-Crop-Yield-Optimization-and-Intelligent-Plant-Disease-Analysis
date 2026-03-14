@@ -479,48 +479,108 @@ export function HarvestHistory() {
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-5 sm:p-6 shadow-md border-l-4 border-l-green-500 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group">
+        {/* Total Harvests Card */}
+        <div 
+          style={{
+            background: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)',
+            border: '1px solid #BFDBFE',
+            borderRadius: '14px',
+            padding: '16px 20px',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+            transition: 'all 0.2s ease',
+            cursor: 'pointer'
+          }}
+          className="hover:shadow-lg group"
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-3px)';
+            e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.09)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'none';
+            e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.05)';
+          }}
+        >
           <div className="flex flex-col">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">Total Records</p>
-              <FileText className="w-5 h-5 text-green-600 opacity-70 group-hover:opacity-100 transition-opacity" />
+              <p style={{ fontSize: '11px', fontWeight: '600', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Harvests</p>
+              <FileText className="w-5 h-5 text-blue-600 opacity-70 group-hover:opacity-100 transition-opacity" />
             </div>
-            <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 my-2 break-words min-w-0">
+            <p style={{ fontSize: '32px', fontWeight: '700', color: '#1D4ED8', marginBottom: '8px' }} className="break-words min-w-0">
               {formattedTotalRecords}
             </p>
-            <p className="text-xs sm:text-sm text-gray-600 mt-2">Filtered harvest entries</p>
+            <p style={{ fontSize: '12px', color: '#9CA3AF' }}>Filtered harvest entries</p>
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-5 sm:p-6 shadow-md border-l-4 border-l-green-500 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group">
+        {/* Total Yield Card */}
+        <div 
+          style={{
+            background: 'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)',
+            border: '1px solid #BBF7D0',
+            borderRadius: '14px',
+            padding: '16px 20px',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+            transition: 'all 0.2s ease',
+            cursor: 'pointer'
+          }}
+          className="hover:shadow-lg group"
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-3px)';
+            e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.09)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'none';
+            e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.05)';
+          }}
+        >
           <div className="flex flex-col">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">Total Yield</p>
+              <p style={{ fontSize: '11px', fontWeight: '600', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Yield</p>
               <Wheat className="w-5 h-5 text-green-600 opacity-70 group-hover:opacity-100 transition-opacity" />
             </div>
-            <div className="flex min-w-0 flex-wrap items-baseline gap-1 sm:gap-2 my-2">
-              <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 break-words min-w-0">
+            <div className="flex items-baseline gap-1 my-2">
+              <p style={{ fontSize: '32px', fontWeight: '700', color: '#15803D' }} className="break-words min-w-0">
                 {formattedTotalYield}
               </p>
-              <span className="text-xs sm:text-sm font-medium text-gray-600 break-words">tons</span>
+              <span style={{ fontSize: '13px', fontWeight: '400', color: '#9CA3AF', marginLeft: '4px' }}>tons</span>
             </div>
-            <p className="text-xs sm:text-sm text-gray-600 mt-2">Across selected filters</p>
+            <p style={{ fontSize: '12px', color: '#9CA3AF' }}>Across selected filters</p>
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-5 sm:p-6 shadow-md border-l-4 border-l-green-500 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group">
+        {/* Avg Yield/Acre Card */}
+        <div 
+          style={{
+            background: 'linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%)',
+            border: '1px solid #FED7AA',
+            borderRadius: '14px',
+            padding: '16px 20px',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+            transition: 'all 0.2s ease',
+            cursor: 'pointer'
+          }}
+          className="hover:shadow-lg group"
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-3px)';
+            e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.09)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'none';
+            e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.05)';
+          }}
+        >
           <div className="flex flex-col">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">Avg Yield/Acre</p>
-              <TrendingUp className="w-5 h-5 text-green-600 opacity-70 group-hover:opacity-100 transition-opacity" />
+              <p style={{ fontSize: '11px', fontWeight: '600', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Avg Yield/Acre</p>
+              <TrendingUp className="w-5 h-5 text-orange-600 opacity-70 group-hover:opacity-100 transition-opacity" />
             </div>
-            <div className="flex min-w-0 flex-wrap items-baseline gap-1 sm:gap-2 my-2">
-              <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 break-words min-w-0">
+            <div className="flex items-baseline gap-1 my-2">
+              <p style={{ fontSize: '32px', fontWeight: '700', color: '#C2410C' }} className="break-words min-w-0">
                 {formattedAvgYieldPerAcre}
               </p>
-              <span className="text-xs sm:text-sm font-medium text-gray-600 break-words">kg</span>
+              <span style={{ fontSize: '13px', fontWeight: '400', color: '#9CA3AF', marginLeft: '4px' }}>kg</span>
             </div>
-            <p className="text-xs sm:text-sm text-gray-600 mt-2">Average yield per acre</p>
+            <p style={{ fontSize: '12px', color: '#9CA3AF' }}>Average yield per acre</p>
           </div>
         </div>
       </div>
