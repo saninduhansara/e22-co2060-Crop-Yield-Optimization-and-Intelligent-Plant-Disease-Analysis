@@ -363,6 +363,20 @@ export function HarvestHistory() {
     setShowDownloadModal(true);
   };
 
+  const getCropBadgeColors = (crop: string) => {
+    const cropColors: { [key: string]: { bg: string; color: string } } = {
+      'Paddy': { bg: '#FFFEF0', color: '#A16207' },
+      'Corn': { bg: '#FFF7ED', color: '#EA580C' },
+      'Wheat': { bg: '#FFFAE6', color: '#A16207' },
+      'Tomatoes': { bg: '#FEE2E2', color: '#DC2626' },
+      'Onions': { bg: '#F3E8FF', color: '#7C3AED' },
+      'Carrots': { bg: '#FFECDB', color: '#EA580C' },
+      'Cabbage': { bg: '#DCFCE7', color: '#15803D' },
+      'Potatoes': { bg: '#F3F3F3', color: '#6B7280' },
+    };
+    return cropColors[crop] || { bg: '#F3F4F6', color: '#6B7280' };
+  };
+
   const filteredHarvests = harvests.filter((harvest: Harvest) => {
     const matchesSearch = harvest.farmerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       harvest.farmerNIC.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -652,7 +666,26 @@ export function HarvestHistory() {
                   <td style={{ fontSize: '13px', color: '#374151', padding: '11px 16px' }} className="whitespace-nowrap">{harvest.location}</td>
                   <td style={{ fontSize: '13px', color: '#374151', padding: '11px 16px' }} className="whitespace-nowrap">{harvest.season}</td>
                   <td style={{ fontSize: '13px', color: '#374151', padding: '11px 16px' }} className="whitespace-nowrap">{harvest.year}</td>
-                  <td style={{ fontSize: '13px', color: '#374151', padding: '11px 16px' }} className="whitespace-nowrap">{harvest.crop}</td>
+                  <td style={{ fontSize: '13px', color: '#374151', padding: '11px 16px' }} className="whitespace-nowrap">
+                    {(() => {
+                      const badgeColors = getCropBadgeColors(harvest.crop);
+                      return (
+                        <span 
+                          style={{
+                            background: badgeColors.bg,
+                            color: badgeColors.color,
+                            padding: '2px 10px',
+                            borderRadius: '999px',
+                            fontSize: '12px',
+                            fontWeight: '600',
+                            display: 'inline-block'
+                          }}
+                        >
+                          {harvest.crop}
+                        </span>
+                      );
+                    })()}
+                  </td>
                   <td style={{ fontSize: '13px', color: '#374151', padding: '11px 16px' }} className="whitespace-nowrap">{harvest.acres}</td>
                   <td style={{ fontSize: '13px', color: '#374151', padding: '11px 16px', fontWeight: '500' }} className="whitespace-nowrap">{harvest.harvestQty} kg</td>
                   <td style={{ fontSize: '13px', color: '#374151', padding: '11px 16px', fontWeight: '500' }} className="whitespace-nowrap">{harvest.yieldPerAcre.toFixed(2)} kg</td>
