@@ -26,9 +26,22 @@ export function FarmerProfile({ farm, onClose }: FarmerProfileProps) {
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center overflow-y-auto p-4">
       <div className="bg-white rounded-lg shadow-lg w-full max-w-lg">
         {/* Header */}
-        <div className="bg-gradient-to-r from-green-700 to-green-800 text-white p-3 rounded-t-lg flex items-start justify-between">
-          <div className="flex items-start gap-3 flex-1">
-            <div className="w-12 h-12 rounded-full overflow-hidden bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0 border-2 border-white/30">
+        <div className="bg-gradient-to-r from-green-700 to-green-800 text-white rounded-t-lg relative" style={{ padding: '20px 24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <div 
+              style={{
+                width: '52px',
+                height: '52px',
+                borderRadius: '50%',
+                background: 'rgba(255,255,255,0.2)',
+                border: '2px solid rgba(255,255,255,0.6)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                overflow: 'hidden'
+              }}
+            >
               {farm.farmerImage ? (
                 <img 
                   src={farm.farmerImage} 
@@ -40,16 +53,61 @@ export function FarmerProfile({ farm, onClose }: FarmerProfileProps) {
                   }}
                 />
               ) : null}
-              <span className={`text-lg font-bold ${farm.farmerImage ? 'hidden' : ''}`}>{initials}</span>
+              <span 
+                style={{
+                  fontSize: '18px',
+                  fontWeight: '700',
+                  color: 'white',
+                  display: farm.farmerImage ? 'none' : 'block'
+                }}
+              >
+                {initials}
+              </span>
             </div>
-            <div>
-              <h2 className="text-xl font-bold mb-1">{farm.farmerName}</h2>
-              <p className="text-green-100 text-xs">NIC: {farm.farmerNIC}</p>
+            <div style={{ flex: 1 }}>
+              <h2 style={{ fontSize: '20px', fontWeight: '700', color: 'white', marginBottom: '6px' }}>
+                {farm.farmerName}
+              </h2>
+              <span 
+                style={{
+                  display: 'inline-block',
+                  background: 'rgba(255,255,255,0.15)',
+                  border: '1px solid rgba(255,255,255,0.3)',
+                  color: 'rgba(255,255,255,0.9)',
+                  padding: '2px 10px',
+                  borderRadius: '999px',
+                  fontSize: '12px',
+                  fontWeight: '600'
+                }}
+              >
+                NIC · {farm.farmerNIC}
+              </span>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 hover:bg-white/20 rounded transition-colors"
+            style={{
+              position: 'absolute',
+              top: '20px',
+              right: '24px',
+              width: '32px',
+              height: '32px',
+              borderRadius: '50%',
+              background: 'rgba(255,255,255,0.15)',
+              border: 'none',
+              color: 'white',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'background 0.2s'
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.25)';
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.15)';
+            }}
           >
             <X className="w-5 h-5" />
           </button>
