@@ -15,6 +15,8 @@ export interface SummaryCardProps {
   iconBgClass?: string;
   /** Additional classes applied to the card wrapper. */
   className?: string;
+  /** Inline styles applied to the card wrapper. */
+  style?: React.CSSProperties;
   /** Whether the card should show the hover shadow and pointer cursor. */
   hoverable?: boolean;
   /** React children allow full custom layout instead of using props above. */
@@ -29,6 +31,7 @@ export function SummaryCard({
   icon,
   iconBgClass = '',
   className = '',
+  style,
   hoverable = false,
   children,
 }: SummaryCardProps) {
@@ -37,7 +40,7 @@ export function SummaryCard({
   const hoverClasses = hoverable ? 'hover:shadow-md hover:cursor-pointer group' : '';
 
   return (
-    <div className={`${baseClasses} ${hoverClasses} ${className}`.trim()}>
+    <div className={`${baseClasses} ${hoverClasses} ${className}`.trim()} style={style}>
       <div className="flex items-start justify-between">
         <div className="flex-1">
           {children ? (

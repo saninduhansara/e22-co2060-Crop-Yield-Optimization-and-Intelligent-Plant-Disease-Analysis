@@ -7,6 +7,7 @@ export function AdminInquiries() {
     const [inquiries, setInquiries] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [resolvingId, setResolvingId] = useState<string | null>(null);
+    const [activeFilter, setActiveFilter] = useState<'all' | 'pending' | 'resolved'>('all');
 
     useEffect(() => {
         fetchInquiries();
@@ -64,6 +65,95 @@ export function AdminInquiries() {
         }
     };
 
+    const totalInquiries = inquiries.length;
+    const pendingCount = inquiries.filter((i) => i.status === 'Pending').length;
+    const resolvedCount = inquiries.filter((i) => i.status === 'Resolved').length;
+    const pendingRate = totalInquiries > 0
+        ? Math.round((pendingCount / totalInquiries) * 100)
+        : 0;
+
+    const resolutionRate = totalInquiries > 0
+        ? Math.round((resolvedCount / totalInquiries) * 100)
+        : 0;
+
+    const now = new Date();
+    const todayDateKey = now.toDateString();
+    const oneWeekMs = 7 * 24 * 60 * 60 * 1000;
+    const currentWindowStart = new Date(now.getTime() - oneWeekMs);
+    const previousWindowStart = new Date(now.getTime() - 2 * oneWeekMs);
+
+    const inDateRange = (dateValue: string, start: Date, end: Date) => {
+        const date = new Date(dateValue);
+        return !Number.isNaN(date.getTime()) && date >= start && date < end;
+    };
+
+    const newTodayCount = inquiries.filter((inq) => {
+        const createdDate = new Date(inq.createdAt);
+        return !Number.isNaN(createdDate.getTime()) && createdDate.toDateString() === todayDateKey;
+    }).length;
+
+    const pendingAvgResponseHours = pendingCount > 0
+        ? Math.round(
+            inquiries
+                .filter((inq) => inq.status === 'Pending')
+                .reduce((sum, inq) => {
+                    const createdDate = new Date(inq.createdAt);
+                    if (Number.isNaN(createdDate.getTime())) return sum;
+                    const hours = Math.max(0, (now.getTime() - createdDate.getTime()) / (1000 * 60 * 60));
+                    return sum + hours;
+                }, 0) / pendingCount
+        )
+        : 0;
+
+    const trendPercentage = (current: number, previous: number) => {
+        if (previous === 0) return current > 0 ? 100 : 0;
+        return Math.round(((current - previous) / previous) * 100);
+    };
+
+    const totalCurrentWeek = inquiries.filter((inq) =>
+        inDateRange(inq.createdAt, currentWindowStart, now)
+    ).length;
+    const totalPreviousWeek = inquiries.filter((inq) =>
+        inDateRange(inq.createdAt, previousWindowStart, currentWindowStart)
+    ).length;
+    const totalTrend = trendPercentage(totalCurrentWeek, totalPreviousWeek);
+
+    const pendingCurrentWeek = inquiries.filter((inq) =>
+        inq.status === 'Pending' && inDateRange(inq.createdAt, currentWindowStart, now)
+    ).length;
+    const pendingPreviousWeek = inquiries.filter((inq) =>
+        inq.status === 'Pending' && inDateRange(inq.createdAt, previousWindowStart, currentWindowStart)
+    ).length;
+    const pendingTrendRaw = trendPercentage(pendingCurrentWeek, pendingPreviousWeek);
+
+    const resolvedCurrentWeek = inquiries.filter((inq) =>
+        inq.status === 'Resolved' && inDateRange(inq.createdAt, currentWindowStart, now)
+    ).length;
+    const resolvedPreviousWeek = inquiries.filter((inq) =>
+        inq.status === 'Resolved' && inDateRange(inq.createdAt, previousWindowStart, currentWindowStart)
+    ).length;
+    const resolvedTrend = trendPercentage(resolvedCurrentWeek, resolvedPreviousWeek);
+
+    const filteredInquiries = inquiries.filter((inq) => {
+        if (activeFilter === 'pending') return inq.status === 'Pending';
+        if (activeFilter === 'resolved') return inq.status === 'Resolved';
+        return true;
+    });
+
+    const renderTrend = (trend: number) => {
+        const isIncrease = trend >= 0;
+        const arrow = isIncrease ? '↑' : '↓';
+        const pillClass = isIncrease
+            ? 'bg-green-50 text-green-600'
+            : 'bg-red-50 text-red-600';
+
+        return (
+            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${pillClass}`}>
+                {arrow} {Math.abs(trend)}% this week
+            </span>
+        );
+    };
+
     return (
         <div className="space-y-6">
             {/* Header */}
@@ -73,58 +163,103 @@ export function AdminInquiries() {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-                    <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                            <Mail className="w-6 h-6 text-blue-600" />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Total Inquiries Card */}
+                <button
+                    onClick={() => setActiveFilter('all')}
+                    className={`relative min-h-[120px] overflow-hidden text-left rounded-xl px-6 py-5 border transition-all duration-200 ease-out cursor-pointer bg-white ${
+                        activeFilter === 'all'
+                            ? 'border-gray-300 shadow-[0_4px_16px_rgba(0,0,0,0.10)]'
+                            : 'border-gray-200 shadow-[0_1px_3px_rgba(0,0,0,0.06)] hover:border-gray-300 hover:shadow-[0_4px_16px_rgba(0,0,0,0.10)]'
+                    }`}
+                    style={{ borderWidth: '1px' }}
+                >
+                    <div className="flex items-center gap-3 mb-2">
+                        <div className="w-9 h-9 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                            <Mail className="w-5 h-5 text-blue-700" />
                         </div>
-                        <div>
-                            <p className="text-sm text-gray-600">Total Inquiries</p>
-                            <p className="text-2xl font-bold text-gray-900">{inquiries.length}</p>
-                        </div>
+                        <p className="text-sm font-medium text-gray-700">Total Inquiries</p>
                     </div>
-                </div>
-                <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-                    <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-                            <AlertCircle className="w-6 h-6 text-yellow-600" />
-                        </div>
-                        <div>
-                            <p className="text-sm text-gray-600">Pending Action</p>
-                            <p className="text-2xl font-bold text-gray-900">
-                                {inquiries.filter((i) => i.status === 'Pending').length}
-                            </p>
-                        </div>
+                    <p className="text-4xl leading-tight font-bold text-gray-900 mb-2">{totalInquiries}</p>
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                        {renderTrend(totalTrend)}
+                        <p className="text-xs text-gray-500">{newTodayCount} new today</p>
                     </div>
-                </div>
-                <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-                    <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                            <CheckCircle2 className="w-6 h-6 text-green-600" />
+                    <div className="absolute bottom-0 left-0 h-1 w-full bg-blue-600" style={{ borderRadius: '0 0 12px 12px' }} />
+                </button>
+
+                {/* Pending Action Card */}
+                <button
+                    onClick={() => setActiveFilter('pending')}
+                    className={`relative min-h-[120px] overflow-hidden text-left px-6 py-5 border transition-all duration-200 ease-out cursor-pointer bg-white ${
+                        activeFilter === 'pending'
+                            ? 'border-gray-300 shadow-[0_4px_16px_rgba(0,0,0,0.10)]'
+                            : 'border-gray-200 shadow-[0_1px_3px_rgba(0,0,0,0.06)] hover:border-gray-300 hover:shadow-[0_4px_16px_rgba(0,0,0,0.10)]'
+                    }`}
+                    style={{
+                        borderWidth: '1px',
+                        borderLeft: '3px solid #F59E0B',
+                        borderTopLeftRadius: '12px',
+                        borderBottomLeftRadius: '12px',
+                        borderTopRightRadius: '12px',
+                        borderBottomRightRadius: '12px',
+                    }}
+                >
+                    <div className="flex items-center gap-3 mb-2">
+                        <div className="w-9 h-9 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+                            <AlertCircle className="w-5 h-5 text-amber-700" />
                         </div>
-                        <div>
-                            <p className="text-sm text-gray-600">Resolved</p>
-                            <p className="text-2xl font-bold text-gray-900">
-                                {inquiries.filter((i) => i.status === 'Resolved').length}
-                            </p>
-                        </div>
+                        <p className="text-sm font-medium text-gray-700">Pending Action</p>
                     </div>
-                </div>
+                    <p className="text-4xl leading-tight font-bold text-gray-900 mb-2">{pendingCount}</p>
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                        {renderTrend(pendingTrendRaw)}
+                        <p className="text-xs text-gray-500">
+                            {pendingCount === 0 ? 'All clear' : `Avg. ${pendingAvgResponseHours}h response time`}
+                        </p>
+                    </div>
+                    <div className="absolute bottom-0 left-0 h-1 w-full bg-amber-500" style={{ borderRadius: '0 0 12px 12px' }} />
+                </button>
+
+                {/* Resolved Card */}
+                <button
+                    onClick={() => setActiveFilter('resolved')}
+                    className={`relative min-h-[120px] overflow-hidden text-left rounded-xl px-6 py-5 border transition-all duration-200 ease-out cursor-pointer bg-white ${
+                        activeFilter === 'resolved'
+                            ? 'border-gray-300 shadow-[0_4px_16px_rgba(0,0,0,0.10)]'
+                            : 'border-gray-200 shadow-[0_1px_3px_rgba(0,0,0,0.06)] hover:border-gray-300 hover:shadow-[0_4px_16px_rgba(0,0,0,0.10)]'
+                    }`}
+                    style={{ borderWidth: '1px' }}
+                >
+                    <div className="flex items-center gap-3 mb-2">
+                        <div className="w-9 h-9 rounded-lg bg-green-100 flex items-center justify-center flex-shrink-0">
+                            <CheckCircle2 className="w-5 h-5 text-green-700" />
+                        </div>
+                        <p className="text-sm font-medium text-gray-700">Resolved</p>
+                    </div>
+                    <p className="text-4xl leading-tight font-bold text-gray-900 mb-2">{resolvedCount}</p>
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                        {renderTrend(resolvedTrend)}
+                        <p className="text-xs text-gray-500">{resolutionRate}% resolution rate</p>
+                    </div>
+                    <div className="absolute bottom-0 left-0 h-1 w-full bg-green-600" style={{ borderRadius: '0 0 12px 12px' }} />
+                </button>
             </div>
 
             {/* Inquiries List */}
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
                 <div className="p-6 border-b border-gray-200">
-                    <h3 className="text-lg font-semibold text-gray-800">Recent Submissions</h3>
+                    <h3 className="text-lg font-semibold text-gray-800">
+                        {activeFilter === 'all' ? 'Recent Submissions' : activeFilter === 'pending' ? 'Pending Inquiries' : 'Resolved Inquiries'}
+                    </h3>
                 </div>
                 <div className="p-6 space-y-4">
                     {loading ? (
                         <div className="flex justify-center py-8">
                             <Loader2 className="w-8 h-8 text-green-600 animate-spin" />
                         </div>
-                    ) : inquiries.length > 0 ? (
-                        inquiries.map((inq) => {
+                    ) : filteredInquiries.length > 0 ? (
+                        filteredInquiries.map((inq) => {
                             let displaySubject = inq.subject;
                             let displayCategory = "Support";
                             const match = inq.subject.match(/^\[(.*?)\] (.*)$/);
@@ -185,7 +320,9 @@ export function AdminInquiries() {
                     ) : (
                         <div className="text-center py-12">
                             <Mail className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                            <p className="text-gray-500">No inquiries found.</p>
+                            <p className="text-gray-500">
+                                {activeFilter === 'all' ? 'No inquiries found.' : 'No inquiries match this filter.'}
+                            </p>
                         </div>
                     )}
                 </div>
