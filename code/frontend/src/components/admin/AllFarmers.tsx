@@ -150,54 +150,62 @@ export function AllFarmers() {
           ) : (
             <>
               {/* Desktop Table View */}
-              <div className="hidden lg:block bg-white rounded-xl border border-gray-200 shadow-sm">
+              <div className="hidden lg:block bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full">
-                    <thead className="bg-gray-50 border-b border-gray-200">
+                    <thead style={{
+                      position: 'sticky',
+                      top: 0,
+                      zIndex: 10,
+                      background: '#F3F4F6',
+                      borderBottom: '2px solid #E5E7EB'
+                    }}>
                       <tr>
-                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider whitespace-nowrap">
+                        <th className="px-4 py-3 text-left" style={{ fontSize: '12px', fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
                           Farm ID
                         </th>
-                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider whitespace-nowrap">
+                        <th className="px-4 py-3 text-left" style={{ fontSize: '12px', fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
                           Farmer Name
                         </th>
-                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider whitespace-nowrap">
+                        <th className="px-4 py-3 text-left" style={{ fontSize: '12px', fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
                           NIC
                         </th>
-                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider whitespace-nowrap">
+                        <th className="px-4 py-3 text-left" style={{ fontSize: '12px', fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
                           Phone
                         </th>
-                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider whitespace-nowrap">
+                        <th className="px-4 py-3 text-left" style={{ fontSize: '12px', fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
                           Division
                         </th>
-                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider whitespace-nowrap">
+                        <th className="px-4 py-3 text-left" style={{ fontSize: '12px', fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
                           District
                         </th>
-                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider whitespace-nowrap">
+                        <th className="px-4 py-3 text-left" style={{ fontSize: '12px', fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
                           Farm Size
                         </th>
-                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider whitespace-nowrap">
+                        <th className="px-4 py-3 text-left" style={{ fontSize: '12px', fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
                           Crop
                         </th>
-                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider whitespace-nowrap">
+                        <th className="px-4 py-3 text-left" style={{ fontSize: '12px', fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
                           Status
                         </th>
-                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider whitespace-nowrap">
+                        <th className="px-4 py-3 text-left" style={{ fontSize: '12px', fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
                           Points
                         </th>
-                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider whitespace-nowrap">
+                        <th className="px-4 py-3 text-left" style={{ fontSize: '12px', fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
                           Actions
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {filteredFarms.map((farm) => (
+                    <tbody>
+                      {filteredFarms.map((farm, index) => (
                         <tr
                           key={farm.farmId}
-                          className="transition-all duration-200"
                           style={{
                             cursor: 'pointer',
-                            borderLeft: '3px solid transparent'
+                            borderLeft: '3px solid transparent',
+                            background: index % 2 === 0 ? '#FFFFFF' : '#F9FAFB',
+                            height: '52px',
+                            transition: 'all 0.15s ease'
                           }}
                           onClick={() => navigate(`/admin/farmer-profile/${farm.farmId}`, { state: { farm } })}
                           onMouseEnter={(e) => {
@@ -207,14 +215,14 @@ export function AllFarmers() {
                           }}
                           onMouseLeave={(e) => {
                             const row = e.currentTarget;
-                            row.style.background = '';
+                            row.style.background = index % 2 === 0 ? '#FFFFFF' : '#F9FAFB';
                             row.style.borderLeft = '3px solid transparent';
                           }}
                         >
-                          <td className="px-3 py-3 whitespace-nowrap">
-                            <span className="font-medium text-gray-700 text-sm" style={{ cursor: 'default', color: '#374151' }}>{farm.farmId}</span>
+                          <td style={{ padding: '12px 16px', fontSize: '14px', color: '#374151', cursor: 'default', whiteSpace: 'nowrap' }}>
+                            <span className="font-medium" style={{ color: '#374151' }}>{farm.farmId}</span>
                           </td>
-                          <td className="px-3 py-3 whitespace-nowrap">
+                          <td style={{ padding: '12px 16px', fontSize: '14px', color: '#374151' }}>
                             <div className="flex items-center gap-2">
                               <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden bg-green-100 border border-green-200">
                                 {farm.farmerImage ? (
@@ -233,16 +241,16 @@ export function AllFarmers() {
                                 </span>
                               </div>
                               <div>
-                                <p className="font-medium text-gray-800 text-sm">{farm.farmerName}</p>
+                                <p className="font-medium" style={{ fontSize: '14px', color: '#374151' }}>{farm.farmerName}</p>
                               </div>
                             </div>
                           </td>
-                          <td className="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">{farm.farmerNIC}</td>
-                          <td className="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">{farm.phone}</td>
-                          <td className="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">{farm.division}</td>
-                          <td className="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">{farm.district}</td>
-                          <td className="px-3 py-3 text-xs font-medium text-gray-800 whitespace-nowrap">{farm.farmSize} acres</td>
-                          <td className="px-3 py-3 whitespace-nowrap">
+                          <td style={{ padding: '12px 16px', fontSize: '14px', color: '#374151', whiteSpace: 'nowrap' }}>{farm.farmerNIC}</td>
+                          <td style={{ padding: '12px 16px', fontSize: '14px', color: '#374151', whiteSpace: 'nowrap' }}>{farm.phone}</td>
+                          <td style={{ padding: '12px 16px', fontSize: '14px', color: '#374151', whiteSpace: 'nowrap' }}>{farm.division}</td>
+                          <td style={{ padding: '12px 16px', fontSize: '14px', color: '#374151', whiteSpace: 'nowrap' }}>{farm.district}</td>
+                          <td style={{ padding: '12px 16px', fontSize: '14px', color: '#374151', fontWeight: '500', whiteSpace: 'nowrap' }}>{farm.farmSize} acres</td>
+                          <td style={{ padding: '12px 16px', fontSize: '14px', color: '#374151', whiteSpace: 'nowrap' }}>
                             {(() => {
                               const cropColor = getCropBadgeColor(farm.crop);
                               return (
@@ -259,7 +267,7 @@ export function AllFarmers() {
                               );
                             })()}
                           </td>
-                          <td className="px-3 py-3 whitespace-nowrap">
+                          <td style={{ padding: '12px 16px', fontSize: '14px', color: '#374151', whiteSpace: 'nowrap' }}>
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${farm.status === 'active'
                               ? 'bg-green-100 text-green-700'
                               : 'bg-yellow-100 text-yellow-700'
@@ -267,10 +275,10 @@ export function AllFarmers() {
                               {farm.status.charAt(0).toUpperCase() + farm.status.slice(1)}
                             </span>
                           </td>
-                          <td className="px-3 py-3 whitespace-nowrap">
-                            <span className="font-semibold text-green-700 text-sm">{Math.round(farm.points)}</span>
+                          <td style={{ padding: '12px 16px', fontSize: '14px', color: '#374151', fontWeight: '600', whiteSpace: 'nowrap' }}>
+                            {Math.round(farm.points)}
                           </td>
-                          <td className="px-3 py-3 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                          <td style={{ padding: '12px 16px', fontSize: '14px', color: '#374151', whiteSpace: 'nowrap' }} onClick={(e) => e.stopPropagation()}>
                             <div className="flex items-center gap-1">
                               <button className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors" title="View" onClick={() => setSelectedFarmer(farm)}>
                                 <Eye className="w-4 h-4 text-gray-600" />
