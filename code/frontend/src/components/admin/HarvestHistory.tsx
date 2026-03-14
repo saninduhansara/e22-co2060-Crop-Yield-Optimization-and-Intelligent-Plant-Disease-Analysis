@@ -1,5 +1,6 @@
 import { Search, Download, Loader, RefreshCw, FileText, Wheat, TrendingUp, X, FileJson, File } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { farmAPI } from '../../services/api';
 import { formatNumber } from '../../utils/numberUtils';
 import jsPDF from 'jspdf';
@@ -124,6 +125,7 @@ export function HarvestHistory() {
     const csvContent = generateCSVContent();
     const timestamp = new Date().toISOString().slice(0, 10);
     downloadFile(csvContent, `harvest_report_${timestamp}.csv`, 'text/csv;charset=utf-8;');
+    toast.success('Report downloaded successfully.');
     setShowDownloadModal(false);
   };
 
@@ -184,6 +186,7 @@ export function HarvestHistory() {
 
       const timestamp = new Date().toISOString().slice(0, 10);
       downloadFile(excelContent, `harvest_report_${timestamp}.xls`, 'application/vnd.ms-excel;charset=utf-8;');
+      toast.success('Report downloaded successfully.');
       setShowDownloadModal(false);
     } catch (error) {
       console.error('Error exporting to Excel:', error);
@@ -345,6 +348,7 @@ export function HarvestHistory() {
       // Save the PDF
       const timestamp = new Date().toISOString().slice(0, 10);
       doc.save(`harvest_report_${timestamp}.pdf`);
+      toast.success('Report downloaded successfully.');
       
       setShowDownloadModal(false);
       setExportingFormat(null);
