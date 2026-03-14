@@ -963,6 +963,99 @@ export function AllFarmers() {
                 ))}
               </div>
 
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '12px 16px',
+                  background: '#F9FAFB',
+                  borderRadius: '10px',
+                  border: '1px solid #E5E7EB',
+                  marginTop: '16px'
+                }}>
+                  <div style={{ fontSize: '13px', color: '#6B7280' }}>
+                    Showing <span style={{ fontWeight: '600', color: '#111827' }}>{Math.min((currentPage - 1) * pageSize + 1, filteredFarms.length)}</span>–<span style={{ fontWeight: '600', color: '#111827' }}>{Math.min(currentPage * pageSize, filteredFarms.length)}</span> of <span style={{ fontWeight: '600', color: '#111827' }}>{filteredFarms.length}</span> records
+                  </div>
+                  
+                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                    <button
+                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                      disabled={currentPage === 1}
+                      style={{
+                        padding: '6px 12px',
+                        background: 'white',
+                        border: '1px solid #E5E7EB',
+                        borderRadius: '6px',
+                        color: '#374151',
+                        cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                        opacity: currentPage === 1 ? '0.4' : '1',
+                        fontSize: '13px',
+                        fontWeight: '500',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      Previous
+                    </button>
+                    
+                    {Array.from({ length: totalPages }, (_, i) => {
+                      const pageNum = i + 1;
+                      const isCurrentPage = pageNum === currentPage;
+                      const shouldShow = pageNum === 1 || pageNum === totalPages || Math.abs(pageNum - currentPage) <= 1;
+                      
+                      if (!shouldShow) return null;
+                      if (pageNum > 1 && pageNum < totalPages && Math.abs(pageNum - currentPage) > 1) {
+                        if (pageNum === currentPage - 2 || pageNum === currentPage + 2) {
+                          return <span key={`dots-${pageNum}`} style={{ color: '#9CA3AF' }}>...</span>;
+                        }
+                        return null;
+                      }
+                      
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => setCurrentPage(pageNum)}
+                          style={{
+                            background: isCurrentPage ? '#15803D' : 'white',
+                            color: isCurrentPage ? 'white' : '#374151',
+                            border: isCurrentPage ? 'none' : '1px solid #E5E7EB',
+                            borderRadius: '6px',
+                            width: '32px',
+                            height: '32px',
+                            cursor: 'pointer',
+                            fontWeight: '500',
+                            fontSize: '13px',
+                            transition: 'all 0.2s ease'
+                          }}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    }).filter(Boolean)}
+                    
+                    <button
+                      onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                      disabled={currentPage >= totalPages}
+                      style={{
+                        padding: '6px 12px',
+                        background: 'white',
+                        border: '1px solid #E5E7EB',
+                        borderRadius: '6px',
+                        color: '#374151',
+                        cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer',
+                        opacity: currentPage >= totalPages ? '0.4' : '1',
+                        fontSize: '13px',
+                        fontWeight: '500',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Summary Bar */}
               <div style={{
                 display: 'flex',
@@ -1010,178 +1103,6 @@ export function AllFarmers() {
                   </div>
                 </div>
               </div>
-
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  marginTop: '16px'
-                }}>
-                  {/* Previous Button */}
-                  <button
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                    style={{
-                      padding: '8px 12px',
-                      borderRadius: '8px',
-                      border: '1px solid #E5E7EB',
-                      background: currentPage === 1 ? '#F3F4F6' : 'white',
-                      color: '#374151',
-                      fontSize: '14px',
-                      fontWeight: '500',
-                      cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
-                      opacity: currentPage === 1 ? 0.4 : 1,
-                      transition: 'all 0.2s ease'
-                    }}
-                    onMouseEnter={(e) => {
-                      if (currentPage !== 1) {
-                        e.currentTarget.style.background = '#F0FDF4';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = currentPage === 1 ? '#F3F4F6' : 'white';
-                    }}
-                  >
-                    ← Previous
-                  </button>
-
-                  {/* Page Buttons */}
-                  {(() => {
-                    const pages = [];
-                    const maxVisible = 5;
-                    let start = Math.max(1, currentPage - Math.floor(maxVisible / 2));
-                    let end = Math.min(totalPages, start + maxVisible - 1);
-                    if (end - start + 1 < maxVisible) {
-                      start = Math.max(1, end - maxVisible + 1);
-                    }
-
-                    if (start > 1) {
-                      pages.push(
-                        <button
-                          key={1}
-                          onClick={() => setCurrentPage(1)}
-                          style={{
-                            padding: '8px 12px',
-                            borderRadius: '8px',
-                            border: '1px solid #E5E7EB',
-                            background: 'white',
-                            color: '#374151',
-                            fontSize: '14px',
-                            fontWeight: '500',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s ease'
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.background = '#F0FDF4';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.background = 'white';
-                          }}
-                        >
-                          1
-                        </button>
-                      );
-                      if (start > 2) {
-                        pages.push(<span key="dots1" style={{ color: '#9CA3AF', padding: '0 4px' }}>...</span>);
-                      }
-                    }
-
-                    for (let i = start; i <= end; i++) {
-                      pages.push(
-                        <button
-                          key={i}
-                          onClick={() => setCurrentPage(i)}
-                          style={{
-                            padding: '8px 12px',
-                            borderRadius: '8px',
-                            border: '1px solid #E5E7EB',
-                            background: i === currentPage ? '#16A34A' : 'white',
-                            color: i === currentPage ? 'white' : '#374151',
-                            fontSize: '14px',
-                            fontWeight: '500',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s ease'
-                          }}
-                          onMouseEnter={(e) => {
-                            if (i !== currentPage) {
-                              e.currentTarget.style.background = '#F0FDF4';
-                            }
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.background = i === currentPage ? '#16A34A' : 'white';
-                          }}
-                        >
-                          {i}
-                        </button>
-                      );
-                    }
-
-                    if (end < totalPages) {
-                      if (end < totalPages - 1) {
-                        pages.push(<span key="dots2" style={{ color: '#9CA3AF', padding: '0 4px' }}>...</span>);
-                      }
-                      pages.push(
-                        <button
-                          key={totalPages}
-                          onClick={() => setCurrentPage(totalPages)}
-                          style={{
-                            padding: '8px 12px',
-                            borderRadius: '8px',
-                            border: '1px solid #E5E7EB',
-                            background: 'white',
-                            color: '#374151',
-                            fontSize: '14px',
-                            fontWeight: '500',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s ease'
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.background = '#F0FDF4';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.background = 'white';
-                          }}
-                        >
-                          {totalPages}
-                        </button>
-                      );
-                    }
-
-                    return pages;
-                  })()}
-
-                  {/* Next Button */}
-                  <button
-                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                    disabled={currentPage === totalPages}
-                    style={{
-                      padding: '8px 12px',
-                      borderRadius: '8px',
-                      border: '1px solid #E5E7EB',
-                      background: currentPage === totalPages ? '#F3F4F6' : 'white',
-                      color: '#374151',
-                      fontSize: '14px',
-                      fontWeight: '500',
-                      cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
-                      opacity: currentPage === totalPages ? 0.4 : 1,
-                      transition: 'all 0.2s ease'
-                    }}
-                    onMouseEnter={(e) => {
-                      if (currentPage !== totalPages) {
-                        e.currentTarget.style.background = '#F0FDF4';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = currentPage === totalPages ? '#F3F4F6' : 'white';
-                    }}
-                  >
-                    Next →
-                  </button>
-                </div>
-              )}
             </>
           )}
         </>
