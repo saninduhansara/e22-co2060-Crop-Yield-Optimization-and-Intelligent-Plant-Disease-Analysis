@@ -1,5 +1,6 @@
 import { Search, Filter, Eye, Edit, Trash2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router';
 import { FarmerProfile } from './FarmerProfile';
 import { EditFarmModal } from './EditFarmModal';
 import { DeleteConfirmationModal } from './DeleteConfirmationModal';
@@ -22,8 +23,24 @@ interface Farm {
   location: string;
 }
 
+// Helper function to get crop badge colors
+const getCropBadgeColor = (crop: string): { background: string; color: string } => {
+  const cropColors: { [key: string]: { background: string; color: string } } = {
+    'Paddy': { background: '#FEF08A', color: '#713F12' },
+    'Corn': { background: '#FED7AA', color: '#9A3412' },
+    'Wheat': { background: '#FDE68A', color: '#92400E' },
+    'Tomatoes': { background: '#FECACA', color: '#991B1B' },
+    'Onions': { background: '#E9D5FF', color: '#6B21A8' },
+    'Carrots': { background: '#FFEDD5', color: '#C2410C' },
+    'Cabbage': { background: '#BBF7D0', color: '#166534' },
+    'Potatoes': { background: '#D6D3D1', color: '#44403C' }
+  };
+  return cropColors[crop] || { background: '#D1D5DB', color: '#374151' };
+};
+
 // All farmers is changed to All Farms in the UI (admin sidebar)
 export function AllFarmers() {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFarmer, setSelectedFarmer] = useState<Farm | null>(null);
   const [farmToEdit, setFarmToEdit] = useState<Farm | null>(null);
@@ -177,11 +194,25 @@ export function AllFarmers() {
                       {filteredFarms.map((farm) => (
                         <tr
                           key={farm.farmId}
-                          className="hover:bg-gray-50 transition-colors cursor-pointer"
-                          onClick={() => setSelectedFarmer(farm)}
+                          className="transition-all duration-200"
+                          style={{
+                            cursor: 'pointer',
+                            borderLeft: '3px solid transparent'
+                          }}
+                          onClick={() => navigate(`/admin/farmer-profile/${farm.farmId}`, { state: { farm } })}
+                          onMouseEnter={(e) => {
+                            const row = e.currentTarget;
+                            row.style.background = '#F0FDF4';
+                            row.style.borderLeft = '3px solid #16A34A';
+                          }}
+                          onMouseLeave={(e) => {
+                            const row = e.currentTarget;
+                            row.style.background = '';
+                            row.style.borderLeft = '3px solid transparent';
+                          }}
                         >
                           <td className="px-3 py-3 whitespace-nowrap">
-                            <span className="font-medium text-green-700 text-sm">{farm.farmId}</span>
+                            <span className="font-medium text-gray-700 text-sm" style={{ cursor: 'default', color: '#374151' }}>{farm.farmId}</span>
                           </td>
                           <td className="px-3 py-3 whitespace-nowrap">
                             <div className="flex items-center gap-2">
@@ -212,9 +243,21 @@ export function AllFarmers() {
                           <td className="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">{farm.district}</td>
                           <td className="px-3 py-3 text-xs font-medium text-gray-800 whitespace-nowrap">{farm.farmSize} acres</td>
                           <td className="px-3 py-3 whitespace-nowrap">
-                            <span className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
-                              {farm.crop}
-                            </span>
+                            {(() => {
+                              const cropColor = getCropBadgeColor(farm.crop);
+                              return (
+                                <span style={{
+                                  padding: '3px 10px',
+                                  borderRadius: '999px',
+                                  fontSize: '12px',
+                                  fontWeight: '600',
+                                  background: cropColor.background,
+                                  color: cropColor.color
+                                }}>
+                                  {farm.crop}
+                                </span>
+                              );
+                            })()}
                           </td>
                           <td className="px-3 py-3 whitespace-nowrap">
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${farm.status === 'active'
@@ -253,7 +296,7 @@ export function AllFarmers() {
                   <div
                     key={farm.farmId}
                     className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
-                    onClick={() => setSelectedFarmer(farm)}
+                    onClick={() => navigate(`/admin/farmer-profile/${farm.farmId}`, { state: { farm } })}
                   >
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -307,9 +350,21 @@ export function AllFarmers() {
 
                     <div className="flex items-center justify-between pt-3 border-t border-gray-200">
                       <div className="flex items-center gap-2">
-                        <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
-                          {farm.crop}
-                        </span>
+                        {(() => {
+                          const cropColor = getCropBadgeColor(farm.crop);
+                          return (
+                            <span style={{
+                              padding: '3px 10px',
+                              borderRadius: '999px',
+                              fontSize: '12px',
+                              fontWeight: '600',
+                              background: cropColor.background,
+                              color: cropColor.color
+                            }}>
+                              {farm.crop}
+                            </span>
+                          );
+                        })()}
                         <span className="text-sm font-semibold text-green-700">{Math.round(farm.points)} pts</span>
                       </div>
                       <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
