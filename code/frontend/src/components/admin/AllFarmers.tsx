@@ -48,6 +48,8 @@ export function AllFarmers() {
   const [farms, setFarms] = useState<Farm[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeStatusFilter, setActiveStatusFilter] = useState<'all' | 'active' | 'abandoned' | string>('all');
+  const [activeCropFilter, setActiveCropFilter] = useState<string | null>(null);
 
   // Fetch farms on component mount
   useEffect(() => {
@@ -68,15 +70,25 @@ export function AllFarmers() {
     }
   };
 
-  // Filter farms based on search term
+  // Filter farms based on search term, status, and crop
   const filteredFarms = farms.filter((farm) => {
     const searchLower = searchTerm.toLowerCase();
-    return (
+    const matchesSearch = 
       farm.farmId.toLowerCase().includes(searchLower) ||
       farm.farmerName.toLowerCase().includes(searchLower) ||
       farm.farmerNIC.toLowerCase().includes(searchLower) ||
-      farm.phone.toLowerCase().includes(searchLower)
-    );
+      farm.phone.toLowerCase().includes(searchLower);
+    
+    const matchesStatus = 
+      activeStatusFilter === 'all' || 
+      (activeStatusFilter === 'active' && farm.status.toLowerCase() === 'active') ||
+      (activeStatusFilter === 'abandoned' && farm.status.toLowerCase() === 'abandoned');
+    
+    const matchesCrop = 
+      !activeCropFilter || 
+      farm.crop.toLowerCase() === activeCropFilter.toLowerCase();
+    
+    return matchesSearch && matchesStatus && matchesCrop;
   });
 
   return (
@@ -108,35 +120,165 @@ export function AllFarmers() {
           <div className="bg-white rounded-xl border border-gray-200 p-4">
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Search by Farm ID, farmer name, NIC, or phone..."
-                  className="w-full pl-11 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm md:text-base"
+                  style={{
+                    width: '100%',
+                    paddingLeft: '40px',
+                    paddingRight: searchTerm ? '40px' : '16px',
+                    paddingTop: '10px',
+                    paddingBottom: '10px',
+                    height: '42px',
+                    border: '1px solid #E5E7EB',
+                    borderRadius: '10px',
+                    fontSize: '14px',
+                    outline: 'none',
+                    transition: 'all 0.2s ease',
+                    boxSizing: 'border-box'
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = '#16A34A';
+                    e.currentTarget.style.boxShadow = '0 0 0 3px rgba(22,163,74,0.1)';
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = '#E5E7EB';
+                    e.currentTarget.style.boxShadow = 'none';
+                  }}
+                  className="placeholder-gray-400"
                 />
                 {searchTerm && (
                   <button
                     onClick={() => setSearchTerm('')}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 flex items-center justify-center w-5 h-5"
                     title="Clear search"
                   >
                     ✕
                   </button>
                 )}
               </div>
-              <button className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg flex items-center justify-center gap-2 transition-colors">
+              <button 
+                style={{
+                  background: '#16A34A',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '10px',
+                  padding: '10px 20px',
+                  fontWeight: '500',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  transition: 'background 0.2s ease',
+                  whiteSpace: 'nowrap'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = '#15803D'}
+                onMouseLeave={(e) => e.currentTarget.style.background = '#16A34A'}
+              >
                 <Filter className="w-5 h-5" />
-                <span className="text-sm md:text-base">Filter</span>
+                <span>Filter</span>
               </button>
             </div>
 
+            {/* Quick Filter Chips */}
+            <div style={{ marginTop: '12px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              {/* Status Filters */}
+              <button
+                onClick={() => {
+                  setActiveStatusFilter('all');
+                  setActiveCropFilter(null);
+                }}
+                style={{
+                  padding: '5px 14px',
+                  borderRadius: '999px',
+                  fontSize: '12px',
+                  fontWeight: '500',
+                  border: activeStatusFilter === 'all' ? 'none' : '1px solid #E5E7EB',
+                  background: activeStatusFilter === 'all' ? '#16A34A' : '#F3F4F6',
+                  color: activeStatusFilter === 'all' ? 'white' : '#374151',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                All
+              </button>
+              <button
+                onClick={() => {
+                  setActiveStatusFilter('active');
+                  setActiveCropFilter(null);
+                }}
+                style={{
+                  padding: '5px 14px',
+                  borderRadius: '999px',
+                  fontSize: '12px',
+                  fontWeight: '500',
+                  border: activeStatusFilter === 'active' ? 'none' : '1px solid #E5E7EB',
+                  background: activeStatusFilter === 'active' ? '#16A34A' : '#F3F4F6',
+                  color: activeStatusFilter === 'active' ? 'white' : '#374151',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                Active
+              </button>
+              <button
+                onClick={() => {
+                  setActiveStatusFilter('abandoned');
+                  setActiveCropFilter(null);
+                }}
+                style={{
+                  padding: '5px 14px',
+                  borderRadius: '999px',
+                  fontSize: '12px',
+                  fontWeight: '500',
+                  border: activeStatusFilter === 'abandoned' ? 'none' : '1px solid #E5E7EB',
+                  background: activeStatusFilter === 'abandoned' ? '#16A34A' : '#F3F4F6',
+                  color: activeStatusFilter === 'abandoned' ? 'white' : '#374151',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                Abandoned
+              </button>
+
+              {/* Crop Filters */}
+              {Array.from(new Set(farms.map(f => f.crop))).sort().map((crop) => (
+                <button
+                  key={crop}
+                  onClick={() => {
+                    setActiveCropFilter(activeCropFilter === crop ? null : crop);
+                    setActiveStatusFilter('all');
+                  }}
+                  style={{
+                    padding: '5px 14px',
+                    borderRadius: '999px',
+                    fontSize: '12px',
+                    fontWeight: '500',
+                    border: activeCropFilter === crop ? 'none' : '1px solid #E5E7EB',
+                    background: activeCropFilter === crop ? '#16A34A' : '#F3F4F6',
+                    color: activeCropFilter === crop ? 'white' : '#374151',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  {crop}
+                </button>
+              ))}
+            </div>
+
             {/* Search Results Info */}
-            {searchTerm && (
+            {(searchTerm || activeStatusFilter !== 'all' || activeCropFilter) && (
               <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                 <p className="text-sm text-blue-700">
-                  <span className="font-semibold">{filteredFarms.length}</span> result{filteredFarms.length !== 1 ? 's' : ''} found for "<span className="font-semibold">{searchTerm}</span>" (searching by Farm ID, name, NIC, or phone)
+                  <span className="font-semibold">{filteredFarms.length}</span> result{filteredFarms.length !== 1 ? 's' : ''} found 
+                  {searchTerm && ` for "<span className="font-semibold">${searchTerm}</span>"`}
+                  {activeStatusFilter !== 'all' && ` • Status: ${activeStatusFilter}`}
+                  {activeCropFilter && ` • Crop: ${activeCropFilter}`}
                 </p>
               </div>
             )}
