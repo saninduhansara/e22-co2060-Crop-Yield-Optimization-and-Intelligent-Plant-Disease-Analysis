@@ -658,8 +658,8 @@ export function HarvestHistory() {
                 >
                   <td style={{ fontSize: '13px', color: '#374151', padding: '11px 16px' }} className="whitespace-nowrap">
                     <div>
-                      <p className="font-medium whitespace-nowrap">{harvest.farmerName}</p>
-                      <p className="text-xs text-gray-600 whitespace-nowrap">{harvest.farmerNIC}</p>
+                      <p style={{ fontSize: '13px', fontWeight: '600', color: '#111827', display: 'block' }} className="whitespace-nowrap">{harvest.farmerName}</p>
+                      <p style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: '400', display: 'block', marginTop: '1px' }} className="whitespace-nowrap">{harvest.farmerNIC}</p>
                     </div>
                   </td>
                   <td style={{ fontSize: '13px', color: '#374151', padding: '11px 16px' }} className="whitespace-nowrap">{harvest.farmName}</td>
