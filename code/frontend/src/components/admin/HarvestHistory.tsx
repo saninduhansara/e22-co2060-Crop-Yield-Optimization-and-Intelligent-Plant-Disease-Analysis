@@ -1,5 +1,5 @@
-import { Search, Download, Loader, RefreshCw, FileText, Wheat, TrendingUp, X, FileJson, File } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { Search, Download, Loader, RefreshCw, FileText, Wheat, TrendingUp, X, FileJson, File, ChevronDown } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { farmAPI } from '../../services/api';
 import { formatNumber } from '../../utils/numberUtils';
@@ -39,6 +39,10 @@ export function HarvestHistory() {
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 20;
 
+  // Dropdown visibility state
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const dropdownRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+
   useEffect(() => {
     fetchCrops();
     fetchHarvestHistory();
@@ -47,6 +51,17 @@ export function HarvestHistory() {
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, selectedCrop, selectedYear, selectedSeason]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!Object.values(dropdownRefs.current).some(ref => ref?.contains(event.target as Node))) {
+        setOpenDropdown(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const fetchCrops = async () => {
     try {
@@ -383,6 +398,23 @@ export function HarvestHistory() {
     return cropColors[crop] || { bg: '#F3F4F6', color: '#6B7280' };
   };
 
+  const getCropSwatchColor = (crop: string) => {
+    const cropSwatches: { [key: string]: string } = {
+      'Paddy': '#FEF08A',
+      'Corn': '#FED7AA',
+      'Wheat': '#FDE68A',
+      'Tomatoes': '#FECACA',
+      'Onions': '#E9D5FF',
+      'Carrots': '#FFEDD5',
+      'Cabbage': '#BBF7D0',
+      'Potatoes': '#D6D3D1',
+    };
+    return cropSwatches[crop] || '#E5E7EB';
+  };
+
+  const years = ['2026', '2025', '2024'];
+  const seasons = ['Maha', 'Yala'];
+
   const filteredHarvests = harvests.filter((harvest: Harvest) => {
     const matchesSearch = harvest.farmerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       harvest.farmerNIC.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -463,56 +495,459 @@ export function HarvestHistory() {
         </div>
       </div>
 
-      {/* Search & Filter */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search by farmer name, NIC, or plot..."
-              className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm md:text-base"
-            />
-          </div>
-          <div className="flex flex-wrap gap-2 sm:gap-4">
-            <select
-              value={selectedCrop}
-              onChange={(e) => setSelectedCrop(e.target.value)}
-              className="flex-1 sm:flex-none px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base text-gray-700"
+      {/* Search & Filter - Unified Block */}
+      <div 
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 0,
+          background: '#FFFFFF',
+          border: '1px solid #E5E7EB',
+          borderRadius: '12px',
+          padding: '6px 8px',
+          boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+        }}
+        onFocus={() => {}}
+        className="focus-within:border-green-600 transition-all duration-200"
+        onMouseEnter={(e) => {
+          const el = e.currentTarget as HTMLElement;
+          const isFocused = el.querySelector('input:focus');
+          if (!isFocused && openDropdown === null) {
+            el.style.borderColor = '#E5E7EB';
+            el.style.boxShadow = '0 1px 4px rgba(0,0,0,0.06)';
+          }
+        }}
+      >
+        {/* Search Input Section */}
+        <div style={{ display: 'flex', alignItems: 'center', flex: 1, gap: '8px', paddingRight: '8px' }}>
+          <Search style={{ color: '#9CA3AF', width: '16px', height: '16px', flexShrink: 0 }} />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search by farmer name, NIC, or plot..."
+            style={{
+              flex: 1,
+              border: 'none',
+              outline: 'none',
+              background: 'transparent',
+              fontSize: '14px',
+              color: '#111827',
+              padding: '6px 10px',
+            }}
+            onFocus={(e) => {
+              const container = e.currentTarget.closest('div[style*="display: flex"]')?.parentElement as HTMLElement;
+              if (container) {
+                container.style.borderColor = '#16A34A';
+                container.style.boxShadow = '0 0 0 3px rgba(22,163,74,0.08)';
+              }
+            }}
+            onBlur={(e) => {
+              if (openDropdown === null) {
+                const container = e.currentTarget.closest('div[style*="display: flex"]')?.parentElement as HTMLElement;
+                if (container) {
+                  container.style.borderColor = '#E5E7EB';
+                  container.style.boxShadow = '0 1px 4px rgba(0,0,0,0.06)';
+                }
+              }
+            }}
+          />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              style={{
+                background: '#F3F4F6',
+                border: 'none',
+                borderRadius: '50%',
+                width: '20px',
+                height: '20px',
+                color: '#6B7280',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+              title="Clear search"
             >
-              <option value="">All Crops</option>
-              {['Paddy', 'Corn', 'Wheat', 'Tomatoes', 'Onions', 'Carrots', 'Cabbage', 'Potatoes', ...availableCrops]
-                .filter((v, i, a) => a.indexOf(v) === i) // Unique
-                .map(crop => (
-                  <option key={crop} value={crop}>{crop}</option>
+              <X size={14} />
+            </button>
+          )}
+        </div>
+
+        {/* Divider */}
+        <div style={{ width: '1px', height: '28px', background: '#E5E7EB', flexShrink: 0, margin: '0 4px' }} />
+
+        {/* Crop Dropdown */}
+        <div 
+          ref={(el) => { dropdownRefs.current['crop'] = el; }}
+          style={{ position: 'relative' }}
+        >
+          <label style={{ fontSize: '10px', fontWeight: '600', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', marginBottom: '1px', paddingLeft: '6px' }}>
+            Crop
+          </label>
+          <button
+            onClick={() => setOpenDropdown(openDropdown === 'crop' ? null : 'crop')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 14px',
+              border: 'none',
+              background: 'transparent',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: '600',
+              color: '#111827',
+              whiteSpace: 'nowrap',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#F3F4F6';
+              e.currentTarget.style.borderRadius = '8px';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+            }}
+          >
+            {selectedCrop || 'All Crops'}
+            <ChevronDown size={14} style={{ color: '#6B7280' }} />
+          </button>
+
+          {/* Crop Dropdown Menu */}
+          {openDropdown === 'crop' && (
+            <div style={{
+              position: 'absolute',
+              top: 'calc(100% + 6px)',
+              left: '6px',
+              background: '#FFFFFF',
+              border: '1px solid #E5E7EB',
+              borderRadius: '10px',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.10)',
+              minWidth: '160px',
+              zIndex: 50,
+            }}>
+              <div style={{ padding: '6px 0' }}>
+                <div
+                  onClick={() => {
+                    setSelectedCrop('');
+                    setOpenDropdown(null);
+                  }}
+                  style={{
+                    padding: '9px 14px',
+                    fontSize: '13px',
+                    color: selectedCrop === '' ? '#15803D' : '#374151',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    background: selectedCrop === '' ? '#F0FDF4' : 'transparent',
+                    fontWeight: selectedCrop === '' ? '500' : '400',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (selectedCrop !== '') {
+                      e.currentTarget.style.background = '#F9FAFB';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (selectedCrop !== '') {
+                      e.currentTarget.style.background = 'transparent';
+                    }
+                  }}
+                >
+                  All Crops
+                </div>
+                {['Paddy', 'Corn', 'Wheat', 'Tomatoes', 'Onions', 'Carrots', 'Cabbage', 'Potatoes', ...availableCrops]
+                  .filter((v, i, a) => a.indexOf(v) === i)
+                  .map(crop => (
+                    <div
+                      key={crop}
+                      onClick={() => {
+                        setSelectedCrop(crop);
+                        setOpenDropdown(null);
+                      }}
+                      style={{
+                        padding: '9px 14px',
+                        fontSize: '13px',
+                        color: selectedCrop === crop ? '#15803D' : '#374151',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        background: selectedCrop === crop ? '#F0FDF4' : 'transparent',
+                        fontWeight: selectedCrop === crop ? '500' : '400',
+                      }}
+                      onMouseEnter={(e) => {
+                        if (selectedCrop !== crop) {
+                          e.currentTarget.style.background = '#F9FAFB';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (selectedCrop !== crop) {
+                          e.currentTarget.style.background = 'transparent';
+                        }
+                      }}
+                    >
+                      <span
+                        style={{
+                          width: '10px',
+                          height: '10px',
+                          borderRadius: '2px',
+                          display: 'inline-block',
+                          marginRight: '6px',
+                          background: getCropSwatchColor(crop),
+                        }}
+                      />
+                      {crop}
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Divider */}
+        <div style={{ width: '1px', height: '28px', background: '#E5E7EB', flexShrink: 0, margin: '0 4px' }} />
+
+        {/* Year Dropdown */}
+        <div 
+          ref={(el) => { dropdownRefs.current['year'] = el; }}
+          style={{ position: 'relative' }}
+        >
+          <label style={{ fontSize: '10px', fontWeight: '600', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', marginBottom: '1px', paddingLeft: '6px' }}>
+            Year
+          </label>
+          <button
+            onClick={() => setOpenDropdown(openDropdown === 'year' ? null : 'year')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 14px',
+              border: 'none',
+              background: 'transparent',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: '600',
+              color: '#111827',
+              whiteSpace: 'nowrap',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#F3F4F6';
+              e.currentTarget.style.borderRadius = '8px';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+            }}
+          >
+            {selectedYear || 'All Years'}
+            <ChevronDown size={14} style={{ color: '#6B7280' }} />
+          </button>
+
+          {/* Year Dropdown Menu */}
+          {openDropdown === 'year' && (
+            <div style={{
+              position: 'absolute',
+              top: 'calc(100% + 6px)',
+              left: '6px',
+              background: '#FFFFFF',
+              border: '1px solid #E5E7EB',
+              borderRadius: '10px',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.10)',
+              minWidth: '160px',
+              zIndex: 50,
+            }}>
+              <div style={{ padding: '6px 0' }}>
+                <div
+                  onClick={() => {
+                    setSelectedYear('');
+                    setOpenDropdown(null);
+                  }}
+                  style={{
+                    padding: '9px 14px',
+                    fontSize: '13px',
+                    color: selectedYear === '' ? '#15803D' : '#374151',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    background: selectedYear === '' ? '#F0FDF4' : 'transparent',
+                    fontWeight: selectedYear === '' ? '500' : '400',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (selectedYear !== '') {
+                      e.currentTarget.style.background = '#F9FAFB';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (selectedYear !== '') {
+                      e.currentTarget.style.background = 'transparent';
+                    }
+                  }}
+                >
+                  All Years
+                </div>
+                {years.map(year => (
+                  <div
+                    key={year}
+                    onClick={() => {
+                      setSelectedYear(year);
+                      setOpenDropdown(null);
+                    }}
+                    style={{
+                      padding: '9px 14px',
+                      fontSize: '13px',
+                      color: selectedYear === year ? '#15803D' : '#374151',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      background: selectedYear === year ? '#F0FDF4' : 'transparent',
+                      fontWeight: selectedYear === year ? '500' : '400',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (selectedYear !== year) {
+                        e.currentTarget.style.background = '#F9FAFB';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (selectedYear !== year) {
+                        e.currentTarget.style.background = 'transparent';
+                      }
+                    }}
+                  >
+                    {year}
+                  </div>
                 ))}
-            </select>
+              </div>
+            </div>
+          )}
+        </div>
 
-            <select
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(e.target.value)}
-              className="flex-1 sm:flex-none px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base text-gray-700"
-            >
-              <option value="">All Years</option>
-              <option value="2026">2026</option>
-              <option value="2025">2025</option>
-              <option value="2024">2024</option>
-            </select>
+        {/* Divider */}
+        <div style={{ width: '1px', height: '28px', background: '#E5E7EB', flexShrink: 0, margin: '0 4px' }} />
 
-            <select
-              value={selectedSeason}
-              onChange={(e) => setSelectedSeason(e.target.value)}
-              className="flex-1 sm:flex-none px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base text-gray-700"
-            >
-              <option value="">All Seasons</option>
-              <option value="Maha">Maha</option>
-              <option value="Yala">Yala</option>
-            </select>
-          </div>
+        {/* Season Dropdown */}
+        <div 
+          ref={(el) => { dropdownRefs.current['season'] = el; }}
+          style={{ position: 'relative' }}
+        >
+          <label style={{ fontSize: '10px', fontWeight: '600', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', marginBottom: '1px', paddingLeft: '6px' }}>
+            Season
+          </label>
+          <button
+            onClick={() => setOpenDropdown(openDropdown === 'season' ? null : 'season')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 14px',
+              border: 'none',
+              background: 'transparent',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: '600',
+              color: '#111827',
+              whiteSpace: 'nowrap',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#F3F4F6';
+              e.currentTarget.style.borderRadius = '8px';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+            }}
+          >
+            {selectedSeason || 'All Seasons'}
+            <ChevronDown size={14} style={{ color: '#6B7280' }} />
+          </button>
+
+          {/* Season Dropdown Menu */}
+          {openDropdown === 'season' && (
+            <div style={{
+              position: 'absolute',
+              top: 'calc(100% + 6px)',
+              left: '6px',
+              background: '#FFFFFF',
+              border: '1px solid #E5E7EB',
+              borderRadius: '10px',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.10)',
+              minWidth: '160px',
+              zIndex: 50,
+            }}>
+              <div style={{ padding: '6px 0' }}>
+                <div
+                  onClick={() => {
+                    setSelectedSeason('');
+                    setOpenDropdown(null);
+                  }}
+                  style={{
+                    padding: '9px 14px',
+                    fontSize: '13px',
+                    color: selectedSeason === '' ? '#15803D' : '#374151',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    background: selectedSeason === '' ? '#F0FDF4' : 'transparent',
+                    fontWeight: selectedSeason === '' ? '500' : '400',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (selectedSeason !== '') {
+                      e.currentTarget.style.background = '#F9FAFB';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (selectedSeason !== '') {
+                      e.currentTarget.style.background = 'transparent';
+                    }
+                  }}
+                >
+                  All Seasons
+                </div>
+                {seasons.map(season => (
+                  <div
+                    key={season}
+                    onClick={() => {
+                      setSelectedSeason(season);
+                      setOpenDropdown(null);
+                    }}
+                    style={{
+                      padding: '9px 14px',
+                      fontSize: '13px',
+                      color: selectedSeason === season ? '#15803D' : '#374151',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      background: selectedSeason === season ? '#F0FDF4' : 'transparent',
+                      fontWeight: selectedSeason === season ? '500' : '400',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (selectedSeason !== season) {
+                        e.currentTarget.style.background = '#F9FAFB';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (selectedSeason !== season) {
+                        e.currentTarget.style.background = 'transparent';
+                      }
+                    }}
+                  >
+                    {season}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Results text */}
+      {(selectedCrop || selectedYear || selectedSeason) && (
+        <div style={{ fontSize: '13px', color: '#6B7280', marginTop: '8px' }}>
+          Showing <span style={{ fontWeight: '600', color: '#111827' }}>{filteredHarvests.length}</span> results
+        </div>
+      )}
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
