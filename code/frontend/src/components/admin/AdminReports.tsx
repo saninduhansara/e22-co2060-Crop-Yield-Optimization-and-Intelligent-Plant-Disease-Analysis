@@ -1,6 +1,7 @@
 import { Download, TrendingUp, Users, Wheat, FileText, BarChart3, Link2, MapPin, Layers } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import { useState, useEffect, useRef } from 'react';
+import { toast } from 'sonner';
 import { farmAPI } from '../../services/api';
 import { FarmerProfile } from './FarmerProfile';
 import { formatNumber } from '../../utils/numberUtils';
@@ -33,6 +34,8 @@ export function AdminReports() {
       if (pdfContentRef.current) {
         pdfContentRef.current.style.display = 'none';
       }
+      
+      toast.success('Report downloaded successfully.');
     } catch (error) {
       // Hide PDF content on error too
       if (pdfContentRef.current) {

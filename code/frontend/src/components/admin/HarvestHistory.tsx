@@ -1,5 +1,6 @@
-import { Search, Download, Loader, RefreshCw, FileText, Wheat, TrendingUp, X, FileJson, File } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { Search, Download, Loader, RefreshCw, FileText, Wheat, TrendingUp, X, FileJson, File, ChevronDown } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { toast } from 'sonner';
 import { farmAPI } from '../../services/api';
 import { formatNumber } from '../../utils/numberUtils';
 import jsPDF from 'jspdf';
@@ -35,10 +36,31 @@ export function HarvestHistory() {
   const [selectedSeason, setSelectedSeason] = useState<string>('');
   const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [exportingFormat, setExportingFormat] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 20;
+
+  // Dropdown visibility state
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const dropdownRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
   useEffect(() => {
     fetchCrops();
     fetchHarvestHistory();
+  }, []);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedCrop, selectedYear, selectedSeason]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!Object.values(dropdownRefs.current).some(ref => ref?.contains(event.target as Node))) {
+        setOpenDropdown(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const fetchCrops = async () => {
@@ -124,6 +146,7 @@ export function HarvestHistory() {
     const csvContent = generateCSVContent();
     const timestamp = new Date().toISOString().slice(0, 10);
     downloadFile(csvContent, `harvest_report_${timestamp}.csv`, 'text/csv;charset=utf-8;');
+    toast.success('Report downloaded successfully.');
     setShowDownloadModal(false);
   };
 
@@ -184,6 +207,7 @@ export function HarvestHistory() {
 
       const timestamp = new Date().toISOString().slice(0, 10);
       downloadFile(excelContent, `harvest_report_${timestamp}.xls`, 'application/vnd.ms-excel;charset=utf-8;');
+      toast.success('Report downloaded successfully.');
       setShowDownloadModal(false);
     } catch (error) {
       console.error('Error exporting to Excel:', error);
@@ -345,6 +369,7 @@ export function HarvestHistory() {
       // Save the PDF
       const timestamp = new Date().toISOString().slice(0, 10);
       doc.save(`harvest_report_${timestamp}.pdf`);
+      toast.success('Report downloaded successfully.');
       
       setShowDownloadModal(false);
       setExportingFormat(null);
@@ -358,6 +383,37 @@ export function HarvestHistory() {
   const handleExportData = () => {
     setShowDownloadModal(true);
   };
+
+  const getCropBadgeColors = (crop: string) => {
+    const cropColors: { [key: string]: { bg: string; color: string } } = {
+      'Paddy': { bg: '#FFFEF0', color: '#A16207' },
+      'Corn': { bg: '#FFF7ED', color: '#EA580C' },
+      'Wheat': { bg: '#FFFAE6', color: '#A16207' },
+      'Tomatoes': { bg: '#FEE2E2', color: '#DC2626' },
+      'Onions': { bg: '#F3E8FF', color: '#7C3AED' },
+      'Carrots': { bg: '#FFECDB', color: '#EA580C' },
+      'Cabbage': { bg: '#DCFCE7', color: '#15803D' },
+      'Potatoes': { bg: '#F3F3F3', color: '#6B7280' },
+    };
+    return cropColors[crop] || { bg: '#F3F4F6', color: '#6B7280' };
+  };
+
+  const getCropSwatchColor = (crop: string) => {
+    const cropSwatches: { [key: string]: string } = {
+      'Paddy': '#FEF08A',
+      'Corn': '#FED7AA',
+      'Wheat': '#FDE68A',
+      'Tomatoes': '#FECACA',
+      'Onions': '#E9D5FF',
+      'Carrots': '#FFEDD5',
+      'Cabbage': '#BBF7D0',
+      'Potatoes': '#D6D3D1',
+    };
+    return cropSwatches[crop] || '#E5E7EB';
+  };
+
+  const years = ['2026', '2025', '2024'];
+  const seasons = ['Maha', 'Yala'];
 
   const filteredHarvests = harvests.filter((harvest: Harvest) => {
     const matchesSearch = harvest.farmerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -415,108 +471,596 @@ export function HarvestHistory() {
           </button>
           <button 
             onClick={handleExportData}
-            className="px-4 py-3 sm:px-6 bg-green-700 hover:bg-green-800 text-white rounded-lg flex items-center justify-center gap-2 transition-colors whitespace-nowrap">
-            <Download className="w-5 h-5" />
-            <span className="hidden sm:inline">Export Data</span>
+            title="Export as CSV"
+            style={{
+              background: '#15803D',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '8px 14px',
+              color: 'white',
+              fontSize: '14px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'background 0.2s ease'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = '#166534'}
+            onMouseLeave={(e) => e.currentTarget.style.background = '#15803D'}
+          >
+            <Download className="w-4 h-4" />
+            <span>Export</span>
           </button>
         </div>
       </div>
 
-      {/* Search & Filter */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search by farmer name, NIC, or plot..."
-              className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm md:text-base"
-            />
-          </div>
-          <div className="flex flex-wrap gap-2 sm:gap-4">
-            <select
-              value={selectedCrop}
-              onChange={(e) => setSelectedCrop(e.target.value)}
-              className="flex-1 sm:flex-none px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base text-gray-700"
+      {/* Search & Filter - Unified Block */}
+      <div 
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 0,
+          background: '#FFFFFF',
+          border: '1px solid #E5E7EB',
+          borderRadius: '12px',
+          padding: '6px 8px',
+          boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+        }}
+        onFocus={() => {}}
+        className="focus-within:border-green-600 transition-all duration-200"
+        onMouseEnter={(e) => {
+          const el = e.currentTarget as HTMLElement;
+          const isFocused = el.querySelector('input:focus');
+          if (!isFocused && openDropdown === null) {
+            el.style.borderColor = '#E5E7EB';
+            el.style.boxShadow = '0 1px 4px rgba(0,0,0,0.06)';
+          }
+        }}
+      >
+        {/* Search Input Section */}
+        <div style={{ display: 'flex', alignItems: 'center', flex: 1, gap: '8px', paddingRight: '8px' }}>
+          <Search style={{ color: '#9CA3AF', width: '16px', height: '16px', flexShrink: 0 }} />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search by farmer name, NIC, or plot..."
+            style={{
+              flex: 1,
+              border: 'none',
+              outline: 'none',
+              background: 'transparent',
+              fontSize: '14px',
+              color: '#111827',
+              padding: '6px 10px',
+            }}
+            onFocus={(e) => {
+              const container = e.currentTarget.closest('div[style*="display: flex"]')?.parentElement as HTMLElement;
+              if (container) {
+                container.style.borderColor = '#16A34A';
+                container.style.boxShadow = '0 0 0 3px rgba(22,163,74,0.08)';
+              }
+            }}
+            onBlur={(e) => {
+              if (openDropdown === null) {
+                const container = e.currentTarget.closest('div[style*="display: flex"]')?.parentElement as HTMLElement;
+                if (container) {
+                  container.style.borderColor = '#E5E7EB';
+                  container.style.boxShadow = '0 1px 4px rgba(0,0,0,0.06)';
+                }
+              }
+            }}
+          />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              style={{
+                background: '#F3F4F6',
+                border: 'none',
+                borderRadius: '50%',
+                width: '20px',
+                height: '20px',
+                color: '#6B7280',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+              title="Clear search"
             >
-              <option value="">All Crops</option>
-              {['Paddy', 'Corn', 'Wheat', 'Tomatoes', 'Onions', 'Carrots', 'Cabbage', 'Potatoes', ...availableCrops]
-                .filter((v, i, a) => a.indexOf(v) === i) // Unique
-                .map(crop => (
-                  <option key={crop} value={crop}>{crop}</option>
+              <X size={14} />
+            </button>
+          )}
+        </div>
+
+        {/* Divider */}
+        <div style={{ width: '1px', height: '28px', background: '#E5E7EB', flexShrink: 0, margin: '0 4px' }} />
+
+        {/* Crop Dropdown */}
+        <div 
+          ref={(el) => { dropdownRefs.current['crop'] = el; }}
+          style={{ position: 'relative' }}
+        >
+          <label style={{ fontSize: '10px', fontWeight: '600', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', marginBottom: '1px', paddingLeft: '6px' }}>
+            Crop
+          </label>
+          <button
+            onClick={() => setOpenDropdown(openDropdown === 'crop' ? null : 'crop')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 14px',
+              border: 'none',
+              background: 'transparent',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: '600',
+              color: '#111827',
+              whiteSpace: 'nowrap',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#F3F4F6';
+              e.currentTarget.style.borderRadius = '8px';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+            }}
+          >
+            {selectedCrop || 'All Crops'}
+            <ChevronDown size={14} style={{ color: '#6B7280' }} />
+          </button>
+
+          {/* Crop Dropdown Menu */}
+          {openDropdown === 'crop' && (
+            <div style={{
+              position: 'absolute',
+              top: 'calc(100% + 6px)',
+              left: '6px',
+              background: '#FFFFFF',
+              border: '1px solid #E5E7EB',
+              borderRadius: '10px',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.10)',
+              minWidth: '160px',
+              zIndex: 50,
+            }}>
+              <div style={{ padding: '6px 0' }}>
+                <div
+                  onClick={() => {
+                    setSelectedCrop('');
+                    setOpenDropdown(null);
+                  }}
+                  style={{
+                    padding: '9px 14px',
+                    fontSize: '13px',
+                    color: selectedCrop === '' ? '#15803D' : '#374151',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    background: selectedCrop === '' ? '#F0FDF4' : 'transparent',
+                    fontWeight: selectedCrop === '' ? '500' : '400',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (selectedCrop !== '') {
+                      e.currentTarget.style.background = '#F9FAFB';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (selectedCrop !== '') {
+                      e.currentTarget.style.background = 'transparent';
+                    }
+                  }}
+                >
+                  All Crops
+                </div>
+                {['Paddy', 'Corn', 'Wheat', 'Tomatoes', 'Onions', 'Carrots', 'Cabbage', 'Potatoes', ...availableCrops]
+                  .filter((v, i, a) => a.indexOf(v) === i)
+                  .map(crop => (
+                    <div
+                      key={crop}
+                      onClick={() => {
+                        setSelectedCrop(crop);
+                        setOpenDropdown(null);
+                      }}
+                      style={{
+                        padding: '9px 14px',
+                        fontSize: '13px',
+                        color: selectedCrop === crop ? '#15803D' : '#374151',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        background: selectedCrop === crop ? '#F0FDF4' : 'transparent',
+                        fontWeight: selectedCrop === crop ? '500' : '400',
+                      }}
+                      onMouseEnter={(e) => {
+                        if (selectedCrop !== crop) {
+                          e.currentTarget.style.background = '#F9FAFB';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (selectedCrop !== crop) {
+                          e.currentTarget.style.background = 'transparent';
+                        }
+                      }}
+                    >
+                      <span
+                        style={{
+                          width: '10px',
+                          height: '10px',
+                          borderRadius: '2px',
+                          display: 'inline-block',
+                          marginRight: '6px',
+                          background: getCropSwatchColor(crop),
+                        }}
+                      />
+                      {crop}
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Divider */}
+        <div style={{ width: '1px', height: '28px', background: '#E5E7EB', flexShrink: 0, margin: '0 4px' }} />
+
+        {/* Year Dropdown */}
+        <div 
+          ref={(el) => { dropdownRefs.current['year'] = el; }}
+          style={{ position: 'relative' }}
+        >
+          <label style={{ fontSize: '10px', fontWeight: '600', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', marginBottom: '1px', paddingLeft: '6px' }}>
+            Year
+          </label>
+          <button
+            onClick={() => setOpenDropdown(openDropdown === 'year' ? null : 'year')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 14px',
+              border: 'none',
+              background: 'transparent',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: '600',
+              color: '#111827',
+              whiteSpace: 'nowrap',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#F3F4F6';
+              e.currentTarget.style.borderRadius = '8px';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+            }}
+          >
+            {selectedYear || 'All Years'}
+            <ChevronDown size={14} style={{ color: '#6B7280' }} />
+          </button>
+
+          {/* Year Dropdown Menu */}
+          {openDropdown === 'year' && (
+            <div style={{
+              position: 'absolute',
+              top: 'calc(100% + 6px)',
+              left: '6px',
+              background: '#FFFFFF',
+              border: '1px solid #E5E7EB',
+              borderRadius: '10px',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.10)',
+              minWidth: '160px',
+              zIndex: 50,
+            }}>
+              <div style={{ padding: '6px 0' }}>
+                <div
+                  onClick={() => {
+                    setSelectedYear('');
+                    setOpenDropdown(null);
+                  }}
+                  style={{
+                    padding: '9px 14px',
+                    fontSize: '13px',
+                    color: selectedYear === '' ? '#15803D' : '#374151',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    background: selectedYear === '' ? '#F0FDF4' : 'transparent',
+                    fontWeight: selectedYear === '' ? '500' : '400',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (selectedYear !== '') {
+                      e.currentTarget.style.background = '#F9FAFB';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (selectedYear !== '') {
+                      e.currentTarget.style.background = 'transparent';
+                    }
+                  }}
+                >
+                  All Years
+                </div>
+                {years.map(year => (
+                  <div
+                    key={year}
+                    onClick={() => {
+                      setSelectedYear(year);
+                      setOpenDropdown(null);
+                    }}
+                    style={{
+                      padding: '9px 14px',
+                      fontSize: '13px',
+                      color: selectedYear === year ? '#15803D' : '#374151',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      background: selectedYear === year ? '#F0FDF4' : 'transparent',
+                      fontWeight: selectedYear === year ? '500' : '400',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (selectedYear !== year) {
+                        e.currentTarget.style.background = '#F9FAFB';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (selectedYear !== year) {
+                        e.currentTarget.style.background = 'transparent';
+                      }
+                    }}
+                  >
+                    {year}
+                  </div>
                 ))}
-            </select>
+              </div>
+            </div>
+          )}
+        </div>
 
-            <select
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(e.target.value)}
-              className="flex-1 sm:flex-none px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base text-gray-700"
-            >
-              <option value="">All Years</option>
-              <option value="2026">2026</option>
-              <option value="2025">2025</option>
-              <option value="2024">2024</option>
-            </select>
+        {/* Divider */}
+        <div style={{ width: '1px', height: '28px', background: '#E5E7EB', flexShrink: 0, margin: '0 4px' }} />
 
-            <select
-              value={selectedSeason}
-              onChange={(e) => setSelectedSeason(e.target.value)}
-              className="flex-1 sm:flex-none px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base text-gray-700"
-            >
-              <option value="">All Seasons</option>
-              <option value="Maha">Maha</option>
-              <option value="Yala">Yala</option>
-            </select>
-          </div>
+        {/* Season Dropdown */}
+        <div 
+          ref={(el) => { dropdownRefs.current['season'] = el; }}
+          style={{ position: 'relative' }}
+        >
+          <label style={{ fontSize: '10px', fontWeight: '600', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', marginBottom: '1px', paddingLeft: '6px' }}>
+            Season
+          </label>
+          <button
+            onClick={() => setOpenDropdown(openDropdown === 'season' ? null : 'season')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 14px',
+              border: 'none',
+              background: 'transparent',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: '600',
+              color: '#111827',
+              whiteSpace: 'nowrap',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#F3F4F6';
+              e.currentTarget.style.borderRadius = '8px';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+            }}
+          >
+            {selectedSeason || 'All Seasons'}
+            <ChevronDown size={14} style={{ color: '#6B7280' }} />
+          </button>
+
+          {/* Season Dropdown Menu */}
+          {openDropdown === 'season' && (
+            <div style={{
+              position: 'absolute',
+              top: 'calc(100% + 6px)',
+              left: '6px',
+              background: '#FFFFFF',
+              border: '1px solid #E5E7EB',
+              borderRadius: '10px',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.10)',
+              minWidth: '160px',
+              zIndex: 50,
+            }}>
+              <div style={{ padding: '6px 0' }}>
+                <div
+                  onClick={() => {
+                    setSelectedSeason('');
+                    setOpenDropdown(null);
+                  }}
+                  style={{
+                    padding: '9px 14px',
+                    fontSize: '13px',
+                    color: selectedSeason === '' ? '#15803D' : '#374151',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    background: selectedSeason === '' ? '#F0FDF4' : 'transparent',
+                    fontWeight: selectedSeason === '' ? '500' : '400',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (selectedSeason !== '') {
+                      e.currentTarget.style.background = '#F9FAFB';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (selectedSeason !== '') {
+                      e.currentTarget.style.background = 'transparent';
+                    }
+                  }}
+                >
+                  All Seasons
+                </div>
+                {seasons.map(season => (
+                  <div
+                    key={season}
+                    onClick={() => {
+                      setSelectedSeason(season);
+                      setOpenDropdown(null);
+                    }}
+                    style={{
+                      padding: '9px 14px',
+                      fontSize: '13px',
+                      color: selectedSeason === season ? '#15803D' : '#374151',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      background: selectedSeason === season ? '#F0FDF4' : 'transparent',
+                      fontWeight: selectedSeason === season ? '500' : '400',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (selectedSeason !== season) {
+                        e.currentTarget.style.background = '#F9FAFB';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (selectedSeason !== season) {
+                        e.currentTarget.style.background = 'transparent';
+                      }
+                    }}
+                  >
+                    {season}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
+      {/* Results text */}
+      {(searchTerm || selectedCrop || selectedYear || selectedSeason) && (
+        <div style={{ fontSize: '13px', color: '#6B7280', marginTop: '8px' }}>
+          {searchTerm ? (
+            <>
+              Showing <span style={{ fontWeight: '600', color: '#111827' }}>{filteredHarvests.length}</span> results for "{searchTerm}"
+            </>
+          ) : (
+            <>
+              Showing <span style={{ fontWeight: '600', color: '#111827' }}>{filteredHarvests.length}</span> results
+            </>
+          )}
+        </div>
+      )}
+
       {/* Statistics Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-5 sm:p-6 shadow-md border-l-4 border-l-green-500 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group">
+        {/* Total Harvests Card */}
+        <div 
+          style={{
+            background: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)',
+            border: '1px solid #BFDBFE',
+            borderRadius: '14px',
+            padding: '16px 20px',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+            transition: 'all 0.2s ease',
+            cursor: 'pointer'
+          }}
+          className="hover:shadow-lg group"
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-3px)';
+            e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.09)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'none';
+            e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.05)';
+          }}
+        >
           <div className="flex flex-col">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">Total Records</p>
-              <FileText className="w-5 h-5 text-green-600 opacity-70 group-hover:opacity-100 transition-opacity" />
+              <p style={{ fontSize: '11px', fontWeight: '600', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Harvests</p>
+              <FileText className="w-5 h-5 text-blue-600 opacity-70 group-hover:opacity-100 transition-opacity" />
             </div>
-            <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 my-2 break-words min-w-0">
+            <p style={{ fontSize: '32px', fontWeight: '700', color: '#1D4ED8', marginBottom: '8px' }} className="break-words min-w-0">
               {formattedTotalRecords}
             </p>
-            <p className="text-xs sm:text-sm text-gray-600 mt-2">Filtered harvest entries</p>
+            <p style={{ fontSize: '12px', color: '#9CA3AF' }}>Filtered harvest entries</p>
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-5 sm:p-6 shadow-md border-l-4 border-l-green-500 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group">
+        {/* Total Yield Card */}
+        <div 
+          style={{
+            background: 'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)',
+            border: '1px solid #BBF7D0',
+            borderRadius: '14px',
+            padding: '16px 20px',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+            transition: 'all 0.2s ease',
+            cursor: 'pointer'
+          }}
+          className="hover:shadow-lg group"
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-3px)';
+            e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.09)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'none';
+            e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.05)';
+          }}
+        >
           <div className="flex flex-col">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">Total Yield</p>
+              <p style={{ fontSize: '11px', fontWeight: '600', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Yield</p>
               <Wheat className="w-5 h-5 text-green-600 opacity-70 group-hover:opacity-100 transition-opacity" />
             </div>
-            <div className="flex min-w-0 flex-wrap items-baseline gap-1 sm:gap-2 my-2">
-              <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 break-words min-w-0">
+            <div className="flex items-baseline gap-1 my-2">
+              <p style={{ fontSize: '32px', fontWeight: '700', color: '#15803D' }} className="break-words min-w-0">
                 {formattedTotalYield}
               </p>
-              <span className="text-xs sm:text-sm font-medium text-gray-600 break-words">tons</span>
+              <span style={{ fontSize: '13px', fontWeight: '400', color: '#9CA3AF', marginLeft: '4px' }}>tons</span>
             </div>
-            <p className="text-xs sm:text-sm text-gray-600 mt-2">Across selected filters</p>
+            <p style={{ fontSize: '12px', color: '#9CA3AF' }}>Across selected filters</p>
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-5 sm:p-6 shadow-md border-l-4 border-l-green-500 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group">
+        {/* Avg Yield/Acre Card */}
+        <div 
+          style={{
+            background: 'linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%)',
+            border: '1px solid #FED7AA',
+            borderRadius: '14px',
+            padding: '16px 20px',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+            transition: 'all 0.2s ease',
+            cursor: 'pointer'
+          }}
+          className="hover:shadow-lg group"
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-3px)';
+            e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.09)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'none';
+            e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.05)';
+          }}
+        >
           <div className="flex flex-col">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">Avg Yield/Acre</p>
-              <TrendingUp className="w-5 h-5 text-green-600 opacity-70 group-hover:opacity-100 transition-opacity" />
+              <p style={{ fontSize: '11px', fontWeight: '600', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Avg Yield/Acre</p>
+              <TrendingUp className="w-5 h-5 text-orange-600 opacity-70 group-hover:opacity-100 transition-opacity" />
             </div>
-            <div className="flex min-w-0 flex-wrap items-baseline gap-1 sm:gap-2 my-2">
-              <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 break-words min-w-0">
+            <div className="flex items-baseline gap-1 my-2">
+              <p style={{ fontSize: '32px', fontWeight: '700', color: '#C2410C' }} className="break-words min-w-0">
                 {formattedAvgYieldPerAcre}
               </p>
-              <span className="text-xs sm:text-sm font-medium text-gray-600 break-words">kg</span>
+              <span style={{ fontSize: '13px', fontWeight: '400', color: '#9CA3AF', marginLeft: '4px' }}>kg</span>
             </div>
-            <p className="text-xs sm:text-sm text-gray-600 mt-2">Average yield per acre</p>
+            <p style={{ fontSize: '12px', color: '#9CA3AF' }}>Average yield per acre</p>
           </div>
         </div>
       </div>
@@ -525,64 +1069,190 @@ export function HarvestHistory() {
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead style={{ position: 'sticky', top: 0, zIndex: 10, background: '#F3F4F6' }}>
               <tr>
-                <th className="px-3 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider whitespace-nowrap">
+                <th style={{ fontSize: '11px', fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '12px 16px', borderBottom: '2px solid #E5E7EB' }} className="text-left whitespace-nowrap">
                   Farmer
                 </th>
-                <th className="px-3 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider whitespace-nowrap">
+                <th style={{ fontSize: '11px', fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '12px 16px', borderBottom: '2px solid #E5E7EB' }} className="text-left whitespace-nowrap">
                   Farm Name
                 </th>
-                <th className="px-3 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider whitespace-nowrap">
+                <th style={{ fontSize: '11px', fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '12px 16px', borderBottom: '2px solid #E5E7EB' }} className="text-left whitespace-nowrap">
                   Location
                 </th>
-                <th className="px-3 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider whitespace-nowrap">
+                <th style={{ fontSize: '11px', fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '12px 16px', borderBottom: '2px solid #E5E7EB' }} className="text-left whitespace-nowrap">
                   Season
                 </th>
-                <th className="px-3 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider whitespace-nowrap">
+                <th style={{ fontSize: '11px', fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '12px 16px', borderBottom: '2px solid #E5E7EB' }} className="text-left whitespace-nowrap">
                   Year
                 </th>
-                <th className="px-3 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider whitespace-nowrap">
+                <th style={{ fontSize: '11px', fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '12px 16px', borderBottom: '2px solid #E5E7EB' }} className="text-left whitespace-nowrap">
                   Crop
                 </th>
-                <th className="px-3 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider whitespace-nowrap">
+                <th style={{ fontSize: '11px', fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '12px 16px', borderBottom: '2px solid #E5E7EB' }} className="text-left whitespace-nowrap">
                   Acres
                 </th>
-                <th className="px-3 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider whitespace-nowrap">
+                <th style={{ fontSize: '11px', fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '12px 16px', borderBottom: '2px solid #E5E7EB' }} className="text-left whitespace-nowrap">
                   Harvest Qty
                 </th>
-                <th className="px-3 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider whitespace-nowrap">
+                <th style={{ fontSize: '11px', fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '12px 16px', borderBottom: '2px solid #E5E7EB' }} className="text-left whitespace-nowrap">
                   Yield/Acre
                 </th>
-                <th className="px-3 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider whitespace-nowrap">
+                <th style={{ fontSize: '11px', fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '12px 16px', borderBottom: '2px solid #E5E7EB' }} className="text-left whitespace-nowrap">
                   Date
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
-              {filteredHarvests.map((harvest) => (
-                <tr key={harvest.harvestId} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-3 py-3">
+            <tbody>
+              {filteredHarvests.slice((currentPage - 1) * pageSize, currentPage * pageSize).map((harvest, index) => (
+                <tr 
+                  key={harvest.harvestId} 
+                  style={{
+                    background: index % 2 === 0 ? '#FFFFFF' : '#F9FAFB',
+                    transition: 'all 0.15s ease',
+                    cursor: 'pointer'
+                  }}
+                  className="group hover:border-l-4"
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#F0FDF4';
+                    e.currentTarget.style.borderLeft = '3px solid #16A34A';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = index % 2 === 0 ? '#FFFFFF' : '#F9FAFB';
+                    e.currentTarget.style.borderLeft = 'none';
+                  }}
+                >
+                  <td style={{ fontSize: '13px', color: '#374151', padding: '11px 16px' }} className="whitespace-nowrap">
                     <div>
-                      <p className="font-medium text-gray-800 text-sm whitespace-nowrap">{harvest.farmerName}</p>
-                      <p className="text-xs text-gray-600 whitespace-nowrap">{harvest.farmerNIC}</p>
+                      <p style={{ fontSize: '13px', fontWeight: '600', color: '#111827', display: 'block' }} className="whitespace-nowrap">{harvest.farmerName}</p>
+                      <p style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: '400', display: 'block', marginTop: '1px' }} className="whitespace-nowrap">{harvest.farmerNIC}</p>
                     </div>
                   </td>
-                  <td className="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">{harvest.farmName}</td>
-                  <td className="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">{harvest.location}</td>
-                  <td className="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">{harvest.season}</td>
-                  <td className="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">{harvest.year}</td>
-                  <td className="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">{harvest.crop}</td>
-                  <td className="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">{harvest.acres}</td>
-                  <td className="px-3 py-3 text-xs font-medium text-gray-800 whitespace-nowrap">{harvest.harvestQty} kg</td>
-                  <td className="px-3 py-3 text-xs font-medium text-gray-800 whitespace-nowrap">{harvest.yieldPerAcre.toFixed(2)} kg</td>
-                  <td className="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">
+                  <td style={{ fontSize: '13px', color: '#374151', padding: '11px 16px' }} className="whitespace-nowrap">{harvest.farmName}</td>
+                  <td style={{ fontSize: '13px', color: '#374151', padding: '11px 16px' }} className="whitespace-nowrap">{harvest.location}</td>
+                  <td style={{ fontSize: '13px', color: '#374151', padding: '11px 16px' }} className="whitespace-nowrap">{harvest.season}</td>
+                  <td style={{ fontSize: '13px', color: '#374151', padding: '11px 16px' }} className="whitespace-nowrap">{harvest.year}</td>
+                  <td style={{ fontSize: '13px', color: '#374151', padding: '11px 16px' }} className="whitespace-nowrap">
+                    {(() => {
+                      const badgeColors = getCropBadgeColors(harvest.crop);
+                      return (
+                        <span 
+                          style={{
+                            background: badgeColors.bg,
+                            color: badgeColors.color,
+                            padding: '2px 10px',
+                            borderRadius: '999px',
+                            fontSize: '12px',
+                            fontWeight: '600',
+                            display: 'inline-block'
+                          }}
+                        >
+                          {harvest.crop}
+                        </span>
+                      );
+                    })()}
+                  </td>
+                  <td style={{ fontSize: '13px', color: '#374151', padding: '11px 16px' }} className="whitespace-nowrap">{harvest.acres}</td>
+                  <td style={{ fontSize: '13px', color: '#374151', padding: '11px 16px', fontWeight: '500' }} className="whitespace-nowrap">{harvest.harvestQty} kg</td>
+                  <td style={{ fontSize: '13px', color: '#374151', padding: '11px 16px', fontWeight: '500' }} className="whitespace-nowrap">{harvest.yieldPerAcre.toFixed(2)} kg</td>
+                  <td style={{ fontSize: '13px', color: '#374151', padding: '11px 16px' }} className="whitespace-nowrap">
                     {new Date(harvest.harvestDate).toLocaleDateString()}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+        </div>
+        
+        {/* Pagination */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '12px 16px',
+          background: '#F9FAFB',
+          borderRadius: '10px',
+          border: '1px solid #E5E7EB',
+          marginTop: '16px'
+        }}>
+          <div style={{ fontSize: '13px', color: '#6B7280' }}>
+            Showing <span style={{ fontWeight: '600', color: '#111827' }}>{Math.min((currentPage - 1) * pageSize + 1, filteredHarvests.length)}</span>–<span style={{ fontWeight: '600', color: '#111827' }}>{Math.min(currentPage * pageSize, filteredHarvests.length)}</span> of <span style={{ fontWeight: '600', color: '#111827' }}>{filteredHarvests.length}</span> records
+          </div>
+          
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+            <button
+              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+              disabled={currentPage === 1}
+              style={{
+                padding: '6px 12px',
+                background: 'white',
+                border: '1px solid #E5E7EB',
+                borderRadius: '6px',
+                color: '#374151',
+                cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                opacity: currentPage === 1 ? '0.4' : '1',
+                fontSize: '13px',
+                fontWeight: '500',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              Previous
+            </button>
+            
+            {Array.from({ length: Math.ceil(filteredHarvests.length / pageSize) }, (_, i) => {
+              const pageNum = i + 1;
+              const isCurrentPage = pageNum === currentPage;
+              const shouldShow = pageNum === 1 || pageNum === Math.ceil(filteredHarvests.length / pageSize) || Math.abs(pageNum - currentPage) <= 1;
+              
+              if (!shouldShow) return null;
+              if (pageNum > 1 && pageNum < Math.ceil(filteredHarvests.length / pageSize) && Math.abs(pageNum - currentPage) > 1) {
+                if (pageNum === currentPage - 2 || pageNum === currentPage + 2) {
+                  return <span key={`dots-${pageNum}`} style={{ color: '#9CA3AF' }}>...</span>;
+                }
+                return null;
+              }
+              
+              return (
+                <button
+                  key={pageNum}
+                  onClick={() => setCurrentPage(pageNum)}
+                  style={{
+                    background: isCurrentPage ? '#15803D' : 'white',
+                    color: isCurrentPage ? 'white' : '#374151',
+                    border: isCurrentPage ? 'none' : '1px solid #E5E7EB',
+                    borderRadius: '6px',
+                    width: '32px',
+                    height: '32px',
+                    cursor: 'pointer',
+                    fontWeight: '500',
+                    fontSize: '13px',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  {pageNum}
+                </button>
+              );
+            }).filter(Boolean)}
+            
+            <button
+              onClick={() => setCurrentPage(Math.min(Math.ceil(filteredHarvests.length / pageSize), currentPage + 1))}
+              disabled={currentPage >= Math.ceil(filteredHarvests.length / pageSize)}
+              style={{
+                padding: '6px 12px',
+                background: 'white',
+                border: '1px solid #E5E7EB',
+                borderRadius: '6px',
+                color: '#374151',
+                cursor: currentPage >= Math.ceil(filteredHarvests.length / pageSize) ? 'not-allowed' : 'pointer',
+                opacity: currentPage >= Math.ceil(filteredHarvests.length / pageSize) ? '0.4' : '1',
+                fontSize: '13px',
+                fontWeight: '500',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              Next
+            </button>
+          </div>
         </div>
       </div>
 
