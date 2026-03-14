@@ -140,15 +140,21 @@ export function AdminInquiries() {
         return true;
     });
 
-    const renderTrend = (trend: number) => {
+    const renderTrend = (trend: number, cardType: 'total' | 'pending' | 'resolved') => {
         const isIncrease = trend >= 0;
         const arrow = isIncrease ? '↑' : '↓';
-        const pillClass = isIncrease
-            ? 'bg-green-50 text-green-600'
-            : 'bg-red-50 text-red-600';
+        
+        let pillStyle = {};
+        if (cardType === 'total') {
+            pillStyle = { background: '#DBEAFE', color: '#1E40AF' };
+        } else if (cardType === 'pending') {
+            pillStyle = { background: '#FFEDD5', color: '#9A3412' };
+        } else {
+            pillStyle = { background: '#DCFCE7', color: '#166534' };
+        }
 
         return (
-            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${pillClass}`}>
+            <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium" style={{ ...pillStyle, borderRadius: '999px' }}>
                 {arrow} {Math.abs(trend)}% this week
             </span>
         );
@@ -167,82 +173,211 @@ export function AdminInquiries() {
                 {/* Total Inquiries Card */}
                 <button
                     onClick={() => setActiveFilter('all')}
-                    className={`relative min-h-[120px] overflow-hidden text-left rounded-xl px-6 py-5 border transition-all duration-200 ease-out cursor-pointer bg-white ${
-                        activeFilter === 'all'
-                            ? 'border-gray-300 shadow-[0_4px_16px_rgba(0,0,0,0.10)]'
-                            : 'border-gray-200 shadow-[0_1px_3px_rgba(0,0,0,0.06)] hover:border-gray-300 hover:shadow-[0_4px_16px_rgba(0,0,0,0.10)]'
-                    }`}
-                    style={{ borderWidth: '1px' }}
+                    className="relative min-h-[120px] text-left cursor-pointer transition-all duration-[250ms] ease-out"
+                    style={{
+                        background: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)',
+                        border: '1px solid #BFDBFE',
+                        borderRadius: '16px',
+                        padding: '20px 24px',
+                        boxShadow: activeFilter === 'all' ? '0 12px 28px rgba(0,0,0,0.12)' : '0 2px 8px rgba(0,0,0,0.06)',
+                        transform: activeFilter === 'all' ? 'translateY(-6px)' : 'none',
+                        display: 'flex',
+                        flexDirection: 'column'
+                    }}
+                    onMouseEnter={(e) => {
+                        if (activeFilter !== 'all') {
+                            e.currentTarget.style.transform = 'translateY(-6px)';
+                            e.currentTarget.style.boxShadow = '0 12px 28px rgba(0,0,0,0.12)';
+                            e.currentTarget.style.borderColor = '#BFDBFE';
+                        }
+                    }}
+                    onMouseLeave={(e) => {
+                        if (activeFilter !== 'all') {
+                            e.currentTarget.style.transform = 'none';
+                            e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.06)';
+                            e.currentTarget.style.borderColor = '#BFDBFE';
+                        }
+                    }}
                 >
                     <div className="flex items-center gap-3 mb-2">
-                        <div className="w-9 h-9 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
-                            <Mail className="w-5 h-5 text-blue-700" />
+                        <div style={{
+                            background: 'rgba(255,255,255,0.7)',
+                            borderRadius: '10px',
+                            width: '38px',
+                            height: '38px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0
+                        }}>
+                            <Mail style={{ width: '20px', height: '20px', color: '#1D4ED8' }} />
                         </div>
-                        <p className="text-sm font-medium text-gray-700">Total Inquiries</p>
+                        <p style={{ fontSize: '13px', fontWeight: '600', color: '#3B82F6' }}>Total Inquiries</p>
                     </div>
-                    <p className="text-4xl leading-tight font-bold text-gray-900 mb-2">{totalInquiries}</p>
-                    <div className="flex items-center justify-between gap-2 mb-3">
-                        {renderTrend(totalTrend)}
-                        <p className="text-xs text-gray-500">{newTodayCount} new today</p>
+                    <p style={{ fontSize: '38px', fontWeight: '700', color: '#1D4ED8', marginBottom: '8px', lineHeight: '1' }}>{totalInquiries}</p>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '12px' }}>
+                        {renderTrend(totalTrend, 'total')}
+                        <p style={{ fontSize: '12px', color: '#3B82F6' }}>{newTodayCount} new today</p>
                     </div>
-                    <div className="absolute bottom-0 left-0 h-1 w-full bg-blue-600" style={{ borderRadius: '0 0 12px 12px' }} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px' }}>
+                        <div style={{
+                            flex: 1,
+                            height: '6px',
+                            borderRadius: '999px',
+                            background: 'rgba(255,255,255,0.6)',
+                            overflow: 'hidden'
+                        }}>
+                            <div style={{
+                                height: '100%',
+                                borderRadius: '999px',
+                                background: '#3B82F6',
+                                width: '100%'
+                            }} />
+                        </div>
+                        <p style={{ fontSize: '11px', fontWeight: '600', minWidth: '32px', textAlign: 'right', color: '#1D4ED8' }}>100%</p>
+                    </div>
                 </button>
 
                 {/* Pending Action Card */}
                 <button
                     onClick={() => setActiveFilter('pending')}
-                    className={`relative min-h-[120px] overflow-hidden text-left px-6 py-5 border transition-all duration-200 ease-out cursor-pointer bg-white ${
-                        activeFilter === 'pending'
-                            ? 'border-gray-300 shadow-[0_4px_16px_rgba(0,0,0,0.10)]'
-                            : 'border-gray-200 shadow-[0_1px_3px_rgba(0,0,0,0.06)] hover:border-gray-300 hover:shadow-[0_4px_16px_rgba(0,0,0,0.10)]'
-                    }`}
+                    className="relative min-h-[120px] text-left cursor-pointer transition-all duration-[250ms] ease-out"
                     style={{
-                        borderWidth: '1px',
-                        borderLeft: '3px solid #F59E0B',
-                        borderTopLeftRadius: '12px',
-                        borderBottomLeftRadius: '12px',
-                        borderTopRightRadius: '12px',
-                        borderBottomRightRadius: '12px',
+                        background: 'linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%)',
+                        border: '1px solid #FED7AA',
+                        borderRadius: '16px',
+                        padding: '20px 24px',
+                        boxShadow: activeFilter === 'pending' ? '0 12px 28px rgba(0,0,0,0.12)' : '0 2px 8px rgba(0,0,0,0.06)',
+                        transform: activeFilter === 'pending' ? 'translateY(-6px)' : 'none',
+                        display: 'flex',
+                        flexDirection: 'column'
+                    }}
+                    onMouseEnter={(e) => {
+                        if (activeFilter !== 'pending') {
+                            e.currentTarget.style.transform = 'translateY(-6px)';
+                            e.currentTarget.style.boxShadow = '0 12px 28px rgba(0,0,0,0.12)';
+                            e.currentTarget.style.borderColor = '#FED7AA';
+                        }
+                    }}
+                    onMouseLeave={(e) => {
+                        if (activeFilter !== 'pending') {
+                            e.currentTarget.style.transform = 'none';
+                            e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.06)';
+                            e.currentTarget.style.borderColor = '#FED7AA';
+                        }
                     }}
                 >
                     <div className="flex items-center gap-3 mb-2">
-                        <div className="w-9 h-9 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
-                            <AlertCircle className="w-5 h-5 text-amber-700" />
+                        <div style={{
+                            background: 'rgba(255,255,255,0.7)',
+                            borderRadius: '10px',
+                            width: '38px',
+                            height: '38px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0
+                        }}>
+                            <AlertCircle style={{ width: '20px', height: '20px', color: '#C2410C' }} />
                         </div>
-                        <p className="text-sm font-medium text-gray-700">Pending Action</p>
+                        <p style={{ fontSize: '13px', fontWeight: '600', color: '#EA580C' }}>Pending Action</p>
                     </div>
-                    <p className="text-4xl leading-tight font-bold text-gray-900 mb-2">{pendingCount}</p>
-                    <div className="flex items-center justify-between gap-2 mb-3">
-                        {renderTrend(pendingTrendRaw)}
-                        <p className="text-xs text-gray-500">
+                    <p style={{ fontSize: '38px', fontWeight: '700', color: '#C2410C', marginBottom: '8px', lineHeight: '1' }}>{pendingCount}</p>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '12px' }}>
+                        {renderTrend(pendingTrendRaw, 'pending')}
+                        <p style={{ fontSize: '12px', color: '#EA580C' }}>
                             {pendingCount === 0 ? 'All clear' : `Avg. ${pendingAvgResponseHours}h response time`}
                         </p>
                     </div>
-                    <div className="absolute bottom-0 left-0 h-1 w-full bg-amber-500" style={{ borderRadius: '0 0 12px 12px' }} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px' }}>
+                        <div style={{
+                            flex: 1,
+                            height: '6px',
+                            borderRadius: '999px',
+                            background: 'rgba(255,255,255,0.6)',
+                            overflow: 'hidden'
+                        }}>
+                            <div style={{
+                                height: '100%',
+                                borderRadius: '999px',
+                                background: '#F97316',
+                                width: totalInquiries > 0 ? `${(pendingCount / totalInquiries) * 100}%` : '0%'
+                            }} />
+                        </div>
+                        <p style={{ fontSize: '11px', fontWeight: '600', minWidth: '32px', textAlign: 'right', color: '#C2410C' }}>
+                            {totalInquiries > 0 ? Math.round((pendingCount / totalInquiries) * 100) : 0}%
+                        </p>
+                    </div>
                 </button>
 
                 {/* Resolved Card */}
                 <button
                     onClick={() => setActiveFilter('resolved')}
-                    className={`relative min-h-[120px] overflow-hidden text-left rounded-xl px-6 py-5 border transition-all duration-200 ease-out cursor-pointer bg-white ${
-                        activeFilter === 'resolved'
-                            ? 'border-gray-300 shadow-[0_4px_16px_rgba(0,0,0,0.10)]'
-                            : 'border-gray-200 shadow-[0_1px_3px_rgba(0,0,0,0.06)] hover:border-gray-300 hover:shadow-[0_4px_16px_rgba(0,0,0,0.10)]'
-                    }`}
-                    style={{ borderWidth: '1px' }}
+                    className="relative min-h-[120px] text-left cursor-pointer transition-all duration-[250ms] ease-out"
+                    style={{
+                        background: 'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)',
+                        border: '1px solid #BBF7D0',
+                        borderRadius: '16px',
+                        padding: '20px 24px',
+                        boxShadow: activeFilter === 'resolved' ? '0 12px 28px rgba(0,0,0,0.12)' : '0 2px 8px rgba(0,0,0,0.06)',
+                        transform: activeFilter === 'resolved' ? 'translateY(-6px)' : 'none',
+                        display: 'flex',
+                        flexDirection: 'column'
+                    }}
+                    onMouseEnter={(e) => {
+                        if (activeFilter !== 'resolved') {
+                            e.currentTarget.style.transform = 'translateY(-6px)';
+                            e.currentTarget.style.boxShadow = '0 12px 28px rgba(0,0,0,0.12)';
+                            e.currentTarget.style.borderColor = '#BBF7D0';
+                        }
+                    }}
+                    onMouseLeave={(e) => {
+                        if (activeFilter !== 'resolved') {
+                            e.currentTarget.style.transform = 'none';
+                            e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.06)';
+                            e.currentTarget.style.borderColor = '#BBF7D0';
+                        }
+                    }}
                 >
                     <div className="flex items-center gap-3 mb-2">
-                        <div className="w-9 h-9 rounded-lg bg-green-100 flex items-center justify-center flex-shrink-0">
-                            <CheckCircle2 className="w-5 h-5 text-green-700" />
+                        <div style={{
+                            background: 'rgba(255,255,255,0.7)',
+                            borderRadius: '10px',
+                            width: '38px',
+                            height: '38px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0
+                        }}>
+                            <CheckCircle2 style={{ width: '20px', height: '20px', color: '#15803D' }} />
                         </div>
-                        <p className="text-sm font-medium text-gray-700">Resolved</p>
+                        <p style={{ fontSize: '13px', fontWeight: '600', color: '#16A34A' }}>Resolved</p>
                     </div>
-                    <p className="text-4xl leading-tight font-bold text-gray-900 mb-2">{resolvedCount}</p>
-                    <div className="flex items-center justify-between gap-2 mb-3">
-                        {renderTrend(resolvedTrend)}
-                        <p className="text-xs text-gray-500">{resolutionRate}% resolution rate</p>
+                    <p style={{ fontSize: '38px', fontWeight: '700', color: '#15803D', marginBottom: '8px', lineHeight: '1' }}>{resolvedCount}</p>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '12px' }}>
+                        {renderTrend(resolvedTrend, 'resolved')}
+                        <p style={{ fontSize: '12px', color: '#16A34A' }}>{resolutionRate}% resolution rate</p>
                     </div>
-                    <div className="absolute bottom-0 left-0 h-1 w-full bg-green-600" style={{ borderRadius: '0 0 12px 12px' }} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px' }}>
+                        <div style={{
+                            flex: 1,
+                            height: '6px',
+                            borderRadius: '999px',
+                            background: 'rgba(255,255,255,0.6)',
+                            overflow: 'hidden'
+                        }}>
+                            <div style={{
+                                height: '100%',
+                                borderRadius: '999px',
+                                background: '#22C55E',
+                                width: totalInquiries > 0 ? `${(resolvedCount / totalInquiries) * 100}%` : '0%'
+                            }} />
+                        </div>
+                        <p style={{ fontSize: '11px', fontWeight: '600', minWidth: '32px', textAlign: 'right', color: '#15803D' }}>
+                            {totalInquiries > 0 ? Math.round((resolvedCount / totalInquiries) * 100) : 0}%
+                        </p>
+                    </div>
                 </button>
             </div>
 
