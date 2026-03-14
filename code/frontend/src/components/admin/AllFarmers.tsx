@@ -25,31 +25,31 @@ interface Farm {
 // Helper function to get crop badge colors
 const getCropBadgeColor = (crop: string): { background: string; color: string } => {
   const cropColors: { [key: string]: { background: string; color: string } } = {
-    'Paddy': { background: '#FEF08A', color: '#713F12' },
-    'Corn': { background: '#FED7AA', color: '#9A3412' },
-    'Wheat': { background: '#FDE68A', color: '#92400E' },
-    'Tomatoes': { background: '#FECACA', color: '#991B1B' },
-    'Onions': { background: '#E9D5FF', color: '#6B21A8' },
-    'Carrots': { background: '#FFEDD5', color: '#C2410C' },
-    'Cabbage': { background: '#BBF7D0', color: '#166534' },
-    'Potatoes': { background: '#D6D3D1', color: '#44403C' }
+    'Paddy': { background: '#FFFEF0', color: '#A16207' },
+    'Corn': { background: '#FFF7ED', color: '#EA580C' },
+    'Wheat': { background: '#FFFAE6', color: '#A16207' },
+    'Tomatoes': { background: '#FEE2E2', color: '#DC2626' },
+    'Onions': { background: '#F3E8FF', color: '#7C3AED' },
+    'Carrots': { background: '#FFECDB', color: '#EA580C' },
+    'Cabbage': { background: '#DCFCE7', color: '#15803D' },
+    'Potatoes': { background: '#F3F3F3', color: '#6B7280' }
   };
-  return cropColors[crop] || { background: '#D1D5DB', color: '#374151' };
+  return cropColors[crop] || { background: '#F3F4F6', color: '#6B7280' };
 };
 
 // Helper function to get crop swatch color
 const getCropSwatchColor = (crop: string): string => {
   const cropSwatches: { [key: string]: string } = {
-    'Paddy': '#FEF08A',
-    'Corn': '#FED7AA',
-    'Wheat': '#FDE68A',
-    'Tomatoes': '#FECACA',
-    'Onions': '#E9D5FF',
-    'Carrots': '#FFEDD5',
-    'Cabbage': '#BBF7D0',
-    'Potatoes': '#D6D3D1'
+    'Paddy': '#FFFEF0',
+    'Corn': '#FFF7ED',
+    'Wheat': '#FFFAE6',
+    'Tomatoes': '#FEE2E2',
+    'Onions': '#F3E8FF',
+    'Carrots': '#FFECDB',
+    'Cabbage': '#DCFCE7',
+    'Potatoes': '#F3F3F3'
   };
-  return cropSwatches[crop] || '#D1D5DB';
+  return cropSwatches[crop] || '#F3F4F6';
 };
 
 // Helper function to get status dot color
