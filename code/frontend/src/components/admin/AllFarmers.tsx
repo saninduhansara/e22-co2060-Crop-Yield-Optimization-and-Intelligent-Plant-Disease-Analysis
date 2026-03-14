@@ -307,15 +307,93 @@ export function AllFarmers() {
                             </span>
                           </td>
                           <td style={{ padding: '12px 16px', fontSize: '14px', color: '#374151', whiteSpace: 'nowrap' }} onClick={(e) => e.stopPropagation()}>
-                            <div className="flex items-center gap-1">
-                              <button className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors" title="View" onClick={() => setSelectedFarmer(farm)}>
-                                <Eye className="w-4 h-4 text-gray-600" />
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#F3F4F6', borderRadius: '8px', padding: '4px 8px' }}>
+                              <button 
+                                style={{ 
+                                  width: '28px', 
+                                  height: '28px', 
+                                  borderRadius: '6px', 
+                                  display: 'flex', 
+                                  alignItems: 'center', 
+                                  justifyContent: 'center', 
+                                  border: 'none', 
+                                  background: 'transparent', 
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s ease'
+                                }}
+                                title="View"
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.background = '#DBEAFE';
+                                  e.currentTarget.style.color = '#1D4ED8';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.background = 'transparent';
+                                  e.currentTarget.style.color = '#6B7280';
+                                }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedFarmer(farm);
+                                }}
+                              >
+                                <Eye style={{ width: '16px', height: '16px', color: '#6B7280' }} />
                               </button>
-                              <button className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors" title="Edit" onClick={() => setFarmToEdit(farm)}>
-                                <Edit className="w-4 h-4 text-gray-600" />
+                              <button 
+                                style={{ 
+                                  width: '28px', 
+                                  height: '28px', 
+                                  borderRadius: '6px', 
+                                  display: 'flex', 
+                                  alignItems: 'center', 
+                                  justifyContent: 'center', 
+                                  border: 'none', 
+                                  background: 'transparent', 
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s ease'
+                                }}
+                                title="Edit"
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.background = '#FEF9C3';
+                                  e.currentTarget.style.color = '#854D0E';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.background = 'transparent';
+                                  e.currentTarget.style.color = '#6B7280';
+                                }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setFarmToEdit(farm);
+                                }}
+                              >
+                                <Edit style={{ width: '16px', height: '16px', color: '#6B7280' }} />
                               </button>
-                              <button className="p-1.5 hover:bg-red-50 rounded-lg transition-colors" title="Delete" onClick={() => setFarmToDelete(farm)}>
-                                <Trash2 className="w-4 h-4 text-red-600" />
+                              <button 
+                                style={{ 
+                                  width: '28px', 
+                                  height: '28px', 
+                                  borderRadius: '6px', 
+                                  display: 'flex', 
+                                  alignItems: 'center', 
+                                  justifyContent: 'center', 
+                                  border: 'none', 
+                                  background: 'transparent', 
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s ease'
+                                }}
+                                title="Delete"
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.background = '#FEE2E2';
+                                  e.currentTarget.style.color = '#991B1B';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.background = 'transparent';
+                                  e.currentTarget.style.color = '#6B7280';
+                                }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setFarmToDelete(farm);
+                                }}
+                              >
+                                <Trash2 style={{ width: '16px', height: '16px', color: '#6B7280' }} />
                               </button>
                             </div>
                           </td>
@@ -425,15 +503,93 @@ export function AllFarmers() {
                           {Math.round(farm.points)}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                        <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="View" onClick={() => setSelectedFarmer(farm)}>
-                          <Eye className="w-4 h-4 text-gray-600" />
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#F3F4F6', borderRadius: '8px', padding: '4px 8px' }} onClick={(e) => e.stopPropagation()}>
+                        <button 
+                          style={{ 
+                            width: '28px', 
+                            height: '28px', 
+                            borderRadius: '6px', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center', 
+                            border: 'none', 
+                            background: 'transparent', 
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease'
+                          }}
+                          title="View"
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = '#DBEAFE';
+                            e.currentTarget.style.color = '#1D4ED8';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'transparent';
+                            e.currentTarget.style.color = '#6B7280';
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedFarmer(farm);
+                          }}
+                        >
+                          <Eye style={{ width: '16px', height: '16px', color: '#6B7280' }} />
                         </button>
-                        <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Edit" onClick={() => setFarmToEdit(farm)}>
-                          <Edit className="w-4 h-4 text-gray-600" />
+                        <button 
+                          style={{ 
+                            width: '28px', 
+                            height: '28px', 
+                            borderRadius: '6px', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center', 
+                            border: 'none', 
+                            background: 'transparent', 
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease'
+                          }}
+                          title="Edit"
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = '#FEF9C3';
+                            e.currentTarget.style.color = '#854D0E';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'transparent';
+                            e.currentTarget.style.color = '#6B7280';
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setFarmToEdit(farm);
+                          }}
+                        >
+                          <Edit style={{ width: '16px', height: '16px', color: '#6B7280' }} />
                         </button>
-                        <button className="p-2 hover:bg-red-50 rounded-lg transition-colors" title="Delete" onClick={() => setFarmToDelete(farm)}>
-                          <Trash2 className="w-4 h-4 text-red-600" />
+                        <button 
+                          style={{ 
+                            width: '28px', 
+                            height: '28px', 
+                            borderRadius: '6px', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center', 
+                            border: 'none', 
+                            background: 'transparent', 
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease'
+                          }}
+                          title="Delete"
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = '#FEE2E2';
+                            e.currentTarget.style.color = '#991B1B';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'transparent';
+                            e.currentTarget.style.color = '#6B7280';
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setFarmToDelete(farm);
+                          }}
+                        >
+                          <Trash2 style={{ width: '16px', height: '16px', color: '#6B7280' }} />
                         </button>
                       </div>
                     </div>
