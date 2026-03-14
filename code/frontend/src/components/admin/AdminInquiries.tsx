@@ -140,6 +140,25 @@ export function AdminInquiries() {
         return true;
     });
 
+    const getInquiryTypeColor = (type: string) => {
+        const colorMap: { [key: string]: { border: string; badge: string; badgeText: string } } = {
+            'Complaint': { border: '#8B5CF6', badge: '#F3F0FF', badgeText: '#6D28D9' },
+            'Natural Disaster': { border: '#F97316', badge: '#FFF7ED', badgeText: '#C2410C' },
+            'General Inquiry': { border: '#3B82F6', badge: '#EFF6FF', badgeText: '#1D4ED8' },
+            'Feedback': { border: '#10B981', badge: '#ECFDF5', badgeText: '#065F46' },
+            'Other': { border: '#6B7280', badge: '#F3F4F6', badgeText: '#374151' }
+        };
+        return colorMap[type] || colorMap['Other'];
+    };
+
+    const timeAgo = (dateStr: string) => {
+        const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
+        if (diff < 60) return 'just now';
+        if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+        if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+        return `${Math.floor(diff / 86400)}d ago`;
+    };
+
     const renderTrend = (trend: number, cardType: 'total' | 'pending' | 'resolved') => {
         const isIncrease = trend >= 0;
         const arrow = isIncrease ? '↑' : '↓';
@@ -405,48 +424,158 @@ export function AdminInquiries() {
 
                             const farmerName = inq.farmer ? `${inq.farmer.firstName} ${inq.farmer.lastName}` : "Unknown Farmer";
                             const farmerDistrict = inq.farmer?.district || "Unknown District";
+                            const typeColor = getInquiryTypeColor(displayCategory);
+                            const fullDate = new Date(inq.createdAt).toLocaleString();
 
                             return (
-                                <div key={inq._id} className="border border-gray-200 rounded-lg p-5 hover:border-green-300 transition-colors">
-                                    <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-4">
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-3 mb-2">
-                                                <span className="px-2.5 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-semibold">
-                                                    {displayCategory}
-                                                </span>
-                                                <h4 className="font-semibold text-gray-900">{displaySubject}</h4>
-                                            </div>
-                                            <div className="flex items-center gap-4 text-sm text-gray-600">
-                                                <span>From: <strong>{farmerName}</strong></span>
-                                                <span>•</span>
-                                                <span>{farmerDistrict}</span>
-                                                <span>•</span>
-                                                <span>{new Date(inq.createdAt).toLocaleDateString()}</span>
-                                            </div>
+                                <div
+                                    key={inq._id}
+                                    style={{
+                                        background: 'white',
+                                        border: '1px solid #E5E7EB',
+                                        borderLeft: `4px solid ${typeColor.border}`,
+                                        borderRadius: '14px',
+                                        padding: '20px 24px',
+                                        marginBottom: '16px',
+                                        boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s ease'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.transform = 'translateY(-3px)';
+                                        e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.09)';
+                                        e.currentTarget.style.borderColor = '#D1D5DB';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.transform = 'none';
+                                        e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.05)';
+                                        e.currentTarget.style.borderColor = '#E5E7EB';
+                                    }}
+                                >
+                                    {/* Badge + Title Row */}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                                        <span style={{
+                                            padding: '3px 12px',
+                                            borderRadius: '999px',
+                                            fontSize: '12px',
+                                            fontWeight: '600',
+                                            background: typeColor.badge,
+                                            color: typeColor.badgeText,
+                                            whiteSpace: 'nowrap'
+                                        }}>
+                                            {displayCategory}
+                                        </span>
+                                        <h4 style={{ fontSize: '16px', fontWeight: '600', color: '#111827', margin: 0 }}>
+                                            {displaySubject}
+                                        </h4>
+                                    </div>
+
+                                    {/* Info Row with Icons */}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: '10px', flexWrap: 'wrap' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+                                                <circle cx="8" cy="5" r="2.5" stroke="#6B7280" strokeWidth="1.5" />
+                                                <path d="M8 7.5C6.067 7.5 4.5 9.067 4.5 11V13.5H11.5V11C11.5 9.067 9.933 7.5 8 7.5Z" stroke="#6B7280" strokeWidth="1.5" />
+                                            </svg>
+                                            <span style={{ fontWeight: '600', color: '#374151', fontSize: '13px' }}>{farmerName}</span>
                                         </div>
-
-                                        <div className="flex items-center gap-3">
-                                            <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium ${getStatusColor(inq.status)}`}>
-                                                {getStatusIcon(inq.status)}
-                                                {inq.status}
-                                            </div>
-
-                                            {/* Action Dropdown Alternative using Select for simplicity */}
-                                            <select
-                                                value={inq.status}
-                                                onChange={(e) => handleStatusUpdate(inq._id, e.target.value)}
-                                                disabled={resolvingId === inq._id}
-                                                className="text-sm border-gray-300 rounded focus:ring-green-500 focus:border-green-500"
-                                            >
-                                                <option value="Pending">Mark Pending</option>
-                                                <option value="Reviewed">Mark Reviewed</option>
-                                                <option value="Resolved">Mark Resolved</option>
-                                            </select>
-
-                                            {resolvingId === inq._id && <Loader2 className="w-4 h-4 text-green-600 animate-spin" />}
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+                                                <path d="M8 1.5C4.41 1.5 1.5 4.41 1.5 8C1.5 11.59 4.41 14.5 8 14.5C11.59 14.5 14.5 11.59 14.5 8C14.5 4.41 11.59 1.5 8 1.5Z" stroke="#6B7280" strokeWidth="1.5" />
+                                                <path d="M9 5H7V8.5C7 8.78 7.22 9 7.5 9H10.5" stroke="#6B7280" strokeWidth="1.5" />
+                                            </svg>
+                                            <span style={{ color: '#6B7280', fontSize: '13px' }}>{farmerDistrict}</span>
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+                                                <rect x="2" y="3.5" width="12" height="10.5" rx="1" stroke="#6B7280" strokeWidth="1.5" />
+                                                <path d="M2 5.5H14" stroke="#6B7280" strokeWidth="1.5" />
+                                            </svg>
+                                            <span style={{ color: '#6B7280', fontSize: '13px' }} title={fullDate}>{timeAgo(inq.createdAt)}</span>
                                         </div>
                                     </div>
-                                    <div className="bg-gray-50 rounded-lg p-4 text-gray-700 text-sm whitespace-pre-wrap">
+
+                                    {/* Status + Action Row */}
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '14px' }}>
+                                        <div>
+                                            {inq.status === 'Resolved' ? (
+                                                <div style={{
+                                                    background: '#ECFDF5',
+                                                    color: '#065F46',
+                                                    border: '1px solid #6EE7B7',
+                                                    padding: '4px 12px',
+                                                    borderRadius: '999px',
+                                                    fontSize: '12px',
+                                                    fontWeight: '600',
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                    gap: '6px'
+                                                }}>
+                                                    <CheckCircle2 size={14} />
+                                                    Resolved
+                                                </div>
+                                            ) : (
+                                                <div style={{
+                                                    background: '#FFFBEB',
+                                                    color: '#92400E',
+                                                    border: '1px solid #FCD34D',
+                                                    padding: '4px 12px',
+                                                    borderRadius: '999px',
+                                                    fontSize: '12px',
+                                                    fontWeight: '600',
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                    gap: '6px'
+                                                }}>
+                                                    <AlertCircle size={14} />
+                                                    Pending
+                                                </div>
+                                            )}
+                                        </div>
+                                        <select
+                                            value={inq.status}
+                                            onChange={(e) => handleStatusUpdate(inq._id, e.target.value)}
+                                            disabled={resolvingId === inq._id}
+                                            style={{
+                                                background: 'white',
+                                                border: '1px solid #E5E7EB',
+                                                borderRadius: '8px',
+                                                padding: '6px 14px',
+                                                fontSize: '13px',
+                                                color: '#374151',
+                                                cursor: resolvingId === inq._id ? 'not-allowed' : 'pointer',
+                                                transition: 'all 0.2s ease'
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                if (resolvingId !== inq._id) {
+                                                    e.currentTarget.style.background = '#F9FAFB';
+                                                    e.currentTarget.style.borderColor = '#D1D5DB';
+                                                }
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                e.currentTarget.style.background = 'white';
+                                                e.currentTarget.style.borderColor = '#E5E7EB';
+                                            }}
+                                        >
+                                            <option value="Pending">Mark Pending</option>
+                                            <option value="Reviewed">Mark Reviewed</option>
+                                            <option value="Resolved">Mark Resolved</option>
+                                        </select>
+                                        {resolvingId === inq._id && <Loader2 className="w-4 h-4 text-green-600 animate-spin" />}
+                                    </div>
+
+                                    {/* Message Preview Box */}
+                                    <div style={{
+                                        marginTop: '14px',
+                                        background: '#F9FAFB',
+                                        borderRadius: '8px',
+                                        padding: '12px 16px',
+                                        fontSize: '14px',
+                                        color: '#4B5563',
+                                        fontStyle: 'italic',
+                                        lineHeight: '1.6',
+                                        borderLeft: '3px solid #E5E7EB'
+                                    }}>
                                         {inq.message}
                                     </div>
                                 </div>
