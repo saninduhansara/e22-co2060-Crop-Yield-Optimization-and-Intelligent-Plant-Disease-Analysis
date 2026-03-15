@@ -588,9 +588,9 @@ export function AdminDashboard() {
     day: 'numeric',
     year: 'numeric',
   });
-  const currentSeasonLabel = `${currentSeason.charAt(0).toUpperCase() + currentSeason.slice(1)} ${currentYear}`;
   const selectedYearLabel = selectedYear === 'all' ? 'All Years' : String(selectedYear);
   const selectedSeasonLabel = selectedSeason === 'all' ? 'All Seasons' : `${selectedSeason.charAt(0).toUpperCase() + selectedSeason.slice(1)}`;
+  const selectedSeasonYearLabel = `${selectedSeasonLabel} ${selectedYearLabel}`;
   const selectedCropLabel = selectedCrop || 'All Crops';
 
   const cropSwatchColors: Record<string, string> = {
@@ -677,7 +677,7 @@ export function AdminDashboard() {
                 fontWeight: 600,
               }}
             >
-              {currentSeasonLabel}
+              {selectedSeasonYearLabel}
             </span>
           </div>
         </div>
