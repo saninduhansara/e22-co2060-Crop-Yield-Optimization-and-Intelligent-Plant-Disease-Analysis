@@ -4,7 +4,7 @@
  * active plots, total farmland, and harvest yields.
  * Fetches and aggregates real-time data from the backend.
  */
-import { Users, TrendingUp, Wheat, AlertTriangle, BarChart3, MapPin, Layers, Scale, Link2 } from 'lucide-react';
+import { Users, TrendingUp, Wheat, AlertTriangle, BarChart3, MapPin, Layers, Scale, Link2, ChevronDown } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { farmAPI, userAPI } from '../../services/api';
 import { FarmerProfile } from './FarmerProfile';
@@ -98,6 +98,9 @@ export function AdminDashboard() {
   const [availableCrops, setAvailableCrops] = useState<string[]>([]);
   const [showMoreFarmers, setShowMoreFarmers] = useState(false);
   const [showMoreHarvests, setShowMoreHarvests] = useState(false);
+  const [adminFirstName, setAdminFirstName] = useState('Admin');
+  const [openHeaderDropdown, setOpenHeaderDropdown] = useState<'year' | 'season' | 'crop' | null>(null);
+  const headerFilterRef = useRef<HTMLDivElement>(null);
 
   // Set to current date/season based on metadata
   const currentYear = 2026;
@@ -112,10 +115,37 @@ export function AdminDashboard() {
   }, []);
 
   useEffect(() => {
+    const loadAdminProfile = async () => {
+      try {
+        const data = await userAPI.fetchProfile();
+        const firstName = data?.user?.firstName?.trim();
+        if (firstName) {
+          setAdminFirstName(firstName);
+        }
+      } catch (error) {
+        console.error('Error loading admin profile:', error);
+      }
+    };
+
+    loadAdminProfile();
+  }, []);
+
+  useEffect(() => {
     if (availableCrops.length > 0 || selectedCrop === null) {
       fetchDashboardData();
     }
   }, [selectedCrop, selectedYear, selectedSeason, availableCrops.length]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!headerFilterRef.current?.contains(event.target as Node)) {
+        setOpenHeaderDropdown(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const fetchCrops = async () => {
     try {
@@ -534,7 +564,6 @@ export function AdminDashboard() {
 
   const harvestPercentage = extractPercentage(harvestLastSeasonText);
   const yieldPercentage = extractPercentage(yieldLastSeasonText);
-  const isActivePeriod = Number(selectedYear) === currentYear && selectedSeason === currentSeason;
 
   // Count-up animations for all 6 stat cards
   const animatedFarmers = useCountUp(loading ? 0 : totalFarmers);
@@ -550,6 +579,30 @@ export function AdminDashboard() {
   const displayFarmland = loading ? '...' : formatNumber(animatedFarmland);
   const displayYield = loading ? '...' : formatNumber(animatedYield);
   const displayDiseaseReports = loading ? '...' : Math.round(animatedDiseaseReports).toString();
+  const currentDate = new Date();
+  const currentHour = currentDate.getHours();
+  const timeGreeting = currentHour < 12 ? 'Good morning' : currentHour < 17 ? 'Good afternoon' : 'Good evening';
+  const formattedCurrentDate = currentDate.toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  });
+  const currentSeasonLabel = `${currentSeason.charAt(0).toUpperCase() + currentSeason.slice(1)} ${currentYear}`;
+  const selectedYearLabel = selectedYear === 'all' ? 'All Years' : String(selectedYear);
+  const selectedSeasonLabel = selectedSeason === 'all' ? 'All Seasons' : `${selectedSeason.charAt(0).toUpperCase() + selectedSeason.slice(1)}`;
+  const selectedCropLabel = selectedCrop || 'All Crops';
+
+  const cropSwatchColors: Record<string, string> = {
+    Paddy: '#FEF08A',
+    Corn: '#FED7AA',
+    Wheat: '#FDE68A',
+    Tomatoes: '#FECACA',
+    Onions: '#E9D5FF',
+    Carrots: '#FFEDD5',
+    Cabbage: '#BBF7D0',
+    Potatoes: '#D6D3D1',
+  };
 
   const dashboardStatCardStyle = {
     background: 'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)',
@@ -592,76 +645,256 @@ export function AdminDashboard() {
         }
       `}</style>
       
-      {/* Prominent Season Label */}
-      <div className="bg-green-700 rounded-xl p-4 text-white shadow-md flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Layers className="w-6 h-6 text-green-200" />
-          <div>
-            <p className="text-sm text-green-100 font-medium tracking-wide uppercase">
-              {selectedYear === 'all' && selectedSeason === 'all' ? 'All Time Overview'
-                : selectedYear !== 'all' && selectedSeason === 'all' ? `Yearly Overview`
-                  : selectedYear === 'all' && selectedSeason !== 'all' ? `Seasonal Overview`
-                    : 'Selected Period'}
-            </p>
-            <h2 className="text-2xl font-bold">
-              {selectedSeason === 'all' ? 'All Seasons' : selectedSeason.charAt(0).toUpperCase() + selectedSeason.slice(1)} {selectedYear === 'all' ? 'All Years' : selectedYear}
-            </h2>
-          </div>
-        </div>
-        <div className="hidden sm:block text-right">
-          <p className="text-sm text-green-100 uppercase tracking-wide">Status</p>
-          <div className="flex items-center gap-2 mt-1">
-            <span className={`w-2.5 h-2.5 rounded-full ${Number(selectedYear) === currentYear && selectedSeason === currentSeason ? 'bg-green-300 animate-pulse' : 'bg-gray-300'}`}></span>
-            <span className="font-semibold">{Number(selectedYear) === currentYear && selectedSeason === currentSeason ? 'Active Period' : 'Historical Data'}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+      {/* Welcome Header */}
+      <div
+        style={{
+          backgroundColor: '#15803D',
+          backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.03) 10px, rgba(255,255,255,0.03) 20px)',
+          borderRadius: '14px',
+          padding: '18px 28px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: '24px',
+          gap: '16px',
+          flexWrap: 'wrap',
+        }}
+      >
         <div>
-          <p className="text-sm md:text-base text-gray-600">Monitor and manage all farming activities</p>
+          <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#FFFFFF' }}>
+            {`${timeGreeting}, ${adminFirstName} 👋`}
+          </h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '5px', flexWrap: 'wrap' }}>
+            <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)' }}>{formattedCurrentDate}</p>
+            <span
+              style={{
+                background: 'rgba(255,255,255,0.2)',
+                border: '1px solid rgba(255,255,255,0.3)',
+                color: '#FFFFFF',
+                padding: '3px 12px',
+                borderRadius: '999px',
+                fontSize: '12px',
+                fontWeight: 600,
+              }}
+            >
+              {currentSeasonLabel}
+            </span>
+          </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Filter:</label>
-          <select
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(e.target.value === 'all' ? 'all' : Number(e.target.value))}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm bg-white min-w-[100px]"
-          >
-            <option value="all">All Years</option>
-            {availableYears.map((year) => (
-              <option key={year} value={year}>
-                {year}
-              </option>
-            ))}
-          </select>
-          <select
-            value={selectedSeason}
-            onChange={(e) => setSelectedSeason(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm bg-white min-w-[110px]"
-          >
-            <option value="all">All Seasons</option>
-            <option value="maha">Maha</option>
-            <option value="yala">Yala</option>
-          </select>
-          <select
-            value={selectedCrop || ''}
-            onChange={(e) => setSelectedCrop(e.target.value || null)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm bg-white min-w-[150px]"
-          >
-            <option value="">All Crops</option>
-            {cropOptions.map((crop) => (
-              <option key={crop} value={crop}>
-                {crop}
-              </option>
-            ))}
-          </select>
+
+        <div ref={headerFilterRef} style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <div style={{ position: 'relative' }}>
+            <button
+              type="button"
+              onClick={() => setOpenHeaderDropdown(openHeaderDropdown === 'year' ? null : 'year')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '7px 14px',
+                background: 'rgba(255,255,255,0.15)',
+                border: '1px solid rgba(255,255,255,0.3)',
+                borderRadius: '8px',
+                fontSize: '13px',
+                fontWeight: 500,
+                color: '#FFFFFF',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.25)';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.15)';
+              }}
+            >
+              {selectedYearLabel}
+              <ChevronDown style={{ width: '13px', height: '13px', color: 'rgba(255,255,255,0.7)' }} />
+            </button>
+
+            {openHeaderDropdown === 'year' && (
+              <div style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, background: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: '10px', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', zIndex: 50, minWidth: '150px', overflow: 'hidden' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedYear('all');
+                    setOpenHeaderDropdown(null);
+                  }}
+                  style={{ width: '100%', textAlign: 'left', padding: '9px 14px', fontSize: '13px', color: selectedYear === 'all' ? '#15803D' : '#374151', fontWeight: selectedYear === 'all' ? 500 : 400, background: selectedYear === 'all' ? '#F0FDF4' : '#FFFFFF', cursor: 'pointer' }}
+                  onMouseEnter={(e) => {
+                    if (selectedYear !== 'all') (e.currentTarget as HTMLButtonElement).style.background = '#F9FAFB';
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.background = selectedYear === 'all' ? '#F0FDF4' : '#FFFFFF';
+                  }}
+                >
+                  All Years
+                </button>
+                {availableYears.map((year) => {
+                  const isSelected = selectedYear === year;
+                  return (
+                    <button
+                      key={year}
+                      type="button"
+                      onClick={() => {
+                        setSelectedYear(year);
+                        setOpenHeaderDropdown(null);
+                      }}
+                      style={{ width: '100%', textAlign: 'left', padding: '9px 14px', fontSize: '13px', color: isSelected ? '#15803D' : '#374151', fontWeight: isSelected ? 500 : 400, background: isSelected ? '#F0FDF4' : '#FFFFFF', cursor: 'pointer' }}
+                      onMouseEnter={(e) => {
+                        if (!isSelected) (e.currentTarget as HTMLButtonElement).style.background = '#F9FAFB';
+                      }}
+                      onMouseLeave={(e) => {
+                        (e.currentTarget as HTMLButtonElement).style.background = isSelected ? '#F0FDF4' : '#FFFFFF';
+                      }}
+                    >
+                      {year}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <div style={{ position: 'relative' }}>
+            <button
+              type="button"
+              onClick={() => setOpenHeaderDropdown(openHeaderDropdown === 'season' ? null : 'season')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '7px 14px',
+                background: 'rgba(255,255,255,0.15)',
+                border: '1px solid rgba(255,255,255,0.3)',
+                borderRadius: '8px',
+                fontSize: '13px',
+                fontWeight: 500,
+                color: '#FFFFFF',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.25)';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.15)';
+              }}
+            >
+              {selectedSeasonLabel}
+              <ChevronDown style={{ width: '13px', height: '13px', color: 'rgba(255,255,255,0.7)' }} />
+            </button>
+
+            {openHeaderDropdown === 'season' && (
+              <div style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, background: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: '10px', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', zIndex: 50, minWidth: '150px', overflow: 'hidden' }}>
+                {[
+                  { label: 'All Seasons', value: 'all' },
+                  { label: 'Maha', value: 'maha' },
+                  { label: 'Yala', value: 'yala' },
+                ].map((option) => {
+                  const isSelected = selectedSeason === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => {
+                        setSelectedSeason(option.value);
+                        setOpenHeaderDropdown(null);
+                      }}
+                      style={{ width: '100%', textAlign: 'left', padding: '9px 14px', fontSize: '13px', color: isSelected ? '#15803D' : '#374151', fontWeight: isSelected ? 500 : 400, background: isSelected ? '#F0FDF4' : '#FFFFFF', cursor: 'pointer' }}
+                      onMouseEnter={(e) => {
+                        if (!isSelected) (e.currentTarget as HTMLButtonElement).style.background = '#F9FAFB';
+                      }}
+                      onMouseLeave={(e) => {
+                        (e.currentTarget as HTMLButtonElement).style.background = isSelected ? '#F0FDF4' : '#FFFFFF';
+                      }}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <div style={{ position: 'relative' }}>
+            <button
+              type="button"
+              onClick={() => setOpenHeaderDropdown(openHeaderDropdown === 'crop' ? null : 'crop')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '7px 14px',
+                background: 'rgba(255,255,255,0.15)',
+                border: '1px solid rgba(255,255,255,0.3)',
+                borderRadius: '8px',
+                fontSize: '13px',
+                fontWeight: 500,
+                color: '#FFFFFF',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.25)';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.15)';
+              }}
+            >
+              {selectedCropLabel}
+              <ChevronDown style={{ width: '13px', height: '13px', color: 'rgba(255,255,255,0.7)' }} />
+            </button>
+
+            {openHeaderDropdown === 'crop' && (
+              <div style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, background: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: '10px', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', zIndex: 50, minWidth: '150px', overflow: 'hidden', maxHeight: '280px', overflowY: 'auto' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedCrop(null);
+                    setOpenHeaderDropdown(null);
+                  }}
+                  style={{ width: '100%', textAlign: 'left', padding: '9px 14px', fontSize: '13px', color: selectedCrop === null ? '#15803D' : '#374151', fontWeight: selectedCrop === null ? 500 : 400, background: selectedCrop === null ? '#F0FDF4' : '#FFFFFF', cursor: 'pointer' }}
+                  onMouseEnter={(e) => {
+                    if (selectedCrop !== null) (e.currentTarget as HTMLButtonElement).style.background = '#F9FAFB';
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.background = selectedCrop === null ? '#F0FDF4' : '#FFFFFF';
+                  }}
+                >
+                  All Crops
+                </button>
+                {cropOptions.map((crop) => {
+                  const isSelected = selectedCrop === crop;
+                  return (
+                    <button
+                      key={crop}
+                      type="button"
+                      onClick={() => {
+                        setSelectedCrop(crop);
+                        setOpenHeaderDropdown(null);
+                      }}
+                      style={{ width: '100%', textAlign: 'left', padding: '9px 14px', fontSize: '13px', color: isSelected ? '#15803D' : '#374151', fontWeight: isSelected ? 500 : 400, background: isSelected ? '#F0FDF4' : '#FFFFFF', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                      onMouseEnter={(e) => {
+                        if (!isSelected) (e.currentTarget as HTMLButtonElement).style.background = '#F9FAFB';
+                      }}
+                      onMouseLeave={(e) => {
+                        (e.currentTarget as HTMLButtonElement).style.background = isSelected ? '#F0FDF4' : '#FFFFFF';
+                      }}
+                    >
+                      <span style={{ width: '10px', height: '10px', borderRadius: '2px', display: 'inline-block', marginRight: '6px', background: cropSwatchColors[crop] || '#E5E7EB' }} />
+                      {crop}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 md:gap-5 lg:gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 md:gap-5 lg:gap-6" style={{ marginTop: 0 }}>
         {/* Active Farmers Card */}
         <div className="shadow-md transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group" style={dashboardStatCardStyle}>
           <div className="flex flex-col">
