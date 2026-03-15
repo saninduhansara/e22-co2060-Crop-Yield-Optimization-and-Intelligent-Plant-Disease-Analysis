@@ -551,6 +551,23 @@ export function AdminDashboard() {
   const displayYield = loading ? '...' : formatNumber(animatedYield);
   const displayDiseaseReports = loading ? '...' : Math.round(animatedDiseaseReports).toString();
 
+  const dashboardStatCardStyle = {
+    background: 'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)',
+    borderRadius: '14px',
+    padding: '16px 20px',
+  };
+
+  const getDashboardIconBoxStyle = (backgroundColor: string) => ({
+    width: '32px',
+    height: '32px',
+    borderRadius: '8px',
+    backgroundColor,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: '10px',
+  });
+
   return (
     <div className="space-y-6">
       <style>{`
@@ -646,12 +663,14 @@ export function AdminDashboard() {
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 md:gap-5 lg:gap-6">
         {/* Active Farmers Card */}
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-5 sm:p-6 shadow-md border-l-4 border-l-green-500 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group">
+        <div className="shadow-md transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group" style={dashboardStatCardStyle}>
           <div className="flex flex-col">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">Active Farmers</p>
-              <Users className="w-5 h-5 text-green-600 opacity-70 group-hover:opacity-100 transition-opacity" />
+            <div className="flex items-center">
+              <div style={getDashboardIconBoxStyle('#DCFCE7')}>
+                <Users className="w-5 h-5 text-green-600 opacity-70 group-hover:opacity-100 transition-opacity" />
+              </div>
             </div>
+            <p style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Active Farmers</p>
             <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 my-2 break-words min-w-0">
               {displayFarmers}
             </p>
@@ -663,12 +682,14 @@ export function AdminDashboard() {
         </div>
 
         {/* Total Harvest Card */}
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-5 sm:p-6 shadow-md border-l-4 border-l-green-500 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group">
+        <div className="shadow-md transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group" style={dashboardStatCardStyle}>
           <div className="flex flex-col">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">Total Harvest</p>
-              <Wheat className="w-5 h-5 text-green-600 opacity-70 group-hover:opacity-100 transition-opacity" />
+            <div className="flex items-center">
+              <div style={getDashboardIconBoxStyle('#C8E6C9')}>
+                <Wheat className="w-5 h-5 text-green-700 opacity-70 group-hover:opacity-100 transition-opacity" />
+              </div>
             </div>
+            <p style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Total Harvest</p>
             <div className="flex min-w-0 flex-wrap items-baseline gap-1 sm:gap-2 my-2">
               <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 break-words min-w-0">
                 {displayHarvest}
@@ -683,12 +704,14 @@ export function AdminDashboard() {
         </div>
 
         {/* Active Plots Card */}
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-5 sm:p-6 shadow-md border-l-4 border-l-green-500 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group">
+        <div className="shadow-md transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group" style={dashboardStatCardStyle}>
           <div className="flex flex-col">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">Active Plots</p>
-              <MapPin className="w-5 h-5 text-green-600 opacity-70 group-hover:opacity-100 transition-opacity" />
+            <div className="flex items-center">
+              <div style={getDashboardIconBoxStyle('#D1FAE5')}>
+                <MapPin className="w-5 h-5 text-emerald-600 opacity-70 group-hover:opacity-100 transition-opacity" />
+              </div>
             </div>
+            <p style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Active Plots</p>
             <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 my-2 break-words min-w-0">
               {displayActiveFarms}
             </p>
@@ -699,12 +722,14 @@ export function AdminDashboard() {
         </div>
 
         {/* Active Farmland Card */}
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-5 sm:p-6 shadow-md border-l-4 border-l-green-500 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group">
+        <div className="shadow-md transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group" style={dashboardStatCardStyle}>
           <div className="flex flex-col">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">Active Farmland</p>
-              <Layers className="w-5 h-5 text-green-600 opacity-70 group-hover:opacity-100 transition-opacity" />
+            <div className="flex items-center">
+              <div style={getDashboardIconBoxStyle('#DCEDD5')}>
+                <Layers className="w-5 h-5 text-lime-700 opacity-70 group-hover:opacity-100 transition-opacity" />
+              </div>
             </div>
+            <p style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Active Farmland</p>
             <div className="flex min-w-0 flex-wrap items-baseline gap-1 sm:gap-2 my-2">
               <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 break-words min-w-0">
                 {displayFarmland}
@@ -718,12 +743,14 @@ export function AdminDashboard() {
         </div>
 
         {/* Yield per Acre Card */}
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-5 sm:p-6 shadow-md border-l-4 border-l-green-500 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group">
+        <div className="shadow-md transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group" style={dashboardStatCardStyle}>
           <div className="flex flex-col">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">Yield per Acre</p>
-              <TrendingUp className="w-5 h-5 text-green-600 opacity-70 group-hover:opacity-100 transition-opacity" />
+            <div className="flex items-center">
+              <div style={getDashboardIconBoxStyle('#D5F5E3')}>
+                <TrendingUp className="w-5 h-5 text-emerald-500 opacity-70 group-hover:opacity-100 transition-opacity" />
+              </div>
             </div>
+            <p style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Yield per Acre</p>
             <div className="flex min-w-0 flex-wrap items-baseline gap-1 sm:gap-2 my-2">
               <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 break-words min-w-0">
                 {displayYield}
@@ -738,12 +765,14 @@ export function AdminDashboard() {
         </div>
 
         {/* Disease Reports Card */}
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-5 sm:p-6 shadow-md border-l-4 border-l-green-500 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group">
+        <div className="shadow-md transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group" style={dashboardStatCardStyle}>
           <div className="flex flex-col">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">Disease Reports</p>
-              <AlertTriangle className="w-5 h-5 text-green-600 opacity-70 group-hover:opacity-100 transition-opacity" />
+            <div className="flex items-center">
+              <div style={getDashboardIconBoxStyle('#FEE2E2')}>
+                <AlertTriangle className="w-5 h-5 text-red-600 opacity-70 group-hover:opacity-100 transition-opacity" />
+              </div>
             </div>
+            <p style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Disease Reports</p>
             <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 my-2 break-words min-w-0">
               {displayDiseaseReports}
             </p>
