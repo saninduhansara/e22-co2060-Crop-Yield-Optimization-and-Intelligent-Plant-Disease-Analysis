@@ -1,4 +1,4 @@
-import { Download, TrendingUp, Users, Wheat, FileText, BarChart3, MapPin, Layers, Trophy, Star } from 'lucide-react';
+import { Download, TrendingUp, Users, Wheat, FileText, BarChart3, MapPin, Layers, Trophy, Star, RefreshCw } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
@@ -49,6 +49,26 @@ export function AdminReports() {
         pdfContentRef.current.style.display = 'none';
       }
       alert(`Failed to generate PDF: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
+  const handleRefreshReport = async () => {
+    try {
+      setLoadingHarvests(true);
+      const harvestData = await farmAPI.getHarvestHistory();
+      setHarvests(harvestData.harvests || []);
+
+      const farmsData = await farmAPI.getAllFarms();
+      setFarms(farmsData.farms || []);
+
+      const cropsData = await farmAPI.getAllCrops();
+      setAvailableCrops(cropsData.crops || []);
+      toast.success('Report refreshed successfully.');
+    } catch (err) {
+      console.error('Failed to refresh data', err);
+      toast.error('Failed to refresh report.');
+    } finally {
+      setLoadingHarvests(false);
     }
   };
 
@@ -531,12 +551,61 @@ export function AdminReports() {
             Last updated: today at {lastUpdatedTime}
           </span>
         </div>
-        <button 
-          onClick={handleDownloadReport}
-          className="px-6 py-3 bg-green-700 hover:bg-green-800 text-white rounded-lg flex items-center gap-2 transition-colors">
-          <Download className="w-5 h-5" />
-          Download Report
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'nowrap' }}>
+          <button
+            type="button"
+            onClick={handleRefreshReport}
+            style={{
+              padding: '10px 16px',
+              background: '#E0F2FE',
+              border: '1px solid #BAE6FD',
+              color: '#075985',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              fontWeight: 500,
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.background = '#BAE6FD';
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.background = '#E0F2FE';
+            }}
+          >
+            <RefreshCw className="w-4 h-4" />
+            Refresh
+          </button>
+
+          <button
+            type="button"
+            onClick={handleDownloadReport}
+            style={{
+              padding: '10px 16px',
+              background: '#E0F2FE',
+              border: '1px solid #BAE6FD',
+              color: '#075985',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              fontWeight: 500,
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.background = '#BAE6FD';
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.background = '#E0F2FE';
+            }}
+          >
+            <Download className="w-5 h-5" />
+            Download Report
+          </button>
+        </div>
       </div>
       {/* Filters - Year / Season / Crop */}
       <AdminReportFilters
