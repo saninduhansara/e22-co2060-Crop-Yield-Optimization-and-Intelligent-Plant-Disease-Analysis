@@ -88,6 +88,8 @@ export function AdminReports() {
   const [selectedSeason, setSelectedSeason] = useState<string>('');
   const [selectedCrop, setSelectedCrop] = useState<string | null>(null);
   const [availableCrops, setAvailableCrops] = useState<string[]>([]);
+  const [varietyYear, setVarietyYear] = useState<string>('');
+  const [varietySeason, setVarietySeason] = useState<string>('');
   const [districtYear, setDistrictYear] = useState<string>('');
   const [districtSeason, setDistrictSeason] = useState<string>('');
   const [districtCrop, setDistrictCrop] = useState<string>('');
@@ -384,8 +386,8 @@ export function AdminReports() {
 
   // Filter by year and season only (NOT crop) for variety distribution
   const filteredHarvestsForVariety = harvests.filter((h) => {
-    const yearMatch = selectedYear ? String(h.year) === selectedYear : true;
-    const seasonMatch = selectedSeason ? normalizeSeason(h.season) === normalizeSeason(selectedSeason) : true;
+    const yearMatch = varietyYear ? String(h.year) === varietyYear : true;
+    const seasonMatch = varietySeason ? normalizeSeason(h.season) === normalizeSeason(varietySeason) : true;
     return yearMatch && seasonMatch;
   });
 
@@ -921,10 +923,36 @@ export function AdminReports() {
           </div>
         ) : (
           <div>
-            <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#111827' }}>Crop Variety Distribution</h3>
-            <p style={{ fontSize: '12px', color: '#9CA3AF', margin: '2px 0 0 0' }}>
-              Distribution of crop varieties in tons
-            </p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', flexWrap: 'wrap' }}>
+              <div>
+                <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#111827' }}>Crop Variety Distribution</h3>
+                <p style={{ fontSize: '12px', color: '#9CA3AF', margin: '2px 0 0 0' }}>
+                  Distribution of crop varieties in tons
+                </p>
+              </div>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <select
+                  value={varietyYear}
+                  onChange={(e) => setVarietyYear(e.target.value)}
+                  className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-green-500 min-w-[90px]"
+                >
+                  <option value="">All Years</option>
+                  {years.map((y) => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
+                <select
+                  value={varietySeason}
+                  onChange={(e) => setVarietySeason(e.target.value)}
+                  className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-green-500 min-w-[90px]"
+                >
+                  <option value="">All Seasons</option>
+                  {seasons.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '32px', marginTop: '16px', flexWrap: 'wrap' }}>
               <div style={{ flex: '0 0 auto', maxWidth: '260px' }}>
                 <ResponsiveContainer width={260} height={280}>
