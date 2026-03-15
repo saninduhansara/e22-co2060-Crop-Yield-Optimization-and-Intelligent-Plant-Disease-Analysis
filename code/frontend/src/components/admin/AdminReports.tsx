@@ -695,19 +695,84 @@ export function AdminReports() {
       {/* Charts Row 1 */}
       <div className="grid grid-cols-1 gap-6">
         {/* Season Comparison */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Yield by Season {selectedCrop && `- ${selectedCrop}`}</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={seasonData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="year" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="Maha" fill="#16a34a" name="Maha (tons)" />
-              <Bar dataKey="Yala" fill="#60a5fa" name="Yala (tons)" />
-            </BarChart>
-          </ResponsiveContainer>
+        <div style={{
+          background: 'white',
+          border: '1px solid #E5E7EB',
+          borderRadius: '14px',
+          padding: '20px 24px',
+          boxShadow: '0 1px 4px rgba(0,0,0,0.05)'
+        }}>
+          <h3 style={{
+            fontSize: '16px',
+            fontWeight: 600,
+            color: '#111827'
+          }}>
+            Yield by Season {selectedCrop && `- ${selectedCrop}`}
+          </h3>
+          <p style={{
+            fontSize: '12px',
+            color: '#9CA3AF',
+            marginTop: '2px',
+            margin: 0,
+            marginTop: '2px'
+          }}>
+            Total yield in tons by harvest season
+          </p>
+          <div style={{ padding: '12px', background: '#FAFAFA', borderRadius: '8px', marginTop: '12px' }}>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={seasonData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                <XAxis dataKey="year" />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="Maha" fill="#16a34a" name="Maha (tons)" />
+                <Bar dataKey="Yala" fill="#60a5fa" name="Yala (tons)" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          {/* Custom Legend with Styled Badges */}
+          <div style={{ display: 'flex', gap: '8px', marginTop: '16px', flexWrap: 'wrap' }}>
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              background: '#F3F4F6',
+              padding: '4px 12px',
+              borderRadius: '999px',
+              fontSize: '12px',
+              fontWeight: 500,
+              color: '#374151',
+              marginRight: '8px'
+            }}>
+              <div style={{
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                background: '#15803D'
+              }} />
+              Maha (tons)
+            </div>
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              background: '#F3F4F6',
+              padding: '4px 12px',
+              borderRadius: '999px',
+              fontSize: '12px',
+              fontWeight: 500,
+              color: '#374151',
+              marginRight: '8px'
+            }}>
+              <div style={{
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                background: '#3B82F6'
+              }} />
+              Yala (tons)
+            </div>
+          </div>
         </div>
 
         {/* Variety Distribution */}
