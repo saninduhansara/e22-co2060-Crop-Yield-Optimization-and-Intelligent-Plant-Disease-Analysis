@@ -162,20 +162,41 @@ export function AdminSidebar({ currentPage, onNavigate, onLogout }: AdminSidebar
             onClick={() => handleNavigate('profile')}
             className="w-full flex items-center gap-3 mb-4 p-3 rounded-lg hover:bg-green-600/30 transition-all"
           >
-            <div className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center overflow-hidden border-2 border-green-500">
-              {adminUser?.image && !adminUser.image.includes('blank-profile') ? (
-                <img src={adminUser.image} alt={adminUser.firstName} className="w-full h-full object-cover" />
+            <div style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '50%',
+              background: '#DCFCE7',
+              color: '#15803D',
+              fontSize: '13px',
+              fontWeight: '700',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
+            }}>
+              {adminUser ? (
+                `${adminUser.firstName?.charAt(0) || 'A'}${adminUser.lastName?.charAt(0) || 'D'}`
               ) : (
-                <span className="text-sm font-semibold uppercase">
-                  {(adminUser?.firstName?.charAt(0) || 'A') + (adminUser?.lastName?.charAt(0) || 'D')}
-                </span>
+                'AD'
               )}
             </div>
             <div className="text-left overflow-hidden">
-              <p className="text-sm font-medium truncate">
+              <p style={{
+                fontSize: '14px',
+                fontWeight: '600',
+                color: 'white'
+              }} className="truncate">
                 {adminUser ? `${adminUser.firstName} ${adminUser.lastName}` : 'Admin User'}
               </p>
-              <p className="text-xs text-green-200 truncate">
+              <p style={{
+                fontSize: '12px',
+                color: 'rgba(255,255,255,0.6)',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                maxWidth: '140px'
+              }}>
                 {adminUser?.email || 'admin@agriconnect.lk'}
               </p>
             </div>
