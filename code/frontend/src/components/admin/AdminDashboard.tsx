@@ -1019,59 +1019,104 @@ export function AdminDashboard() {
       {/* Recent Activity & Quick Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Farmers */}
-        <div className="rounded-2xl shadow-sm border border-gray-100" style={{ backgroundColor: '#f0f7f0' }}>
-          <div className="p-4 md:p-6 border-b border-gray-100 flex items-center justify-between">
-            <h3 className="text-base md:text-lg font-semibold text-gray-800">Recently Added Farmers</h3>
+        <div
+          style={{
+            background: '#FFFFFF',
+            border: '1px solid #E5E7EB',
+            borderRadius: '14px',
+            padding: '20px 24px',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#111827' }}>Recently Added Farmers</h3>
             <button
               type="button"
               onClick={() => setShowMoreFarmers((prev) => !prev)}
-              className="text-green-600 hover:text-green-700 text-xs font-medium flex items-center gap-1"
+              style={{
+                background: '#FFFFFF',
+                border: '1px solid #16A34A',
+                color: '#16A34A',
+                borderRadius: '8px',
+                padding: '5px 12px',
+                fontSize: '12px',
+                fontWeight: 500,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = '#F0FDF4';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = '#FFFFFF';
+              }}
             >
               {showMoreFarmers ? 'View Less' : 'View More'}
-              <Link2 className="w-3 h-3" />
             </button>
           </div>
           <div>
             {loading ? (
-              <div className="flex justify-center py-8 px-4 md:px-6">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-600"></div>
+              <div style={{ display: 'flex', justifyContent: 'center', paddingTop: '32px', paddingBottom: '32px' }}>
+                <div style={{ animation: 'spin 1s linear infinite', borderRadius: '9999px', width: '24px', height: '24px', borderTop: '2px solid #16A34A', borderRight: '2px solid transparent' }}></div>
               </div>
             ) : visibleRecentFarmers.length > 0 ? (
               visibleRecentFarmers.map((farmer, index) => (
                 <div
                   key={index}
-                  className="px-4 py-3 hover:bg-green-50 transition-all duration-200 cursor-pointer flex items-center justify-between"
                   style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '10px 12px',
+                    borderRadius: '10px',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                    borderLeft: '3px solid transparent',
+                    borderBottom: index === visibleRecentFarmers.length - 1 ? 'none' : '1px solid #F9FAFB',
                     animation: 'slideInFromLeft 0.5s ease-out forwards',
                     animationDelay: `${index * 100}ms`,
                     opacity: 0,
-                    transform: 'translateX(-20px)',
-                    borderBottom: '1px solid #d9e8d9'
                   }}
                   onClick={() => openFarmerProfileByNic(farmer.nic)}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLDivElement).style.background = '#F0FDF4';
+                    (e.currentTarget as HTMLDivElement).style.borderLeft = '3px solid #16A34A';
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLDivElement).style.background = 'transparent';
+                    (e.currentTarget as HTMLDivElement).style.borderLeft = '3px solid transparent';
+                  }}
                 >
-                  <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <div className="w-10 h-10 bg-green-100 text-green-700 font-bold rounded-full flex items-center justify-center flex-shrink-0">
-                      <span className="text-sm">
-                        {farmer.firstName.charAt(0)}{farmer.lastName.charAt(0)}
-                      </span>
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-sm truncate" style={{ fontSize: '16px', color: '#111827' }}>{farmer.name}</p>
-                      <p className="text-gray-400 truncate flex items-center gap-1" style={{ fontSize: '13px' }}>
-                        <MapPin className="w-3 h-3" />
-                        {farmer.location} • {formatDate(farmer.date)}
-                      </p>
-                    </div>
+                  <div
+                    style={{
+                      width: '38px',
+                      height: '38px',
+                      borderRadius: '50%',
+                      background: '#DCFCE7',
+                      color: '#15803D',
+                      fontSize: '13px',
+                      fontWeight: 700,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      textTransform: 'uppercase',
+                      flexShrink: 0,
+                    }}
+                  >
+                    {farmer.firstName.charAt(0)}{farmer.lastName.charAt(0)}
                   </div>
-                  <span className="px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ml-2 bg-green-100 text-green-700">
-                    Active
-                  </span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontSize: '14px', fontWeight: 600, color: '#111827', margin: 0 }}>{farmer.name}</p>
+                    <p style={{ fontSize: '12px', color: '#9CA3AF', margin: '4px 0 0 0', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <MapPin style={{ width: '12px', color: '#9CA3AF' }} />
+                      {farmer.location} • {formatDate(farmer.date)}
+                    </p>
+                  </div>
                 </div>
               ))
             ) : (
-              <div className="text-center py-8 px-4 md:px-6 text-gray-500">
-                <p className="text-sm">No farmers found</p>
+              <div style={{ textAlign: 'center', paddingTop: '32px', paddingBottom: '32px', color: '#9CA3AF' }}>
+                <p style={{ fontSize: '14px' }}>No farmers found</p>
               </div>
             )}
           </div>
