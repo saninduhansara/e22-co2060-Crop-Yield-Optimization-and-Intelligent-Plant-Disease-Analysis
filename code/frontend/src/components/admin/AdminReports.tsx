@@ -473,20 +473,19 @@ export function AdminReports() {
         <div
           style={{
             background: 'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)',
-            border: '1px solid #BBF7D0',
             borderRadius: '14px',
             padding: '16px 20px',
-            boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+            boxShadow: '0 8px 16px -2px rgba(0, 0, 0, 0.15), 0 4px 8px -1px rgba(0, 0, 0, 0.1)',
             transition: 'all 0.2s ease',
             cursor: 'pointer',
           }}
           onMouseEnter={(e) => {
             (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-3px)';
-            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 20px rgba(0,0,0,0.09)';
+            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 12px 28px rgba(0,0,0,0.12)';
           }}
           onMouseLeave={(e) => {
             (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
-            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 1px 4px rgba(0,0,0,0.05)';
+            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 16px -2px rgba(0, 0, 0, 0.15), 0 4px 8px -1px rgba(0, 0, 0, 0.1)';
           }}
         >
           <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -509,21 +508,20 @@ export function AdminReports() {
         {/* Active Plots Card */}
         <div
           style={{
-            background: 'linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%)',
-            border: '1px solid #6EE7B7',
+            background: 'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)',
             borderRadius: '14px',
             padding: '16px 20px',
-            boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+            boxShadow: '0 8px 16px -2px rgba(0, 0, 0, 0.15), 0 4px 8px -1px rgba(0, 0, 0, 0.1)',
             transition: 'all 0.2s ease',
             cursor: 'pointer',
           }}
           onMouseEnter={(e) => {
             (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-3px)';
-            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 20px rgba(0,0,0,0.09)';
+            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 12px 28px rgba(0,0,0,0.12)';
           }}
           onMouseLeave={(e) => {
             (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
-            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 1px 4px rgba(0,0,0,0.05)';
+            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 16px -2px rgba(0, 0, 0, 0.15), 0 4px 8px -1px rgba(0, 0, 0, 0.1)';
           }}
         >
           <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -545,21 +543,20 @@ export function AdminReports() {
         {/* Active Farmland Card */}
         <div
           style={{
-            background: 'linear-gradient(135deg, #F1F8F1 0%, #DCEDD5 100%)',
-            border: '1px solid #A7C4A0',
+            background: 'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)',
             borderRadius: '14px',
             padding: '16px 20px',
-            boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+            boxShadow: '0 8px 16px -2px rgba(0, 0, 0, 0.15), 0 4px 8px -1px rgba(0, 0, 0, 0.1)',
             transition: 'all 0.2s ease',
             cursor: 'pointer',
           }}
           onMouseEnter={(e) => {
             (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-3px)';
-            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 20px rgba(0,0,0,0.09)';
+            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 12px 28px rgba(0,0,0,0.12)';
           }}
           onMouseLeave={(e) => {
             (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
-            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 1px 4px rgba(0,0,0,0.05)';
+            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 16px -2px rgba(0, 0, 0, 0.15), 0 4px 8px -1px rgba(0, 0, 0, 0.1)';
           }}
         >
           <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -584,21 +581,20 @@ export function AdminReports() {
         {/* Total Harvest Card */}
         <div
           style={{
-            background: 'linear-gradient(135deg, #E6F4EA 0%, #C8E6C9 100%)',
-            border: '1px solid #81C784',
+            background: 'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)',
             borderRadius: '14px',
             padding: '16px 20px',
-            boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+            boxShadow: '0 8px 16px -2px rgba(0, 0, 0, 0.15), 0 4px 8px -1px rgba(0, 0, 0, 0.1)',
             transition: 'all 0.2s ease',
             cursor: 'pointer',
           }}
           onMouseEnter={(e) => {
             (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-3px)';
-            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 20px rgba(0,0,0,0.09)';
+            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 12px 28px rgba(0,0,0,0.12)';
           }}
           onMouseLeave={(e) => {
             (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
-            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 1px 4px rgba(0,0,0,0.05)';
+            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 16px -2px rgba(0, 0, 0, 0.15), 0 4px 8px -1px rgba(0, 0, 0, 0.1)';
           }}
         >
           <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -624,21 +620,20 @@ export function AdminReports() {
         {/* Avg Yield/Acre Card */}
         <div
           style={{
-            background: 'linear-gradient(135deg, #EAFAF1 0%, #D5F5E3 100%)',
-            border: '1px solid #82E0AA',
+            background: 'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)',
             borderRadius: '14px',
             padding: '16px 20px',
-            boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+            boxShadow: '0 8px 16px -2px rgba(0, 0, 0, 0.15), 0 4px 8px -1px rgba(0, 0, 0, 0.1)',
             transition: 'all 0.2s ease',
             cursor: 'pointer',
           }}
           onMouseEnter={(e) => {
             (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-3px)';
-            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 20px rgba(0,0,0,0.09)';
+            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 12px 28px rgba(0,0,0,0.12)';
           }}
           onMouseLeave={(e) => {
             (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
-            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 1px 4px rgba(0,0,0,0.05)';
+            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 16px -2px rgba(0, 0, 0, 0.15), 0 4px 8px -1px rgba(0, 0, 0, 0.1)';
           }}
         >
           <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -665,20 +660,19 @@ export function AdminReports() {
         <div
           style={{
             background: 'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)',
-            border: '1px solid #FDE68A',
             borderRadius: '14px',
             padding: '16px 20px',
-            boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+            boxShadow: '0 8px 16px -2px rgba(0, 0, 0, 0.15), 0 4px 8px -1px rgba(0, 0, 0, 0.1)',
             transition: 'all 0.2s ease',
             cursor: 'pointer',
           }}
           onMouseEnter={(e) => {
             (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-3px)';
-            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 20px rgba(0,0,0,0.09)';
+            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 12px 28px rgba(0,0,0,0.12)';
           }}
           onMouseLeave={(e) => {
             (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
-            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 1px 4px rgba(0,0,0,0.05)';
+            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 16px -2px rgba(0, 0, 0, 0.15), 0 4px 8px -1px rgba(0, 0, 0, 0.1)';
           }}
         >
           <div style={{ display: 'flex', flexDirection: 'column' }}>
