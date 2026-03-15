@@ -1,4 +1,4 @@
-import { Download, TrendingUp, Users, Wheat, FileText, BarChart3, Link2, MapPin, Layers } from 'lucide-react';
+import { Download, TrendingUp, Users, Wheat, FileText, BarChart3, MapPin, Layers, Trophy, Star } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
@@ -471,6 +471,54 @@ export function AdminReports() {
   const districtData = Object.entries(districtMap)
     .map(([district, yieldVal]) => ({ district, yield: yieldVal }))
     .sort((a, b) => b.yield - a.yield);
+
+  const getRankBadgeStyle = (rank: number) => {
+    if (rank === 1) {
+      return {
+        background: '#FEF9C3',
+        color: '#B45309',
+        border: '1px solid #FDE68A',
+      };
+    }
+    if (rank === 2) {
+      return {
+        background: '#F3F4F6',
+        color: '#6B7280',
+        border: '1px solid #D1D5DB',
+      };
+    }
+    if (rank === 3) {
+      return {
+        background: '#FFEDD5',
+        color: '#C2410C',
+        border: '1px solid #FED7AA',
+      };
+    }
+    return {
+      background: '#F9FAFB',
+      color: '#9CA3AF',
+      border: '1px solid #E5E7EB',
+    };
+  };
+
+  const getPointsTextStyle = (points: number) => {
+    if (points >= 100000) {
+      return {
+        color: '#B45309',
+        fontWeight: 700,
+      };
+    }
+    if (points >= 10000) {
+      return {
+        color: '#374151',
+        fontWeight: 600,
+      };
+    }
+    return {
+      color: '#9CA3AF',
+      fontWeight: 500,
+    };
+  };
 
   return (
     <div ref={reportContentRef} className="space-y-6">
@@ -1063,53 +1111,101 @@ export function AdminReports() {
       </div>
 
       {/* Top Performers */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-        <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-800">Top Performing Farmers</h3>
-                  {topPerformers.length > 5 && (
-                    <button
-                      type="button"
-                      onClick={() => setShowAllPerformers((prev) => !prev)}
-                      className="text-green-600 hover:text-green-700 text-xs font-medium flex items-center gap-1"
-                    >
-                      {showAllPerformers ? 'View Less' : 'View More'}
-                      <Link2 className="w-3 h-3" />
-                    </button>
-                  )}
+      <div style={{
+        background: 'white',
+        border: '1px solid #E5E7EB',
+        borderRadius: '14px',
+        padding: '20px 24px',
+        boxShadow: '0 1px 4px rgba(0,0,0,0.05)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+          <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#111827', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Trophy style={{ color: '#B45309', width: '18px', height: '18px' }} />
+            Top Performing Farmers
+          </h3>
+          {topPerformers.length > 5 && (
+            <button
+              type="button"
+              onClick={() => setShowAllPerformers((prev) => !prev)}
+              style={{
+                background: 'white',
+                border: '1px solid #16A34A',
+                color: '#16A34A',
+                borderRadius: '8px',
+                padding: '6px 14px',
+                fontSize: '13px',
+                fontWeight: 500,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = '#F0FDF4';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = 'white';
+              }}
+            >
+              {showAllPerformers ? 'View Less' : 'View More'}
+            </button>
+          )}
         </div>
         <div className="overflow-x-auto relative">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
+          <table className="w-full" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
+            <thead style={{ background: '#F9FAFB' }}>
               <tr>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Rank</th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Farmer</th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">District</th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Total Yield</th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Avg Yield/Acre</th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Points</th>
+                <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '11px', fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '2px solid #E5E7EB' }}>Rank</th>
+                <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '11px', fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '2px solid #E5E7EB' }}>Farmer</th>
+                <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '11px', fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '2px solid #E5E7EB' }}>District</th>
+                <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '11px', fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '2px solid #E5E7EB' }}>Total Yield</th>
+                <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '11px', fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '2px solid #E5E7EB' }}>Avg Yield/Acre</th>
+                <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '11px', fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '2px solid #E5E7EB' }}>Points</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
-              {topPerformers.slice(0, showAllPerformers ? 10 : 5).map((farmer) => (
+            <tbody>
+              {topPerformers.slice(0, showAllPerformers ? 10 : 5).map((farmer, idx) => (
                 <tr
                   key={farmer.rank}
-                  className="hover:bg-gray-50 transition-colors cursor-pointer"
+                  style={{
+                    background: idx % 2 === 0 ? '#FFFFFF' : '#F9FAFB',
+                    borderLeft: '3px solid transparent',
+                    transition: 'all 0.15s ease',
+                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLTableRowElement).style.background = '#F0FDF4';
+                    (e.currentTarget as HTMLTableRowElement).style.borderLeft = '3px solid #16A34A';
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLTableRowElement).style.background = idx % 2 === 0 ? '#FFFFFF' : '#F9FAFB';
+                    (e.currentTarget as HTMLTableRowElement).style.borderLeft = '3px solid transparent';
+                  }}
                   onClick={() => handleSelectPerformer(farmer)}
                 >
-                  <td className="px-6 py-4">
-                    <span className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${farmer.rank === 1 ? 'bg-yellow-100 text-yellow-700' :
-                      farmer.rank === 2 ? 'bg-gray-100 text-gray-700' :
-                        farmer.rank === 3 ? 'bg-orange-100 text-orange-700' :
-                          'bg-gray-50 text-gray-600'
-                      }`}>
+                  <td style={{ padding: '12px 16px' }}>
+                    <span style={{
+                      width: '28px',
+                      height: '28px',
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '13px',
+                      fontWeight: 700,
+                      ...getRankBadgeStyle(farmer.rank)
+                    }}>
                       {farmer.rank}
                     </span>
                   </td>
-                  <td className="px-6 py-4 font-medium text-gray-800">{farmer.name}</td>
-                  <td className="px-6 py-4 text-sm text-gray-700">{farmer.district}</td>
-                  <td className="px-6 py-4 text-sm font-medium text-gray-800">{farmer.yield} tons</td>
-                  <td className="px-6 py-4 text-sm font-medium text-gray-800">{farmer.avgYield} kg</td>
-                  <td className="px-6 py-4 text-sm font-semibold text-green-700">{Math.round(farmer.points)}</td>
+                  <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 500, color: '#1F2937' }}>{farmer.name}</td>
+                  <td style={{ padding: '12px 16px', fontSize: '14px', color: '#374151' }}>{farmer.district}</td>
+                  <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 500, color: '#1F2937' }}>{farmer.yield} tons</td>
+                  <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 500, color: '#1F2937' }}>{farmer.avgYield} kg</td>
+                  <td style={{ padding: '12px 16px' }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '14px', ...getPointsTextStyle(Math.round(farmer.points)) }}>
+                      <Star style={{ width: '12px', height: '12px' }} />
+                      {Math.round(farmer.points)}
+                    </span>
+                  </td>
                 </tr>
               ))}
             </tbody>
