@@ -17,6 +17,7 @@ export function AdminReports() {
   });
   const [selectedFarmer, setSelectedFarmer] = useState<any | null>(null);
   const [loadingFarmerDetails, setLoadingFarmerDetails] = useState<boolean>(false);
+  const [refreshingReport, setRefreshingReport] = useState<boolean>(false);
   // control expansion of the top performers list (5 vs 10 entries)
   const [showAllPerformers, setShowAllPerformers] = useState(false);
   const [activeInsightsTab, setActiveInsightsTab] = useState<'growth' | 'variety'>('growth');
@@ -54,6 +55,7 @@ export function AdminReports() {
 
   const handleRefreshReport = async () => {
     try {
+      setRefreshingReport(true);
       setLoadingHarvests(true);
       const harvestData = await farmAPI.getHarvestHistory();
       setHarvests(harvestData.harvests || []);
@@ -68,6 +70,7 @@ export function AdminReports() {
       console.error('Failed to refresh data', err);
       toast.error('Failed to refresh report.');
     } finally {
+      setRefreshingReport(false);
       setLoadingHarvests(false);
     }
   };
@@ -555,6 +558,7 @@ export function AdminReports() {
           <button
             type="button"
             onClick={handleRefreshReport}
+            disabled={refreshingReport}
             style={{
               padding: '10px 16px',
               background: '#E0F2FE',
@@ -564,19 +568,22 @@ export function AdminReports() {
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
-              cursor: 'pointer',
+              cursor: refreshingReport ? 'not-allowed' : 'pointer',
               transition: 'all 0.2s ease',
               fontWeight: 500,
+              opacity: refreshingReport ? 0.8 : 1,
             }}
             onMouseEnter={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.background = '#BAE6FD';
+              if (!refreshingReport) {
+                (e.currentTarget as HTMLButtonElement).style.background = '#BAE6FD';
+              }
             }}
             onMouseLeave={(e) => {
               (e.currentTarget as HTMLButtonElement).style.background = '#E0F2FE';
             }}
           >
-            <RefreshCw className="w-4 h-4" />
-            Refresh
+            <RefreshCw className={`w-4 h-4 ${refreshingReport ? 'animate-spin' : ''}`} />
+            {refreshingReport ? 'Refreshing' : 'Refresh'}
           </button>
 
           <button
