@@ -134,6 +134,18 @@ export function AdminReports() {
     return s;
   };
 
+  const formatDistrictYAxisTick = (value: number | string) => {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return String(value);
+
+    if (n >= 1_000_000) {
+      const m = n / 1_000_000;
+      return `${Number.isInteger(m) ? m : Number(m.toFixed(1))}M`;
+    }
+
+    return String(value); // below 1,000,000 stays as-is
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -804,7 +816,7 @@ export function AdminReports() {
           <div>
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
-                <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#111827' }}>Yield by District</h3>
+                <h3 style={{ fontSize: '15px', fontWeight: 600, color: '#111827' }}>Yield by District</h3>
                 <p style={{ fontSize: '12px', color: '#9CA3AF', margin: '2px 0 0 0' }}>
                   Total crop yield in kilograms across districts
                 </p>
@@ -846,7 +858,7 @@ export function AdminReports() {
                 <BarChart data={districtData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                   <XAxis dataKey="district" />
-                  <YAxis />
+                  <YAxis tickFormatter={formatDistrictYAxisTick} />
                   <Tooltip />
                   <Legend />
                   <Bar dataKey="yield" fill="#16a34a" name="Yield (kg)" />
@@ -904,7 +916,7 @@ export function AdminReports() {
 
         {activeInsightsTab === 'growth' ? (
           <div>
-            <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#111827' }}>Farmer Participation Growth</h3>
+            <h3 style={{ fontSize: '15px', fontWeight: 600, color: '#111827' }}>Farmer Participation Growth</h3>
             <p style={{ fontSize: '12px', color: '#9CA3AF', margin: '2px 0 0 0' }}>
               Number of participating farmers across each harvest season
             </p>
@@ -914,9 +926,20 @@ export function AdminReports() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                   <XAxis dataKey="season" />
                   <YAxis />
-                  <Tooltip />
+                  <Tooltip
+                    labelFormatter={(label: any) => `Season: ${label}`}
+                    formatter={(value: any) => [`${value}`, 'Farmers']}
+                  />
                   <Legend />
-                  <Line type="monotone" dataKey="farmers" stroke="#16a34a" strokeWidth={3} name="Farmers" />
+                  <Line
+                    type="monotone"
+                    dataKey="farmers"
+                    stroke="#15803D"
+                    strokeWidth={3}
+                    dot={{ r: 6 }}
+                    activeDot={{ r: 6 }}
+                    name="Farmers"
+                  />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -925,7 +948,7 @@ export function AdminReports() {
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', flexWrap: 'wrap' }}>
               <div>
-                <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#111827' }}>Crop Variety Distribution</h3>
+                <h3 style={{ fontSize: '15px', fontWeight: 600, color: '#111827' }}>Crop Variety Distribution</h3>
                 <p style={{ fontSize: '12px', color: '#9CA3AF', margin: '2px 0 0 0' }}>
                   Distribution of crop varieties in tons
                 </p>
@@ -1218,9 +1241,20 @@ export function AdminReports() {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="season" angle={-45} textAnchor="end" height={80} />
               <YAxis />
-              <Tooltip />
+              <Tooltip
+                labelFormatter={(label: any) => `Season: ${label}`}
+                formatter={(value: any) => [`${value}`, 'Farmers']}
+              />
               <Legend />
-              <Line type="monotone" dataKey="farmers" stroke="#16a34a" strokeWidth={2} name="Active Farmers" />
+              <Line
+                type="monotone"
+                dataKey="farmers"
+                stroke="#15803D"
+                strokeWidth={2}
+                dot={{ r: 6 }}
+                activeDot={{ r: 6 }}
+                name="Active Farmers"
+              />
             </LineChart>
           </ResponsiveContainer>
         </div>
