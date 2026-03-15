@@ -1026,6 +1026,16 @@ export function AdminDashboard() {
             borderRadius: '14px',
             padding: '20px 24px',
             boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+            transition: 'all 0.2s ease',
+            cursor: 'default',
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 16px rgba(0,0,0,0.1)';
+            (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)';
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 1px 4px rgba(0,0,0,0.05)';
+            (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
@@ -1135,6 +1145,16 @@ export function AdminDashboard() {
             borderRadius: '14px',
             padding: '20px 24px',
             boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+            transition: 'all 0.2s ease',
+            cursor: 'default',
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 16px rgba(0,0,0,0.1)';
+            (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)';
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 1px 4px rgba(0,0,0,0.05)';
+            (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
