@@ -126,19 +126,30 @@ export function AdminSidebar({ currentPage, onNavigate, onLogout }: AdminSidebar
               <button
                 key={item.id}
                 onClick={() => handleNavigate(item.id)}
-                className={`w-full flex items-center gap-3 px-6 py-4 transition-all ${isActive
-                  ? 'text-white'
-                  : 'text-green-50 hover:bg-green-600/30'
-                  }`}
+                className={`w-full flex items-center gap-3 px-6 py-4 ${isActive ? 'text-white' : 'text-green-50 group hover:text-white'}`}
                 style={isActive ? {
                   background: 'rgba(255,255,255,0.2)',
                   borderLeft: '3px solid white',
                   borderRadius: '0 8px 8px 0',
-                  fontWeight: '600'
-                } : {}}
+                  fontWeight: '600',
+                  transition: 'all 0.15s ease'
+                } : {
+                  transition: 'all 0.15s ease'
+                }}
+                onMouseEnter={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
+                    e.currentTarget.style.borderRadius = '8px';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.background = 'transparent';
+                  }
+                }}
               >
-                <Icon className="w-5 h-5" style={isActive ? { color: 'white' } : {}} />
-                <span className="text-sm" style={isActive ? { color: 'white', fontWeight: '600' } : {}}>{item.label}</span>
+                <Icon className="w-5 h-5" style={isActive ? { color: 'white' } : { transition: 'color 0.15s ease' }} />
+                <span className="text-sm" style={isActive ? { color: 'white', fontWeight: '600' } : { transition: 'color 0.15s ease' }}>{item.label}</span>
               </button>
             );
           })}
