@@ -394,14 +394,14 @@ export function AdminReports() {
 
   // Define colors for crops
   const cropColors: Record<string, string> = {
-    'Paddy': '#16a34a',
-    'Corn': '#22c55e',
-    'Wheat': '#4ade80',
-    'Cabbage': '#86efac',
-    'Tomatoes': '#fbbf24',
-    'Onion': '#f97316',
-    'Carrots': '#fb923c',
-    'Potatoes': '#f87171',
+    'Paddy': '#FEF08A',
+    'Corn': '#FED7AA',
+    'Wheat': '#FDE68A',
+    'Tomatoes': '#FECACA',
+    'Onion': '#E9D5FF',
+    'Carrots': '#FFEDD5',
+    'Cabbage': '#BBF7D0',
+    'Potatoes': '#D6D3D1',
   };
 
   const varietyData = Object.entries(cropVarietyMap)
@@ -776,27 +776,87 @@ export function AdminReports() {
         </div>
 
         {/* Variety Distribution */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Crop Variety Distribution</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={varietyData}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={({ name, value }) => `${name}: ${value}%`}
-                outerRadius={100}
-                fill="#8884d8"
-                dataKey="value"
-              >
-                {varietyData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
+        <div style={{
+          background: 'white',
+          border: '1px solid #E5E7EB',
+          borderRadius: '14px',
+          padding: '20px 24px',
+          boxShadow: '0 1px 4px rgba(0,0,0,0.05)'
+        }}>
+          <h3 style={{
+            fontSize: '16px',
+            fontWeight: 600,
+            color: '#111827'
+          }}>
+            Crop Variety Distribution
+          </h3>
+          <p style={{
+            fontSize: '12px',
+            color: '#9CA3AF',
+            margin: 0,
+            marginTop: '2px'
+          }}>
+            Distribution of crop varieties in tons
+          </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '32px', marginTop: '16px' }}>
+            {/* Pie Chart */}
+            <div style={{ flex: '0 0 auto', maxWidth: '260px' }}>
+              <ResponsiveContainer width={260} height={280}>
+                <PieChart>
+                  <Pie
+                    data={varietyData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={false}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {varietyData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            {/* Custom Legend */}
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              {varietyData.map((item, index) => (
+                <div key={index} style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  marginBottom: '10px'
+                }}>
+                  <div style={{
+                    width: '12px',
+                    height: '12px',
+                    borderRadius: '3px',
+                    background: item.color,
+                    flexShrink: 0
+                  }} />
+                  <span style={{
+                    fontSize: '13px',
+                    fontWeight: 500,
+                    color: '#374151',
+                    flex: 1
+                  }}>
+                    {item.name}
+                  </span>
+                  <span style={{
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    color: '#111827',
+                    marginLeft: 'auto'
+                  }}>
+                    {item.value}%
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
