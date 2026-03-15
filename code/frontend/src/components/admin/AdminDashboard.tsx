@@ -1123,22 +1123,45 @@ export function AdminDashboard() {
         </div>
 
         {/* Recent Harvests */}
-        <div className="rounded-2xl shadow-sm border border-gray-100" style={{ backgroundColor: '#f0f7f0' }}>
-          <div className="p-4 md:p-6 border-b border-gray-100 flex items-center justify-between">
-            <h3 className="text-base md:text-lg font-semibold text-gray-800">Recently Added Harvests</h3>
+        <div
+          style={{
+            background: '#FFFFFF',
+            border: '1px solid #E5E7EB',
+            borderRadius: '14px',
+            padding: '20px 24px',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#111827' }}>Recently Added Harvests</h3>
             <button
               type="button"
               onClick={() => setShowMoreHarvests((prev) => !prev)}
-              className="text-green-600 hover:text-green-700 text-xs font-medium flex items-center gap-1"
+              style={{
+                background: '#FFFFFF',
+                border: '1px solid #16A34A',
+                color: '#16A34A',
+                borderRadius: '8px',
+                padding: '5px 12px',
+                fontSize: '12px',
+                fontWeight: 500,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = '#F0FDF4';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = '#FFFFFF';
+              }}
             >
               {showMoreHarvests ? 'View Less' : 'View More'}
-              <Link2 className="w-3 h-3" />
             </button>
           </div>
           <div>
             {loading ? (
-              <div className="flex justify-center py-8 px-4 md:px-6">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-600"></div>
+              <div style={{ display: 'flex', justifyContent: 'center', paddingTop: '32px', paddingBottom: '32px' }}>
+                <div style={{ animation: 'spin 1s linear infinite', borderRadius: '9999px', width: '24px', height: '24px', borderTop: '2px solid #16A34A', borderRight: '2px solid transparent' }}></div>
               </div>
             ) : visibleRecentHarvests.length > 0 ? (
               visibleRecentHarvests.map((harvest, index) => {
@@ -1177,39 +1200,59 @@ export function AdminDashboard() {
                   cropTextColor = '#1E40AF';
                 }
 
+                // Format harvest quantity with comma separators
+                const harvestQtyNumber = typeof harvest.harvestQty === 'number' ? harvest.harvestQty : parseFloat(harvest.harvestQty || '0');
+                const formattedQty = harvestQtyNumber.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+
                 return (
                   <div
                     key={index}
-                    className="px-4 py-3 hover:bg-green-50 transition-all duration-200 cursor-pointer flex items-start justify-between"
                     style={{
+                      padding: '10px 12px',
+                      borderRadius: '10px',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                      borderLeft: '3px solid transparent',
+                      borderBottom: index === visibleRecentHarvests.length - 1 ? 'none' : '1px solid #F9FAFB',
                       animation: 'fadeInUp 0.5s ease-out forwards',
                       animationDelay: `${index * 100}ms`,
                       opacity: 0,
-                      borderBottom: '1px solid #d9e8d9'
                     }}
                     onClick={() => openFarmerProfileByName(harvest.farmerName)}
+                    onMouseEnter={(e) => {
+                      (e.currentTarget as HTMLDivElement).style.background = '#F0FDF4';
+                      (e.currentTarget as HTMLDivElement).style.borderLeft = '3px solid #16A34A';
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.currentTarget as HTMLDivElement).style.background = 'transparent';
+                      (e.currentTarget as HTMLDivElement).style.borderLeft = '3px solid transparent';
+                    }}
                   >
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-sm truncate" style={{ fontSize: '16px', color: '#111827' }}>{harvest.farmerName}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span 
-                          className="text-xs px-2 py-0.5 rounded-full font-medium"
-                          style={{ backgroundColor: cropBgColor, color: cropTextColor }}
-                        >
-                          {harvest.crop}
-                        </span>
-                      </div>
-                      <p className="text-gray-400 mt-1" style={{ fontSize: '13px' }}>{formatDate(harvest.harvestDate)}</p>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <p style={{ fontSize: '14px', fontWeight: 600, color: '#111827', margin: 0 }}>{harvest.farmerName}</p>
+                      <p style={{ fontSize: '14px', fontWeight: 700, color: '#15803D', margin: 0 }}>{formattedQty} kg</p>
                     </div>
-                    <div className="flex items-center gap-1 font-bold text-green-700 whitespace-nowrap ml-2 flex-shrink-0" style={{ fontSize: '15px' }}>
-                      {harvest.harvestQty} kg
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                      <span
+                        style={{
+                          backgroundColor: cropBgColor,
+                          color: cropTextColor,
+                          padding: '2px 8px',
+                          borderRadius: '999px',
+                          fontSize: '11px',
+                          fontWeight: 600,
+                        }}
+                      >
+                        {harvest.crop}
+                      </span>
+                      <p style={{ fontSize: '12px', color: '#9CA3AF', margin: 0 }}>{formatDate(harvest.harvestDate)}</p>
                     </div>
                   </div>
                 );
               })
             ) : (
-              <div className="text-center py-8 px-4 md:px-6 text-gray-500">
-                <p className="text-sm">No harvests found</p>
+              <div style={{ textAlign: 'center', paddingTop: '32px', paddingBottom: '32px', color: '#9CA3AF' }}>
+                <p style={{ fontSize: '14px' }}>No harvests found</p>
               </div>
             )}
           </div>
