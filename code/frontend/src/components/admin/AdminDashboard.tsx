@@ -1095,10 +1095,14 @@ export function AdminDashboard() {
                     }}
                     onClick={() => openFarmerProfileByNic(farmer.nic)}
                     onMouseEnter={(e) => {
-                      (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.9)';
+                      (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.95)';
+                      (e.currentTarget as HTMLDivElement).style.boxShadow = '0 4px 12px rgba(22,163,74,0.12)';
+                      (e.currentTarget as HTMLDivElement).style.transform = 'translateX(4px)';
                     }}
                     onMouseLeave={(e) => {
                       (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.6)';
+                      (e.currentTarget as HTMLDivElement).style.boxShadow = 'none';
+                      (e.currentTarget as HTMLDivElement).style.transform = 'translateX(0)';
                     }}
                   >
                     <div
@@ -1256,10 +1260,12 @@ export function AdminDashboard() {
                     }}
                     onClick={() => openFarmerProfileByName(harvest.farmerName)}
                     onMouseEnter={(e) => {
-                      (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.9)';
+                      (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.95)';
+                      (e.currentTarget as HTMLDivElement).style.boxShadow = '0 4px 12px rgba(217,119,6,0.12)';
                     }}
                     onMouseLeave={(e) => {
                       (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.6)';
+                      (e.currentTarget as HTMLDivElement).style.boxShadow = 'none';
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
