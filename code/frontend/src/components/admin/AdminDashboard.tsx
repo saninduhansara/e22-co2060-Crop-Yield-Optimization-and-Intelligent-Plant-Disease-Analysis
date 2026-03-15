@@ -560,7 +560,7 @@ export function AdminDashboard() {
   const formattedYield = formatNumber(getYieldPerAcre());
   const cropOptions = Array.from(new Set([...defaultCropOptions, ...availableCrops]));
   const visibleRecentFarmers = recentFarmers.slice(0, showMoreFarmers ? 10 : 5);
-  const visibleRecentHarvests = recentHarvests.slice(0, showMoreHarvests ? 10 : 4);
+  const visibleRecentHarvests = recentHarvests.slice(0, showMoreHarvests ? 10 : 5);
 
   const harvestPercentage = extractPercentage(harvestLastSeasonText);
   const yieldPercentage = extractPercentage(yieldLastSeasonText);
