@@ -1038,8 +1038,8 @@ export function AdminDashboard() {
             (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#111827' }}>Recently Added Farmers</h3>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', paddingBottom: '12px', borderBottom: '1px solid #D1FAE5' }}>
+            <h3 style={{ fontSize: '17px', fontWeight: 600, color: '#111827' }}>Recently Added Farmers</h3>
             <button
               type="button"
               onClick={() => setShowMoreFarmers((prev) => !prev)}
