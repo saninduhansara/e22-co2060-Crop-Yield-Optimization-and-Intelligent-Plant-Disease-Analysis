@@ -127,12 +127,18 @@ export function AdminSidebar({ currentPage, onNavigate, onLogout }: AdminSidebar
                 key={item.id}
                 onClick={() => handleNavigate(item.id)}
                 className={`w-full flex items-center gap-3 px-6 py-4 transition-all ${isActive
-                  ? 'bg-green-600/50 text-white border-r-4 border-white'
+                  ? 'text-white'
                   : 'text-green-50 hover:bg-green-600/30'
                   }`}
+                style={isActive ? {
+                  background: 'rgba(255,255,255,0.2)',
+                  borderLeft: '3px solid white',
+                  borderRadius: '0 8px 8px 0',
+                  fontWeight: '600'
+                } : {}}
               >
-                <Icon className="w-5 h-5" />
-                <span className="text-sm font-medium">{item.label}</span>
+                <Icon className="w-5 h-5" style={isActive ? { color: 'white' } : {}} />
+                <span className="text-sm" style={isActive ? { color: 'white', fontWeight: '600' } : {}}>{item.label}</span>
               </button>
             );
           })}
