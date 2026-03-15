@@ -93,6 +93,7 @@ export function AdminReports() {
   const [districtYear, setDistrictYear] = useState<string>('');
   const [districtSeason, setDistrictSeason] = useState<string>('');
   const [districtCrop, setDistrictCrop] = useState<string>('');
+  const [focusedFilter, setFocusedFilter] = useState<string | null>(null);
 
   // dropdown toggles (reuse patterns from AddHarvest)
   // dropdown open state no longer needed; using native <select> elements for
@@ -145,6 +146,20 @@ export function AdminReports() {
 
     return String(value); // below 1,000,000 stays as-is
   };
+
+  const getCompactFilterStyle = (isActive: boolean) => ({
+    background: isActive ? '#DCFCE7' : '#F3F4F6',
+    border: `1px solid ${isActive ? '#86EFAC' : '#E5E7EB'}`,
+    borderRadius: '999px',
+    padding: '4px 12px',
+    fontSize: '12px',
+    fontWeight: 500,
+    color: isActive ? '#15803D' : '#374151',
+    cursor: 'pointer',
+    minWidth: '105px',
+    outline: 'none',
+    transition: 'all 0.2s ease',
+  });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -825,7 +840,9 @@ export function AdminReports() {
                 <select
                   value={districtYear}
                   onChange={(e) => setDistrictYear(e.target.value)}
-                  className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-green-500 min-w-[90px]"
+                  onFocus={() => setFocusedFilter('districtYear')}
+                  onBlur={() => setFocusedFilter(null)}
+                  style={getCompactFilterStyle(focusedFilter === 'districtYear' || districtYear !== '')}
                 >
                   <option value="">All Years</option>
                   <option value="2026">2026</option>
@@ -835,7 +852,9 @@ export function AdminReports() {
                 <select
                   value={districtSeason}
                   onChange={(e) => setDistrictSeason(e.target.value)}
-                  className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-green-500 min-w-[90px]"
+                  onFocus={() => setFocusedFilter('districtSeason')}
+                  onBlur={() => setFocusedFilter(null)}
+                  style={getCompactFilterStyle(focusedFilter === 'districtSeason' || districtSeason !== '')}
                 >
                   <option value="">All Seasons</option>
                   <option value="Maha">Maha</option>
@@ -844,7 +863,9 @@ export function AdminReports() {
                 <select
                   value={districtCrop}
                   onChange={(e) => setDistrictCrop(e.target.value)}
-                  className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-green-500 min-w-[90px]"
+                  onFocus={() => setFocusedFilter('districtCrop')}
+                  onBlur={() => setFocusedFilter(null)}
+                  style={getCompactFilterStyle(focusedFilter === 'districtCrop' || districtCrop !== '')}
                 >
                   <option value="">All Crops</option>
                   {Array.from(new Set([...defaultCropOptions, ...availableCrops])).map((c) => (
@@ -957,7 +978,9 @@ export function AdminReports() {
                 <select
                   value={varietyYear}
                   onChange={(e) => setVarietyYear(e.target.value)}
-                  className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-green-500 min-w-[90px]"
+                  onFocus={() => setFocusedFilter('varietyYear')}
+                  onBlur={() => setFocusedFilter(null)}
+                  style={getCompactFilterStyle(focusedFilter === 'varietyYear' || varietyYear !== '')}
                 >
                   <option value="">All Years</option>
                   {years.map((y) => (
@@ -967,7 +990,9 @@ export function AdminReports() {
                 <select
                   value={varietySeason}
                   onChange={(e) => setVarietySeason(e.target.value)}
-                  className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-green-500 min-w-[90px]"
+                  onFocus={() => setFocusedFilter('varietySeason')}
+                  onBlur={() => setFocusedFilter(null)}
+                  style={getCompactFilterStyle(focusedFilter === 'varietySeason' || varietySeason !== '')}
                 >
                   <option value="">All Seasons</option>
                   {seasons.map((s) => (
