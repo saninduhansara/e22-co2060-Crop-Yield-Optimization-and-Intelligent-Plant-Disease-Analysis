@@ -121,7 +121,13 @@ export function AdminReports() {
 
   const normalizeSeason = (val: any) => {
     const s = String(val || '').toLowerCase().trim();
-    return s.includes('maha') ? 'maha' : s.includes('yala') ? 'yala' : s;
+    // Handle single letters and numbers
+    if (s === 'm' || s === '1') return 'maha';
+    if (s === 'y' || s === '2') return 'yala';
+    // Handle full names and partial matches
+    if (s.includes('maha')) return 'maha';
+    if (s.includes('yala')) return 'yala';
+    return s;
   };
 
   useEffect(() => {
@@ -392,16 +398,16 @@ export function AdminReports() {
     cropVarietyMap[crop] += Number(h.harvestQty) || 0;
   });
 
-  // Define colors for crops
+  // Define colors for crops - variations of green with clear visible differences
   const cropColors: Record<string, string> = {
-    'Paddy': '#FEF08A',
-    'Corn': '#FED7AA',
-    'Wheat': '#FDE68A',
-    'Tomatoes': '#FECACA',
-    'Onion': '#E9D5FF',
-    'Carrots': '#FFEDD5',
-    'Cabbage': '#BBF7D0',
-    'Potatoes': '#D6D3D1',
+    'Paddy': '#7FFF00',        // Chartreuse (bright lime green)
+    'Corn': '#32CD32',         // Lime Green (bright green)
+    'Wheat': '#00FF00',        // Pure Bright Green
+    'Tomatoes': '#228B22',     // Forest Green (dark green)
+    'Onion': '#2E8B57',        // Sea Green (teal-green)
+    'Carrots': '#3CB371',      // Medium Sea Green
+    'Cabbage': '#6B8E23',      // Olive Green
+    'Potatoes': '#20B2AA',     // Light Sea Green (blue-green)
   };
 
   const varietyData = Object.entries(cropVarietyMap)
