@@ -608,9 +608,6 @@ export function HarvestHistory() {
           ref={(el) => { dropdownRefs.current['crop'] = el; }}
           style={{ position: 'relative' }}
         >
-          <label style={{ fontSize: '10px', fontWeight: '600', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', marginBottom: '1px', paddingLeft: '6px' }}>
-            Crop
-          </label>
           <button
             onClick={() => setOpenDropdown(openDropdown === 'crop' ? null : 'crop')}
             style={{
@@ -738,9 +735,6 @@ export function HarvestHistory() {
           ref={(el) => { dropdownRefs.current['year'] = el; }}
           style={{ position: 'relative' }}
         >
-          <label style={{ fontSize: '10px', fontWeight: '600', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', marginBottom: '1px', paddingLeft: '6px' }}>
-            Year
-          </label>
           <button
             onClick={() => setOpenDropdown(openDropdown === 'year' ? null : 'year')}
             style={{
@@ -856,9 +850,6 @@ export function HarvestHistory() {
           ref={(el) => { dropdownRefs.current['season'] = el; }}
           style={{ position: 'relative' }}
         >
-          <label style={{ fontSize: '10px', fontWeight: '600', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', marginBottom: '1px', paddingLeft: '6px' }}>
-            Season
-          </label>
           <button
             onClick={() => setOpenDropdown(openDropdown === 'season' ? null : 'season')}
             style={{
