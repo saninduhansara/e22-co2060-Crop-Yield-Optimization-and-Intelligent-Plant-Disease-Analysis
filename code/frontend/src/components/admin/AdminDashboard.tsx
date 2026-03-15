@@ -1060,60 +1060,65 @@ export function AdminDashboard() {
                 <div style={{ animation: 'spin 1s linear infinite', borderRadius: '9999px', width: '24px', height: '24px', borderTop: '2px solid #16A34A', borderRight: '2px solid transparent' }}></div>
               </div>
             ) : visibleRecentFarmers.length > 0 ? (
-              visibleRecentFarmers.map((farmer, index) => (
-                <div
-                  key={index}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    padding: '10px 12px',
-                    borderRadius: '10px',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease',
-                    borderLeft: '3px solid transparent',
-                    borderBottom: index === visibleRecentFarmers.length - 1 ? 'none' : '1px solid #F9FAFB',
-                    animation: 'slideInFromLeft 0.5s ease-out forwards',
-                    animationDelay: `${index * 100}ms`,
-                    opacity: 0,
-                  }}
-                  onClick={() => openFarmerProfileByNic(farmer.nic)}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLDivElement).style.background = '#F0FDF4';
-                    (e.currentTarget as HTMLDivElement).style.borderLeft = '3px solid #16A34A';
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLDivElement).style.background = 'transparent';
-                    (e.currentTarget as HTMLDivElement).style.borderLeft = '3px solid transparent';
-                  }}
-                >
+              visibleRecentFarmers.map((farmer, index) => {
+                // Rotating green shades for each row
+                const greenShades = ['#16A34A', '#15803D', '#059669', '#10B981', '#34D399'];
+                const borderColor = greenShades[index % greenShades.length];
+
+                return (
                   <div
+                    key={index}
                     style={{
-                      width: '38px',
-                      height: '38px',
-                      borderRadius: '50%',
-                      background: '#DCFCE7',
-                      color: '#15803D',
-                      fontSize: '13px',
-                      fontWeight: 700,
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'center',
-                      textTransform: 'uppercase',
-                      flexShrink: 0,
+                      gap: '12px',
+                      padding: '7px 12px',
+                      borderRadius: '0 8px 8px 0',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                      borderLeft: `3px solid ${borderColor}`,
+                      background: 'rgba(255,255,255,0.6)',
+                      marginBottom: '6px',
+                      animation: 'slideInFromLeft 0.5s ease-out forwards',
+                      animationDelay: `${index * 100}ms`,
+                      opacity: 0,
+                    }}
+                    onClick={() => openFarmerProfileByNic(farmer.nic)}
+                    onMouseEnter={(e) => {
+                      (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.9)';
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.6)';
                     }}
                   >
-                    {farmer.firstName.charAt(0)}{farmer.lastName.charAt(0)}
+                    <div
+                      style={{
+                        width: '38px',
+                        height: '38px',
+                        borderRadius: '50%',
+                        background: '#DCFCE7',
+                        color: '#15803D',
+                        fontSize: '13px',
+                        fontWeight: 700,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        textTransform: 'uppercase',
+                        flexShrink: 0,
+                      }}
+                    >
+                      {farmer.firstName.charAt(0)}{farmer.lastName.charAt(0)}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: '14px', fontWeight: 600, color: '#111827', margin: 0 }}>{farmer.name}</p>
+                      <p style={{ fontSize: '12px', color: '#9CA3AF', margin: '4px 0 0 0', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <MapPin style={{ width: '12px', color: '#9CA3AF' }} />
+                        {farmer.location} • {formatDate(farmer.date)}
+                      </p>
+                    </div>
                   </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: '14px', fontWeight: 600, color: '#111827', margin: 0 }}>{farmer.name}</p>
-                    <p style={{ fontSize: '12px', color: '#9CA3AF', margin: '4px 0 0 0', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <MapPin style={{ width: '12px', color: '#9CA3AF' }} />
-                      {farmer.location} • {formatDate(farmer.date)}
-                    </p>
-                  </div>
-                </div>
-              ))
+                );
+              })
             ) : (
               <div style={{ textAlign: 'center', paddingTop: '32px', paddingBottom: '32px', color: '#9CA3AF' }}>
                 <p style={{ fontSize: '14px' }}>No farmers found</p>
@@ -1169,35 +1174,45 @@ export function AdminDashboard() {
                 const cropName = (harvest.crop || '').toLowerCase();
                 let cropBgColor = '';
                 let cropTextColor = '';
+                let cropBorderColor = '';
 
                 if (cropName.includes('paddy') || cropName.includes('rice')) {
                   cropBgColor = '#FEF08A';
                   cropTextColor = '#713F12';
+                  cropBorderColor = '#EAB308';
                 } else if (cropName.includes('corn')) {
                   cropBgColor = '#FED7AA';
                   cropTextColor = '#9A3412';
+                  cropBorderColor = '#F97316';
                 } else if (cropName.includes('wheat')) {
                   cropBgColor = '#FDE68A';
                   cropTextColor = '#92400E';
+                  cropBorderColor = '#D97706';
                 } else if (cropName.includes('tomato')) {
                   cropBgColor = '#FECACA';
                   cropTextColor = '#991B1B';
+                  cropBorderColor = '#EF4444';
                 } else if (cropName.includes('onion')) {
                   cropBgColor = '#E9D5FF';
                   cropTextColor = '#6B21A8';
+                  cropBorderColor = '#9333EA';
                 } else if (cropName.includes('carrot')) {
                   cropBgColor = '#FFEDD5';
                   cropTextColor = '#C2410C';
+                  cropBorderColor = '#EA580C';
                 } else if (cropName.includes('cabbage')) {
                   cropBgColor = '#BBF7D0';
                   cropTextColor = '#166534';
+                  cropBorderColor = '#16A34A';
                 } else if (cropName.includes('potato')) {
                   cropBgColor = '#D6D3D1';
                   cropTextColor = '#44403C';
+                  cropBorderColor = '#78716C';
                 } else {
                   // Default for unknown crops
                   cropBgColor = '#DBEAFE';
                   cropTextColor = '#1E40AF';
+                  cropBorderColor = '#3B82F6';
                 }
 
                 // Format harvest quantity with comma separators
@@ -1208,24 +1223,23 @@ export function AdminDashboard() {
                   <div
                     key={index}
                     style={{
-                      padding: '10px 12px',
-                      borderRadius: '10px',
+                      padding: '7px 12px',
+                      borderRadius: '0 8px 8px 0',
                       cursor: 'pointer',
                       transition: 'all 0.15s ease',
-                      borderLeft: '3px solid transparent',
-                      borderBottom: index === visibleRecentHarvests.length - 1 ? 'none' : '1px solid #F9FAFB',
+                      borderLeft: `3px solid ${cropBorderColor}`,
+                      background: 'rgba(255,255,255,0.6)',
+                      marginBottom: '6px',
                       animation: 'fadeInUp 0.5s ease-out forwards',
                       animationDelay: `${index * 100}ms`,
                       opacity: 0,
                     }}
                     onClick={() => openFarmerProfileByName(harvest.farmerName)}
                     onMouseEnter={(e) => {
-                      (e.currentTarget as HTMLDivElement).style.background = '#F0FDF4';
-                      (e.currentTarget as HTMLDivElement).style.borderLeft = '3px solid #16A34A';
+                      (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.9)';
                     }}
                     onMouseLeave={(e) => {
-                      (e.currentTarget as HTMLDivElement).style.background = 'transparent';
-                      (e.currentTarget as HTMLDivElement).style.borderLeft = '3px solid transparent';
+                      (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.6)';
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
