@@ -63,7 +63,7 @@ export function AdminReports() {
 
       const cropsData = await farmAPI.getAllCrops();
       setAvailableCrops(cropsData.crops || []);
-      toast.success('Report refreshed successfully.');
+      toast.success('Refreshed successfully.');
     } catch (err) {
       console.error('Failed to refresh data', err);
       toast.error('Failed to refresh report.');
