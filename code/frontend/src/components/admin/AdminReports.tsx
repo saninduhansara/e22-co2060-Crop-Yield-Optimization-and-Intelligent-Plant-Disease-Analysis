@@ -20,6 +20,7 @@ export function AdminReports() {
   // control expansion of the top performers list (5 vs 10 entries)
   const [showAllPerformers, setShowAllPerformers] = useState(false);
   const [activeInsightsTab, setActiveInsightsTab] = useState<'growth' | 'variety'>('growth');
+  const [activeYieldTab, setActiveYieldTab] = useState<'season' | 'district'>('season');
   
   // Handle PDF download
   const handleDownloadReport = async () => {
@@ -699,87 +700,159 @@ export function AdminReports() {
         </div>
       </div>
 
-      {/* Charts Row 1 */}
-      <div className="grid grid-cols-1 gap-6">
-        {/* Season Comparison */}
-        <div style={{
-          background: 'white',
-          border: '1px solid #E5E7EB',
-          borderRadius: '14px',
-          padding: '20px 24px',
-          boxShadow: '0 1px 4px rgba(0,0,0,0.05)'
-        }}>
-          <h3 style={{
-            fontSize: '16px',
-            fontWeight: 600,
-            color: '#111827'
-          }}>
-            Yield by Season {selectedCrop && `- ${selectedCrop}`}
-          </h3>
-          <p style={{
-            fontSize: '12px',
-            color: '#9CA3AF',
-            margin: 0,
-            marginTop: '2px'
-          }}>
-            Total yield in tons by harvest season
-          </p>
-          <div style={{ padding: '12px', background: '#FAFAFA', borderRadius: '8px', marginTop: '12px' }}>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={seasonData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                <XAxis dataKey="year" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="Maha" fill="#16a34a" name="Maha (tons)" />
-                <Bar dataKey="Yala" fill="#60a5fa" name="Yala (tons)" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-          {/* Custom Legend with Styled Badges */}
-          <div style={{ display: 'flex', gap: '8px', marginTop: '16px', flexWrap: 'wrap' }}>
-            <div style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              background: '#F3F4F6',
-              padding: '4px 12px',
+      {/* Yield Tabs */}
+      <div style={{
+        background: 'white',
+        border: '1px solid #E5E7EB',
+        borderRadius: '14px',
+        padding: '20px 24px',
+        boxShadow: '0 1px 4px rgba(0,0,0,0.05)'
+      }}>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '16px' }}>
+          <button
+            type="button"
+            onClick={() => setActiveYieldTab('season')}
+            style={{
+              padding: '8px 14px',
               borderRadius: '999px',
-              fontSize: '12px',
-              fontWeight: 500,
-              color: '#374151',
-              marginRight: '8px'
-            }}>
-              <div style={{
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                background: '#15803D'
-              }} />
-              Maha (tons)
-            </div>
-            <div style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              background: '#F3F4F6',
-              padding: '4px 12px',
+              border: activeYieldTab === 'season' ? '1px solid #15803D' : '1px solid #D1D5DB',
+              background: activeYieldTab === 'season' ? '#DCFCE7' : '#FFFFFF',
+              color: activeYieldTab === 'season' ? '#166534' : '#374151',
+              fontSize: '13px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            Yield by Season
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveYieldTab('district')}
+            style={{
+              padding: '8px 14px',
               borderRadius: '999px',
-              fontSize: '12px',
-              fontWeight: 500,
-              color: '#374151',
-              marginRight: '8px'
-            }}>
-              <div style={{
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                background: '#3B82F6'
-              }} />
-              Yala (tons)
-            </div>
-          </div>
+              border: activeYieldTab === 'district' ? '1px solid #15803D' : '1px solid #D1D5DB',
+              background: activeYieldTab === 'district' ? '#DCFCE7' : '#FFFFFF',
+              color: activeYieldTab === 'district' ? '#166534' : '#374151',
+              fontSize: '13px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            Yield by District
+          </button>
         </div>
+
+        {activeYieldTab === 'season' ? (
+          <div>
+            <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#111827' }}>
+              Yield by Season {selectedCrop && `- ${selectedCrop}`}
+            </h3>
+            <p style={{ fontSize: '12px', color: '#9CA3AF', margin: 0, marginTop: '2px' }}>
+              Total yield in tons by harvest season
+            </p>
+            <div style={{ padding: '12px', background: '#FAFAFA', borderRadius: '8px', marginTop: '12px' }}>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={seasonData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                  <XAxis dataKey="year" />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="Maha" fill="#16a34a" name="Maha (tons)" />
+                  <Bar dataKey="Yala" fill="#60a5fa" name="Yala (tons)" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '16px', flexWrap: 'wrap' }}>
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: '#F3F4F6',
+                padding: '4px 12px',
+                borderRadius: '999px',
+                fontSize: '12px',
+                fontWeight: 500,
+                color: '#374151',
+                marginRight: '8px'
+              }}>
+                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#15803D' }} />
+                Maha (tons)
+              </div>
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: '#F3F4F6',
+                padding: '4px 12px',
+                borderRadius: '999px',
+                fontSize: '12px',
+                fontWeight: 500,
+                color: '#374151',
+                marginRight: '8px'
+              }}>
+                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#3B82F6' }} />
+                Yala (tons)
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#111827' }}>Yield by District</h3>
+                <p style={{ fontSize: '12px', color: '#9CA3AF', margin: '2px 0 0 0' }}>
+                  Total crop yield in kilograms across districts
+                </p>
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                <select
+                  value={districtYear}
+                  onChange={(e) => setDistrictYear(e.target.value)}
+                  className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-green-500 min-w-[90px]"
+                >
+                  <option value="">All Years</option>
+                  <option value="2026">2026</option>
+                  <option value="2025">2025</option>
+                  <option value="2024">2024</option>
+                </select>
+                <select
+                  value={districtSeason}
+                  onChange={(e) => setDistrictSeason(e.target.value)}
+                  className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-green-500 min-w-[90px]"
+                >
+                  <option value="">All Seasons</option>
+                  <option value="Maha">Maha</option>
+                  <option value="Yala">Yala</option>
+                </select>
+                <select
+                  value={districtCrop}
+                  onChange={(e) => setDistrictCrop(e.target.value)}
+                  className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-green-500 min-w-[90px]"
+                >
+                  <option value="">All Crops</option>
+                  {Array.from(new Set([...defaultCropOptions, ...availableCrops])).map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div style={{ padding: '12px', background: '#FAFAFA', borderRadius: '8px', marginTop: '12px' }}>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={districtData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                  <XAxis dataKey="district" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="yield" fill="#16a34a" name="Yield (kg)" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Insights Tabs */}
@@ -911,67 +984,6 @@ export function AdminReports() {
             </div>
           </div>
         )}
-      </div>
-
-      {/* Yield by District */}
-      <div style={{
-        background: 'white',
-        border: '1px solid #E5E7EB',
-        borderRadius: '14px',
-        padding: '20px 24px',
-        boxShadow: '0 1px 4px rgba(0,0,0,0.05)'
-      }}>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#111827' }}>Yield by District</h3>
-            <p style={{ fontSize: '12px', color: '#9CA3AF', margin: '2px 0 0 0' }}>
-              Total crop yield in kilograms across districts
-            </p>
-          </div>
-          <div className="flex gap-2 flex-wrap">
-            <select
-              value={districtYear}
-              onChange={(e) => setDistrictYear(e.target.value)}
-              className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-green-500 min-w-[90px]"
-            >
-              <option value="">All Years</option>
-              <option value="2026">2026</option>
-              <option value="2025">2025</option>
-              <option value="2024">2024</option>
-            </select>
-            <select
-              value={districtSeason}
-              onChange={(e) => setDistrictSeason(e.target.value)}
-              className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-green-500 min-w-[90px]"
-            >
-              <option value="">All Seasons</option>
-              <option value="Maha">Maha</option>
-              <option value="Yala">Yala</option>
-            </select>
-            <select
-              value={districtCrop}
-              onChange={(e) => setDistrictCrop(e.target.value)}
-              className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-green-500 min-w-[90px]"
-            >
-              <option value="">All Crops</option>
-              {Array.from(new Set([...defaultCropOptions, ...availableCrops])).map((c) => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-        <div style={{ padding: '12px', background: '#FAFAFA', borderRadius: '8px', marginTop: '12px' }}>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={districtData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-              <XAxis dataKey="district" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="yield" fill="#16a34a" name="Yield (kg)" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
       </div>
 
       {/* Top Performers */}
