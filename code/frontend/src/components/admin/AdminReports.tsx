@@ -19,6 +19,7 @@ export function AdminReports() {
   const [loadingFarmerDetails, setLoadingFarmerDetails] = useState<boolean>(false);
   // control expansion of the top performers list (5 vs 10 entries)
   const [showAllPerformers, setShowAllPerformers] = useState(false);
+  const [activeInsightsTab, setActiveInsightsTab] = useState<'growth' | 'variety'>('growth');
   
   // Handle PDF download
   const handleDownloadReport = async () => {
@@ -718,7 +719,6 @@ export function AdminReports() {
           <p style={{
             fontSize: '12px',
             color: '#9CA3AF',
-            marginTop: '2px',
             margin: 0,
             marginTop: '2px'
           }}>
@@ -780,149 +780,190 @@ export function AdminReports() {
             </div>
           </div>
         </div>
-
-        {/* Variety Distribution */}
-        <div style={{
-          background: 'white',
-          border: '1px solid #E5E7EB',
-          borderRadius: '14px',
-          padding: '20px 24px',
-          boxShadow: '0 1px 4px rgba(0,0,0,0.05)'
-        }}>
-          <h3 style={{
-            fontSize: '16px',
-            fontWeight: 600,
-            color: '#111827'
-          }}>
-            Crop Variety Distribution
-          </h3>
-          <p style={{
-            fontSize: '12px',
-            color: '#9CA3AF',
-            margin: 0,
-            marginTop: '2px'
-          }}>
-            Distribution of crop varieties in tons
-          </p>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '32px', marginTop: '16px' }}>
-            {/* Pie Chart */}
-            <div style={{ flex: '0 0 auto', maxWidth: '260px' }}>
-              <ResponsiveContainer width={260} height={280}>
-                <PieChart>
-                  <Pie
-                    data={varietyData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={false}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {varietyData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            {/* Custom Legend */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              {varietyData.map((item, index) => (
-                <div key={index} style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  marginBottom: '10px'
-                }}>
-                  <div style={{
-                    width: '12px',
-                    height: '12px',
-                    borderRadius: '3px',
-                    background: item.color,
-                    flexShrink: 0
-                  }} />
-                  <span style={{
-                    fontSize: '13px',
-                    fontWeight: 500,
-                    color: '#374151',
-                    flex: 1
-                  }}>
-                    {item.name}
-                  </span>
-                  <span style={{
-                    fontSize: '13px',
-                    fontWeight: 700,
-                    color: '#111827',
-                    marginLeft: 'auto'
-                  }}>
-                    {item.value}%
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
       </div>
 
-      {/* Charts Row 2 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Farmer Growth */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Farmer Participation Growth</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={farmerTimelineData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="season" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Line type="monotone" dataKey="farmers" stroke="#16a34a" strokeWidth={2} name="Farmers" />
-            </LineChart>
-          </ResponsiveContainer>
+      {/* Insights Tabs */}
+      <div style={{
+        background: 'white',
+        border: '1px solid #E5E7EB',
+        borderRadius: '14px',
+        padding: '20px 24px',
+        boxShadow: '0 1px 4px rgba(0,0,0,0.05)'
+      }}>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '16px' }}>
+          <button
+            type="button"
+            onClick={() => setActiveInsightsTab('growth')}
+            style={{
+              padding: '8px 14px',
+              borderRadius: '999px',
+              border: activeInsightsTab === 'growth' ? '1px solid #15803D' : '1px solid #D1D5DB',
+              background: activeInsightsTab === 'growth' ? '#DCFCE7' : '#FFFFFF',
+              color: activeInsightsTab === 'growth' ? '#166534' : '#374151',
+              fontSize: '13px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            Farmer Participation Growth
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveInsightsTab('variety')}
+            style={{
+              padding: '8px 14px',
+              borderRadius: '999px',
+              border: activeInsightsTab === 'variety' ? '1px solid #15803D' : '1px solid #D1D5DB',
+              background: activeInsightsTab === 'variety' ? '#DCFCE7' : '#FFFFFF',
+              color: activeInsightsTab === 'variety' ? '#166534' : '#374151',
+              fontSize: '13px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            Crop Variety Distribution
+          </button>
         </div>
 
-        {/* District Performance */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-4">
-            <h3 className="text-lg font-semibold text-gray-800">Yield by District</h3>
-            <div className="flex gap-2 flex-wrap">
-              <select
-                value={districtYear}
-                onChange={(e) => setDistrictYear(e.target.value)}
-                className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-green-500 min-w-[90px]"
-              >
-                <option value="">All Years</option>
-                <option value="2026">2026</option>
-                <option value="2025">2025</option>
-                <option value="2024">2024</option>
-              </select>
-              <select
-                value={districtSeason}
-                onChange={(e) => setDistrictSeason(e.target.value)}
-                className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-green-500 min-w-[90px]"
-              >
-                <option value="">All Seasons</option>
-                <option value="Maha">Maha</option>
-                <option value="Yala">Yala</option>
-              </select>
-              <select
-                value={districtCrop}
-                onChange={(e) => setDistrictCrop(e.target.value)}
-                className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-green-500 min-w-[90px]"
-              >
-                <option value="">All Crops</option>
-                {Array.from(new Set([...defaultCropOptions, ...availableCrops])).map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
+        {activeInsightsTab === 'growth' ? (
+          <div>
+            <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#111827' }}>Farmer Participation Growth</h3>
+            <p style={{ fontSize: '12px', color: '#9CA3AF', margin: '2px 0 0 0' }}>
+              Number of participating farmers across each harvest season
+            </p>
+            <div style={{ padding: '12px', background: '#FAFAFA', borderRadius: '8px', marginTop: '12px' }}>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={farmerTimelineData} margin={{ top: 20, right: 20, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                  <XAxis dataKey="season" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Line type="monotone" dataKey="farmers" stroke="#16a34a" strokeWidth={3} name="Farmers" />
+                </LineChart>
+              </ResponsiveContainer>
             </div>
           </div>
+        ) : (
+          <div>
+            <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#111827' }}>Crop Variety Distribution</h3>
+            <p style={{ fontSize: '12px', color: '#9CA3AF', margin: '2px 0 0 0' }}>
+              Distribution of crop varieties in tons
+            </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '32px', marginTop: '16px', flexWrap: 'wrap' }}>
+              <div style={{ flex: '0 0 auto', maxWidth: '260px' }}>
+                <ResponsiveContainer width={260} height={280}>
+                  <PieChart>
+                    <Pie
+                      data={varietyData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={false}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {varietyData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '220px' }}>
+                {varietyData.map((item, index) => (
+                  <div key={index} style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    marginBottom: '10px'
+                  }}>
+                    <div style={{
+                      width: '12px',
+                      height: '12px',
+                      borderRadius: '3px',
+                      background: item.color,
+                      flexShrink: 0
+                    }} />
+                    <span style={{
+                      fontSize: '13px',
+                      fontWeight: 500,
+                      color: '#374151',
+                      flex: 1
+                    }}>
+                      {item.name}
+                    </span>
+                    <span style={{
+                      fontSize: '13px',
+                      fontWeight: 700,
+                      color: '#111827',
+                      marginLeft: 'auto'
+                    }}>
+                      {item.value}%
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Yield by District */}
+      <div style={{
+        background: 'white',
+        border: '1px solid #E5E7EB',
+        borderRadius: '14px',
+        padding: '20px 24px',
+        boxShadow: '0 1px 4px rgba(0,0,0,0.05)'
+      }}>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#111827' }}>Yield by District</h3>
+            <p style={{ fontSize: '12px', color: '#9CA3AF', margin: '2px 0 0 0' }}>
+              Total crop yield in kilograms across districts
+            </p>
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            <select
+              value={districtYear}
+              onChange={(e) => setDistrictYear(e.target.value)}
+              className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-green-500 min-w-[90px]"
+            >
+              <option value="">All Years</option>
+              <option value="2026">2026</option>
+              <option value="2025">2025</option>
+              <option value="2024">2024</option>
+            </select>
+            <select
+              value={districtSeason}
+              onChange={(e) => setDistrictSeason(e.target.value)}
+              className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-green-500 min-w-[90px]"
+            >
+              <option value="">All Seasons</option>
+              <option value="Maha">Maha</option>
+              <option value="Yala">Yala</option>
+            </select>
+            <select
+              value={districtCrop}
+              onChange={(e) => setDistrictCrop(e.target.value)}
+              className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-green-500 min-w-[90px]"
+            >
+              <option value="">All Crops</option>
+              {Array.from(new Set([...defaultCropOptions, ...availableCrops])).map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <div style={{ padding: '12px', background: '#FAFAFA', borderRadius: '8px', marginTop: '12px' }}>
           <ResponsiveContainer width="100%" height={300}>
-            {/* same format as yield-by-season chart */}
-            <BarChart data={districtData}>
-              <CartesianGrid strokeDasharray="3 3" />
+            <BarChart data={districtData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
               <XAxis dataKey="district" />
               <YAxis />
               <Tooltip />
