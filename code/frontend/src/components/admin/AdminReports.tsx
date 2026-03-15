@@ -560,7 +560,7 @@ export function AdminReports() {
               background: '#E0F2FE',
               border: '1px solid #BAE6FD',
               color: '#075985',
-              borderRadius: '8px',
+              borderRadius: '12px',
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
@@ -584,8 +584,8 @@ export function AdminReports() {
             onClick={handleDownloadReport}
             style={{
               padding: '10px 16px',
-              background: '#16A34A',
-              border: '1px solid #15803D',
+              background: '#15803D',
+              border: 'none',
               color: '#FFFFFF',
               borderRadius: '8px',
               display: 'flex',
@@ -596,10 +596,10 @@ export function AdminReports() {
               fontWeight: 500,
             }}
             onMouseEnter={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.background = '#15803D';
+              (e.currentTarget as HTMLButtonElement).style.background = '#166534';
             }}
             onMouseLeave={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.background = '#16A34A';
+              (e.currentTarget as HTMLButtonElement).style.background = '#15803D';
             }}
           >
             <Download className="w-5 h-5" />
