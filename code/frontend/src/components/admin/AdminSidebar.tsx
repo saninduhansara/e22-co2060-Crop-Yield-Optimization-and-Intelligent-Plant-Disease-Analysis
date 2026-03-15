@@ -104,7 +104,11 @@ export function AdminSidebar({ currentPage, onNavigate, onLogout }: AdminSidebar
         ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
         {/* Logo */}
-        <div className="p-6 border-b border-green-600/30">
+        <div className="p-6" style={{
+          borderBottom: '1px solid rgba(255,255,255,0.15)',
+          paddingBottom: '16px',
+          marginBottom: '8px'
+        }}>
           <div className="flex items-center gap-3 mb-2">
             <div className="bg-white/15 p-2 rounded-lg backdrop-blur-sm">
               <Shield className="w-6 h-6" />
