@@ -6,6 +6,7 @@ import { farmAPI } from '../../services/api';
 import { FarmerProfile } from './FarmerProfile';
 import { formatNumber } from '../../utils/numberUtils';
 import { downloadReportAsPDF } from '../../utils/pdfDownload';
+import { AdminReportFilters } from './AdminReportFilters';
 
 export function AdminReports() {
   const reportContentRef = useRef<HTMLDivElement>(null);
@@ -150,7 +151,7 @@ export function AdminReports() {
   // compute filtered harvests when filters change
   const filteredHarvests = harvests.filter((h) => {
     const yearMatch = selectedYear ? String(h.year) === selectedYear : true;
-    const seasonMatch = selectedSeason ? normalizeSeason(h.season) === selectedSeason.toLowerCase() : true;
+    const seasonMatch = selectedSeason ? normalizeSeason(h.season) === normalizeSeason(selectedSeason) : true;
     const cropMatch = selectedCrop ? (String(h.crop || '').toLowerCase() === selectedCrop.toLowerCase()) : true;
     return yearMatch && seasonMatch && cropMatch;
   });
@@ -376,7 +377,7 @@ export function AdminReports() {
   // Filter by year and season only (NOT crop) for variety distribution
   const filteredHarvestsForVariety = harvests.filter((h) => {
     const yearMatch = selectedYear ? String(h.year) === selectedYear : true;
-    const seasonMatch = selectedSeason ? normalizeSeason(h.season) === selectedSeason.toLowerCase() : true;
+    const seasonMatch = selectedSeason ? normalizeSeason(h.season) === normalizeSeason(selectedSeason) : true;
     return yearMatch && seasonMatch;
   });
 
@@ -418,7 +419,7 @@ export function AdminReports() {
   // We use the base 'harvests' array instead of 'filteredHarvests' which uses global filters.
   const filteredHarvestsForDistrict = harvests.filter((h) => {
     const yearMatch = districtYear ? String(h.year) === districtYear : true;
-    const seasonMatch = districtSeason ? normalizeSeason(h.season) === districtSeason.toLowerCase() : true;
+    const seasonMatch = districtSeason ? normalizeSeason(h.season) === normalizeSeason(districtSeason) : true;
     const cropMatch = districtCrop ? (String(h.crop || '').toLowerCase() === districtCrop.toLowerCase()) : true;
     return yearMatch && seasonMatch && cropMatch;
   });
@@ -452,60 +453,19 @@ export function AdminReports() {
           Download Report
         </button>
       </div>
-      {/* Filters - Year / Season / Crop (matching AddHarvest style) */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4">
-        <div>
-          <h4 className="text-sm md:text-md font-semibold text-gray-800 mb-3">Primary Information</h4>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Year */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Year</label>
-              <select
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(e.target.value)}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-left hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              >
-                <option value="">All Years</option>
-                {years.map((y) => (
-                  <option key={y} value={y}>{y}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Season */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Harvest Season</label>
-              <select
-                value={selectedSeason}
-                onChange={(e) => setSelectedSeason(e.target.value)}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-left hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              >
-                <option value="">All Seasons</option>
-                {seasons.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Crop - Using select like AdminDashboard */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Crop</label>
-              <select
-                value={selectedCrop || ''}
-                onChange={(e) => setSelectedCrop(e.target.value || null)}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-left hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              >
-                <option value="">All Crops</option>
-                {Array.from(new Set([...defaultCropOptions, ...availableCrops])).map((crop) => (
-                  <option key={crop} value={crop}>
-                    {crop}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Filters - Year / Season / Crop */}
+      <AdminReportFilters
+        selectedYear={selectedYear}
+        selectedSeason={selectedSeason}
+        selectedCrop={selectedCrop}
+        years={years}
+        seasons={seasons}
+        availableCrops={availableCrops}
+        defaultCropOptions={defaultCropOptions}
+        onYearChange={setSelectedYear}
+        onSeasonChange={setSelectedSeason}
+        onCropChange={setSelectedCrop}
+      />
 
       {/* Summary Cards - matching AdminDashboard styling */}
       <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 md:gap-5 lg:gap-6">
