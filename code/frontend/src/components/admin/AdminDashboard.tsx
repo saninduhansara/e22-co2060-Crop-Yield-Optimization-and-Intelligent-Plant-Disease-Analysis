@@ -1021,8 +1021,8 @@ export function AdminDashboard() {
         {/* Recent Farmers */}
         <div
           style={{
-            background: '#FFFFFF',
-            border: '1px solid #E5E7EB',
+            background: 'linear-gradient(135deg, #F0FDF4 0%, #F7FEF9 100%)',
+            border: '1px solid #BBF7D0',
             borderRadius: '14px',
             padding: '20px 24px',
             boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
@@ -1125,8 +1125,8 @@ export function AdminDashboard() {
         {/* Recent Harvests */}
         <div
           style={{
-            background: '#FFFFFF',
-            border: '1px solid #E5E7EB',
+            background: 'linear-gradient(135deg, #FFFBEB 0%, #FFFEF7 100%)',
+            border: '1px solid #FDE68A',
             borderRadius: '14px',
             padding: '20px 24px',
             boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
