@@ -10,6 +10,10 @@ import { downloadReportAsPDF } from '../../utils/pdfDownload';
 export function AdminReports() {
   const reportContentRef = useRef<HTMLDivElement>(null);
   const pdfContentRef = useRef<HTMLDivElement>(null);
+  const lastUpdatedTime = new Date().toLocaleTimeString([], {
+    hour: 'numeric',
+    minute: '2-digit',
+  });
   const [selectedFarmer, setSelectedFarmer] = useState<any | null>(null);
   const [loadingFarmerDetails, setLoadingFarmerDetails] = useState<boolean>(false);
   // control expansion of the top performers list (5 vs 10 entries)
@@ -434,9 +438,12 @@ export function AdminReports() {
     <div ref={reportContentRef} className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
 
           <p className="text-gray-600">Comprehensive insights and data analysis</p>
+          <span style={{ fontSize: '12px', color: '#9CA3AF', marginLeft: '12px' }}>
+            Last updated: today at {lastUpdatedTime}
+          </span>
         </div>
         <button 
           onClick={handleDownloadReport}
