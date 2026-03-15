@@ -90,6 +90,7 @@ export function HarvestHistory() {
       setRefreshingPoints(true);
       await farmAPI.recalculatePoints();
       await fetchHarvestHistory();
+      toast.success('Refreshed successfully.');
     } catch (err) {
       console.error("Failed to refresh points", err);
     } finally {
