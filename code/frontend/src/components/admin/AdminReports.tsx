@@ -470,108 +470,228 @@ export function AdminReports() {
       {/* Summary Cards - matching AdminDashboard styling */}
       <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 md:gap-5 lg:gap-6">
         {/* Active Farmers Card */}
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-5 sm:p-6 shadow-md border-l-4 border-l-green-500 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group">
-          <div className="flex flex-col">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">Active Farmers</p>
-              <Users className="w-5 h-5 text-green-600 opacity-70 group-hover:opacity-100 transition-opacity" />
+        <div
+          style={{
+            background: 'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)',
+            border: '1px solid #BBF7D0',
+            borderRadius: '14px',
+            padding: '16px 20px',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+            transition: 'all 0.2s ease',
+            cursor: 'pointer',
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-3px)';
+            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 20px rgba(0,0,0,0.09)';
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
+            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 1px 4px rgba(0,0,0,0.05)';
+          }}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
+              <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: '#DCFCE7', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '10px' }}>
+                <Users style={{ width: '18px', height: '18px', color: '#16A34A' }} />
+              </div>
             </div>
-            <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 my-2 break-words min-w-0">
+            <p style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Active Farmers</p>
+            <p style={{ fontSize: '28px', fontWeight: 700, color: '#111827', margin: '0', marginBottom: '4px' }} title={loadingHarvests ? '...' : formattedTotalFarmers}>
               {loadingHarvests ? '...' : formattedTotalFarmers}
             </p>
-            <p className="text-xs sm:text-sm text-green-700 flex items-center gap-1 mt-2">
-              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4" />
+            <p style={{ fontSize: '11px', color: '#9CA3AF', fontStyle: 'normal', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <TrendingUp style={{ width: '12px', height: '12px' }} />
               {loadingHarvests ? '...' : farmersGrowthText}
             </p>
           </div>
         </div>
 
         {/* Active Plots Card */}
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-5 sm:p-6 shadow-md border-l-4 border-l-green-500 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group">
-          <div className="flex flex-col">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">Active Plots</p>
-              <MapPin className="w-5 h-5 text-green-600 opacity-70 group-hover:opacity-100 transition-opacity" />
+        <div
+          style={{
+            background: 'linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%)',
+            border: '1px solid #6EE7B7',
+            borderRadius: '14px',
+            padding: '16px 20px',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+            transition: 'all 0.2s ease',
+            cursor: 'pointer',
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-3px)';
+            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 20px rgba(0,0,0,0.09)';
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
+            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 1px 4px rgba(0,0,0,0.05)';
+          }}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
+              <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: '#D1FAE5', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '10px' }}>
+                <MapPin style={{ width: '18px', height: '18px', color: '#059669' }} />
+              </div>
             </div>
-            <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 my-2 break-words min-w-0">
+            <p style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Active Plots</p>
+            <p style={{ fontSize: '28px', fontWeight: 700, color: '#111827', margin: '0', marginBottom: '4px' }} title={loadingHarvests ? '...' : formattedActivePlots}>
               {loadingHarvests ? '...' : formattedActivePlots}
             </p>
-            <p className="text-xs sm:text-sm text-gray-600 mt-2">
+            <p style={{ fontSize: '11px', color: '#9CA3AF', fontStyle: 'normal', marginTop: '4px' }}>
               Calculated from harvest records
             </p>
           </div>
         </div>
 
         {/* Active Farmland Card */}
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-5 sm:p-6 shadow-md border-l-4 border-l-green-500 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group">
-          <div className="flex flex-col">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">Active Farmland</p>
-              <Layers className="w-5 h-5 text-green-600 opacity-70 group-hover:opacity-100 transition-opacity" />
+        <div
+          style={{
+            background: 'linear-gradient(135deg, #F1F8F1 0%, #DCEDD5 100%)',
+            border: '1px solid #A7C4A0',
+            borderRadius: '14px',
+            padding: '16px 20px',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+            transition: 'all 0.2s ease',
+            cursor: 'pointer',
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-3px)';
+            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 20px rgba(0,0,0,0.09)';
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
+            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 1px 4px rgba(0,0,0,0.05)';
+          }}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
+              <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: '#DCEDD5', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '10px' }}>
+                <Layers style={{ width: '18px', height: '18px', color: '#4D7C0F' }} />
+              </div>
             </div>
-            <div className="flex min-w-0 flex-wrap items-baseline gap-1 sm:gap-2 my-2">
-              <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 break-words min-w-0">
+            <p style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Active Farmland</p>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '4px' }}>
+              <p style={{ fontSize: '28px', fontWeight: 700, color: '#111827', margin: '0' }} title={loadingHarvests ? '...' : formattedActiveFarmland}>
                 {loadingHarvests ? '...' : formattedActiveFarmland}
               </p>
-              <span className="text-xs sm:text-sm font-medium text-gray-600 break-words">acres</span>
+              <span style={{ fontSize: '11px', fontWeight: 500, color: '#6B7280' }}>acres</span>
             </div>
-            <p className="text-xs sm:text-sm text-gray-600 mt-2">
+            <p style={{ fontSize: '11px', color: '#9CA3AF', fontStyle: 'normal', marginTop: '4px' }}>
               Calculated from harvest records
             </p>
           </div>
         </div>
 
         {/* Total Harvest Card */}
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-5 sm:p-6 shadow-md border-l-4 border-l-green-500 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group">
-          <div className="flex flex-col">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">Total Harvest</p>
-              <Wheat className="w-5 h-5 text-green-600 opacity-70 group-hover:opacity-100 transition-opacity" />
+        <div
+          style={{
+            background: 'linear-gradient(135deg, #E6F4EA 0%, #C8E6C9 100%)',
+            border: '1px solid #81C784',
+            borderRadius: '14px',
+            padding: '16px 20px',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+            transition: 'all 0.2s ease',
+            cursor: 'pointer',
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-3px)';
+            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 20px rgba(0,0,0,0.09)';
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
+            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 1px 4px rgba(0,0,0,0.05)';
+          }}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
+              <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: '#C8E6C9', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '10px' }}>
+                <Wheat style={{ width: '18px', height: '18px', color: '#15803D' }} />
+              </div>
             </div>
-            <div className="flex min-w-0 flex-wrap items-baseline gap-1 sm:gap-2 my-2">
-              <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 break-words min-w-0">
+            <p style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Total Harvest</p>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '4px' }}>
+              <p style={{ fontSize: '28px', fontWeight: 700, color: '#111827', margin: '0' }} title={loadingHarvests ? '...' : formattedTotalHarvest}>
                 {loadingHarvests ? '...' : formattedTotalHarvest}
               </p>
-              <span className="text-xs sm:text-sm font-medium text-gray-600 break-words">tons</span>
+              <span style={{ fontSize: '11px', fontWeight: 500, color: '#6B7280' }}>tons</span>
             </div>
-            <p className="text-xs sm:text-sm text-green-700 flex items-center gap-1 mt-2">
-              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4" />
+            <p style={{ fontSize: '11px', color: '#9CA3AF', fontStyle: 'normal', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <TrendingUp style={{ width: '12px', height: '12px' }} />
               {loadingHarvests ? '...' : harvestGrowthText}
             </p>
           </div>
         </div>
 
         {/* Avg Yield/Acre Card */}
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-5 sm:p-6 shadow-md border-l-4 border-l-green-500 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group">
-          <div className="flex flex-col">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">Avg Yield/Acre</p>
-              <TrendingUp className="w-5 h-5 text-green-600 opacity-70 group-hover:opacity-100 transition-opacity" />
+        <div
+          style={{
+            background: 'linear-gradient(135deg, #EAFAF1 0%, #D5F5E3 100%)',
+            border: '1px solid #82E0AA',
+            borderRadius: '14px',
+            padding: '16px 20px',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+            transition: 'all 0.2s ease',
+            cursor: 'pointer',
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-3px)';
+            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 20px rgba(0,0,0,0.09)';
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
+            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 1px 4px rgba(0,0,0,0.05)';
+          }}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
+              <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: '#D5F5E3', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '10px' }}>
+                <TrendingUp style={{ width: '18px', height: '18px', color: '#10B981' }} />
+              </div>
             </div>
-            <div className="flex min-w-0 flex-wrap items-baseline gap-1 sm:gap-2 my-2">
-              <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 break-words min-w-0">
+            <p style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Avg Yield/Acre</p>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '4px' }}>
+              <p style={{ fontSize: '28px', fontWeight: 700, color: '#111827', margin: '0' }} title={loadingHarvests ? '...' : formattedAvgYield}>
                 {loadingHarvests ? '...' : formattedAvgYield}
               </p>
-              <span className="text-xs sm:text-sm font-medium text-gray-600 break-words">kg</span>
+              <span style={{ fontSize: '11px', fontWeight: 500, color: '#6B7280' }}>kg</span>
             </div>
-            <p className="text-xs sm:text-sm text-green-700 flex items-center gap-1 mt-2">
-              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4" />
+            <p style={{ fontSize: '11px', color: '#9CA3AF', fontStyle: 'normal', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <TrendingUp style={{ width: '12px', height: '12px' }} />
               {loadingHarvests ? '...' : yieldGrowthText}
             </p>
           </div>
         </div>
 
         {/* Total Points Card */}
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-5 sm:p-6 shadow-md border-l-4 border-l-green-500 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group">
-          <div className="flex flex-col">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">Total Points</p>
-              <FileText className="w-5 h-5 text-green-600 opacity-70 group-hover:opacity-100 transition-opacity" />
+        <div
+          style={{
+            background: 'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)',
+            border: '1px solid #FDE68A',
+            borderRadius: '14px',
+            padding: '16px 20px',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+            transition: 'all 0.2s ease',
+            cursor: 'pointer',
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-3px)';
+            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 20px rgba(0,0,0,0.09)';
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
+            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 1px 4px rgba(0,0,0,0.05)';
+          }}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
+              <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: '#FEF9C3', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '10px' }}>
+                <FileText style={{ width: '18px', height: '18px', color: '#B45309' }} />
+              </div>
             </div>
-            <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 my-2 break-words min-w-0">
+            <p style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Total Points</p>
+            <p style={{ fontSize: '28px', fontWeight: 700, color: '#111827', margin: '0', marginBottom: '4px' }} title={loadingHarvests ? '...' : formattedTotalPoints}>
               {loadingHarvests ? '...' : formattedTotalPoints}
             </p>
-            <p className="text-xs sm:text-sm text-green-700 mt-2">
+            <p style={{ fontSize: '11px', color: '#9CA3AF', fontStyle: 'normal', marginTop: '4px' }}>
               {loadingHarvests ? '...' : 'Aggregated'}
             </p>
           </div>
