@@ -90,6 +90,7 @@ export function HarvestHistory() {
       setRefreshingPoints(true);
       await farmAPI.recalculatePoints();
       await fetchHarvestHistory();
+      toast.success('Refreshed successfully.');
     } catch (err) {
       console.error("Failed to refresh points", err);
     } finally {
@@ -464,10 +465,34 @@ export function HarvestHistory() {
           <button
             onClick={handleRefreshPoints}
             disabled={refreshingPoints}
-            className="px-4 py-3 sm:px-6 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg flex items-center justify-center gap-2 transition-colors whitespace-nowrap disabled:opacity-50"
+            className="disabled:opacity-50"
+            style={{
+              padding: '10px 16px',
+              background: '#E0F2FE',
+              border: '1px solid #BAE6FD',
+              color: '#075985',
+              borderRadius: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              cursor: refreshingPoints ? 'not-allowed' : 'pointer',
+              transition: 'all 0.2s ease',
+              fontSize: '14px',
+              fontWeight: 500,
+              whiteSpace: 'nowrap',
+            }}
+            onMouseEnter={(e) => {
+              if (!refreshingPoints) {
+                e.currentTarget.style.background = '#BAE6FD';
+              }
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = '#E0F2FE';
+            }}
           >
             <RefreshCw className={`w-5 h-5 ${refreshingPoints ? 'animate-spin' : ''}`} />
-            <span className="hidden sm:inline">{refreshingPoints ? 'Recalculating...' : 'Recalculate Points'}</span>
+            <span>{refreshingPoints ? 'Refreshing...' : 'Refresh'}</span>
           </button>
           <button 
             onClick={handleExportData}
@@ -476,7 +501,7 @@ export function HarvestHistory() {
               background: '#15803D',
               border: 'none',
               borderRadius: '8px',
-              padding: '8px 14px',
+              padding: '10px 16px',
               color: 'white',
               fontSize: '14px',
               fontWeight: '600',
@@ -583,9 +608,6 @@ export function HarvestHistory() {
           ref={(el) => { dropdownRefs.current['crop'] = el; }}
           style={{ position: 'relative' }}
         >
-          <label style={{ fontSize: '10px', fontWeight: '600', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', marginBottom: '1px', paddingLeft: '6px' }}>
-            Crop
-          </label>
           <button
             onClick={() => setOpenDropdown(openDropdown === 'crop' ? null : 'crop')}
             style={{
@@ -713,9 +735,6 @@ export function HarvestHistory() {
           ref={(el) => { dropdownRefs.current['year'] = el; }}
           style={{ position: 'relative' }}
         >
-          <label style={{ fontSize: '10px', fontWeight: '600', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', marginBottom: '1px', paddingLeft: '6px' }}>
-            Year
-          </label>
           <button
             onClick={() => setOpenDropdown(openDropdown === 'year' ? null : 'year')}
             style={{
@@ -831,9 +850,6 @@ export function HarvestHistory() {
           ref={(el) => { dropdownRefs.current['season'] = el; }}
           style={{ position: 'relative' }}
         >
-          <label style={{ fontSize: '10px', fontWeight: '600', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', marginBottom: '1px', paddingLeft: '6px' }}>
-            Season
-          </label>
           <button
             onClick={() => setOpenDropdown(openDropdown === 'season' ? null : 'season')}
             style={{

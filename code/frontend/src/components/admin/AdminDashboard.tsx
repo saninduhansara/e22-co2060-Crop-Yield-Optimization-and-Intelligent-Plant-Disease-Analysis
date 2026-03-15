@@ -4,7 +4,7 @@
  * active plots, total farmland, and harvest yields.
  * Fetches and aggregates real-time data from the backend.
  */
-import { Users, TrendingUp, Wheat, AlertTriangle, BarChart3, MapPin, Layers, Scale, Link2 } from 'lucide-react';
+import { Users, TrendingUp, Wheat, AlertTriangle, BarChart3, MapPin, Layers, Scale, Link2, ChevronDown } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { farmAPI, userAPI } from '../../services/api';
 import { FarmerProfile } from './FarmerProfile';
@@ -98,6 +98,9 @@ export function AdminDashboard() {
   const [availableCrops, setAvailableCrops] = useState<string[]>([]);
   const [showMoreFarmers, setShowMoreFarmers] = useState(false);
   const [showMoreHarvests, setShowMoreHarvests] = useState(false);
+  const [adminFirstName, setAdminFirstName] = useState('Admin');
+  const [openHeaderDropdown, setOpenHeaderDropdown] = useState<'year' | 'season' | 'crop' | null>(null);
+  const headerFilterRef = useRef<HTMLDivElement>(null);
 
   // Set to current date/season based on metadata
   const currentYear = 2026;
@@ -112,10 +115,37 @@ export function AdminDashboard() {
   }, []);
 
   useEffect(() => {
+    const loadAdminProfile = async () => {
+      try {
+        const data = await userAPI.fetchProfile();
+        const firstName = data?.user?.firstName?.trim();
+        if (firstName) {
+          setAdminFirstName(firstName);
+        }
+      } catch (error) {
+        console.error('Error loading admin profile:', error);
+      }
+    };
+
+    loadAdminProfile();
+  }, []);
+
+  useEffect(() => {
     if (availableCrops.length > 0 || selectedCrop === null) {
       fetchDashboardData();
     }
   }, [selectedCrop, selectedYear, selectedSeason, availableCrops.length]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!headerFilterRef.current?.contains(event.target as Node)) {
+        setOpenHeaderDropdown(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const fetchCrops = async () => {
     try {
@@ -530,11 +560,10 @@ export function AdminDashboard() {
   const formattedYield = formatNumber(getYieldPerAcre());
   const cropOptions = Array.from(new Set([...defaultCropOptions, ...availableCrops]));
   const visibleRecentFarmers = recentFarmers.slice(0, showMoreFarmers ? 10 : 5);
-  const visibleRecentHarvests = recentHarvests.slice(0, showMoreHarvests ? 10 : 4);
+  const visibleRecentHarvests = recentHarvests.slice(0, showMoreHarvests ? 10 : 5);
 
   const harvestPercentage = extractPercentage(harvestLastSeasonText);
   const yieldPercentage = extractPercentage(yieldLastSeasonText);
-  const isActivePeriod = Number(selectedYear) === currentYear && selectedSeason === currentSeason;
 
   // Count-up animations for all 6 stat cards
   const animatedFarmers = useCountUp(loading ? 0 : totalFarmers);
@@ -550,6 +579,47 @@ export function AdminDashboard() {
   const displayFarmland = loading ? '...' : formatNumber(animatedFarmland);
   const displayYield = loading ? '...' : formatNumber(animatedYield);
   const displayDiseaseReports = loading ? '...' : Math.round(animatedDiseaseReports).toString();
+  const currentDate = new Date();
+  const currentHour = currentDate.getHours();
+  const timeGreeting = currentHour < 12 ? 'Good morning' : currentHour < 17 ? 'Good afternoon' : 'Good evening';
+  const formattedCurrentDate = currentDate.toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  });
+  const selectedYearLabel = selectedYear === 'all' ? 'All Years' : String(selectedYear);
+  const selectedSeasonLabel = selectedSeason === 'all' ? 'All Seasons' : `${selectedSeason.charAt(0).toUpperCase() + selectedSeason.slice(1)}`;
+  const selectedSeasonYearLabel = `${selectedSeasonLabel} ${selectedYearLabel}`;
+  const selectedCropLabel = selectedCrop || 'All Crops';
+
+  const cropSwatchColors: Record<string, string> = {
+    Paddy: '#FEF08A',
+    Corn: '#FED7AA',
+    Wheat: '#FDE68A',
+    Tomatoes: '#FECACA',
+    Onions: '#E9D5FF',
+    Carrots: '#FFEDD5',
+    Cabbage: '#BBF7D0',
+    Potatoes: '#D6D3D1',
+  };
+
+  const dashboardStatCardStyle = {
+    background: 'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)',
+    borderRadius: '14px',
+    padding: '16px 20px',
+  };
+
+  const getDashboardIconBoxStyle = (backgroundColor: string) => ({
+    width: '32px',
+    height: '32px',
+    borderRadius: '8px',
+    backgroundColor,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: '10px',
+  });
 
   return (
     <div className="space-y-6">
@@ -575,83 +645,265 @@ export function AdminDashboard() {
         }
       `}</style>
       
-      {/* Prominent Season Label */}
-      <div className="bg-green-700 rounded-xl p-4 text-white shadow-md flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Layers className="w-6 h-6 text-green-200" />
-          <div>
-            <p className="text-sm text-green-100 font-medium tracking-wide uppercase">
-              {selectedYear === 'all' && selectedSeason === 'all' ? 'All Time Overview'
-                : selectedYear !== 'all' && selectedSeason === 'all' ? `Yearly Overview`
-                  : selectedYear === 'all' && selectedSeason !== 'all' ? `Seasonal Overview`
-                    : 'Selected Period'}
-            </p>
-            <h2 className="text-2xl font-bold">
-              {selectedSeason === 'all' ? 'All Seasons' : selectedSeason.charAt(0).toUpperCase() + selectedSeason.slice(1)} {selectedYear === 'all' ? 'All Years' : selectedYear}
-            </h2>
-          </div>
-        </div>
-        <div className="hidden sm:block text-right">
-          <p className="text-sm text-green-100 uppercase tracking-wide">Status</p>
-          <div className="flex items-center gap-2 mt-1">
-            <span className={`w-2.5 h-2.5 rounded-full ${Number(selectedYear) === currentYear && selectedSeason === currentSeason ? 'bg-green-300 animate-pulse' : 'bg-gray-300'}`}></span>
-            <span className="font-semibold">{Number(selectedYear) === currentYear && selectedSeason === currentSeason ? 'Active Period' : 'Historical Data'}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+      {/* Welcome Header */}
+      <div
+        style={{
+          backgroundColor: '#15803D',
+          backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.03) 10px, rgba(255,255,255,0.03) 20px)',
+          borderRadius: '14px',
+          padding: '18px 28px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: '24px',
+          gap: '16px',
+          flexWrap: 'wrap',
+        }}
+      >
         <div>
-          <p className="text-sm md:text-base text-gray-600">Monitor and manage all farming activities</p>
+          <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#FFFFFF' }}>
+            {`${timeGreeting}, ${adminFirstName} 👋`}
+          </h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '5px', flexWrap: 'wrap' }}>
+            <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)' }}>{formattedCurrentDate}</p>
+            <span
+              style={{
+                background: 'rgba(255,255,255,0.2)',
+                border: '1px solid rgba(255,255,255,0.3)',
+                color: '#FFFFFF',
+                padding: '3px 12px',
+                borderRadius: '999px',
+                fontSize: '12px',
+                fontWeight: 600,
+              }}
+            >
+              {selectedSeasonYearLabel}
+            </span>
+          </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Filter:</label>
-          <select
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(e.target.value === 'all' ? 'all' : Number(e.target.value))}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm bg-white min-w-[100px]"
-          >
-            <option value="all">All Years</option>
-            {availableYears.map((year) => (
-              <option key={year} value={year}>
-                {year}
-              </option>
-            ))}
-          </select>
-          <select
-            value={selectedSeason}
-            onChange={(e) => setSelectedSeason(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm bg-white min-w-[110px]"
-          >
-            <option value="all">All Seasons</option>
-            <option value="maha">Maha</option>
-            <option value="yala">Yala</option>
-          </select>
-          <select
-            value={selectedCrop || ''}
-            onChange={(e) => setSelectedCrop(e.target.value || null)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm bg-white min-w-[150px]"
-          >
-            <option value="">All Crops</option>
-            {cropOptions.map((crop) => (
-              <option key={crop} value={crop}>
-                {crop}
-              </option>
-            ))}
-          </select>
+
+        <div ref={headerFilterRef} style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <div style={{ position: 'relative' }}>
+            <button
+              type="button"
+              onClick={() => setOpenHeaderDropdown(openHeaderDropdown === 'year' ? null : 'year')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '7px 14px',
+                background: 'rgba(255,255,255,0.15)',
+                border: '1px solid rgba(255,255,255,0.3)',
+                borderRadius: '8px',
+                fontSize: '13px',
+                fontWeight: 500,
+                color: '#FFFFFF',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.25)';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.15)';
+              }}
+            >
+              {selectedYearLabel}
+              <ChevronDown style={{ width: '13px', height: '13px', color: 'rgba(255,255,255,0.7)' }} />
+            </button>
+
+            {openHeaderDropdown === 'year' && (
+              <div style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, background: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: '10px', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', zIndex: 50, minWidth: '150px', overflow: 'hidden' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedYear('all');
+                    setOpenHeaderDropdown(null);
+                  }}
+                  style={{ width: '100%', textAlign: 'left', padding: '9px 14px', fontSize: '13px', color: selectedYear === 'all' ? '#15803D' : '#374151', fontWeight: selectedYear === 'all' ? 500 : 400, background: selectedYear === 'all' ? '#F0FDF4' : '#FFFFFF', cursor: 'pointer' }}
+                  onMouseEnter={(e) => {
+                    if (selectedYear !== 'all') (e.currentTarget as HTMLButtonElement).style.background = '#F9FAFB';
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.background = selectedYear === 'all' ? '#F0FDF4' : '#FFFFFF';
+                  }}
+                >
+                  All Years
+                </button>
+                {availableYears.map((year) => {
+                  const isSelected = selectedYear === year;
+                  return (
+                    <button
+                      key={year}
+                      type="button"
+                      onClick={() => {
+                        setSelectedYear(year);
+                        setOpenHeaderDropdown(null);
+                      }}
+                      style={{ width: '100%', textAlign: 'left', padding: '9px 14px', fontSize: '13px', color: isSelected ? '#15803D' : '#374151', fontWeight: isSelected ? 500 : 400, background: isSelected ? '#F0FDF4' : '#FFFFFF', cursor: 'pointer' }}
+                      onMouseEnter={(e) => {
+                        if (!isSelected) (e.currentTarget as HTMLButtonElement).style.background = '#F9FAFB';
+                      }}
+                      onMouseLeave={(e) => {
+                        (e.currentTarget as HTMLButtonElement).style.background = isSelected ? '#F0FDF4' : '#FFFFFF';
+                      }}
+                    >
+                      {year}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <div style={{ position: 'relative' }}>
+            <button
+              type="button"
+              onClick={() => setOpenHeaderDropdown(openHeaderDropdown === 'season' ? null : 'season')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '7px 14px',
+                background: 'rgba(255,255,255,0.15)',
+                border: '1px solid rgba(255,255,255,0.3)',
+                borderRadius: '8px',
+                fontSize: '13px',
+                fontWeight: 500,
+                color: '#FFFFFF',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.25)';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.15)';
+              }}
+            >
+              {selectedSeasonLabel}
+              <ChevronDown style={{ width: '13px', height: '13px', color: 'rgba(255,255,255,0.7)' }} />
+            </button>
+
+            {openHeaderDropdown === 'season' && (
+              <div style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, background: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: '10px', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', zIndex: 50, minWidth: '150px', overflow: 'hidden' }}>
+                {[
+                  { label: 'All Seasons', value: 'all' },
+                  { label: 'Maha', value: 'maha' },
+                  { label: 'Yala', value: 'yala' },
+                ].map((option) => {
+                  const isSelected = selectedSeason === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => {
+                        setSelectedSeason(option.value);
+                        setOpenHeaderDropdown(null);
+                      }}
+                      style={{ width: '100%', textAlign: 'left', padding: '9px 14px', fontSize: '13px', color: isSelected ? '#15803D' : '#374151', fontWeight: isSelected ? 500 : 400, background: isSelected ? '#F0FDF4' : '#FFFFFF', cursor: 'pointer' }}
+                      onMouseEnter={(e) => {
+                        if (!isSelected) (e.currentTarget as HTMLButtonElement).style.background = '#F9FAFB';
+                      }}
+                      onMouseLeave={(e) => {
+                        (e.currentTarget as HTMLButtonElement).style.background = isSelected ? '#F0FDF4' : '#FFFFFF';
+                      }}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <div style={{ position: 'relative' }}>
+            <button
+              type="button"
+              onClick={() => setOpenHeaderDropdown(openHeaderDropdown === 'crop' ? null : 'crop')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '7px 14px',
+                background: 'rgba(255,255,255,0.15)',
+                border: '1px solid rgba(255,255,255,0.3)',
+                borderRadius: '8px',
+                fontSize: '13px',
+                fontWeight: 500,
+                color: '#FFFFFF',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.25)';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.15)';
+              }}
+            >
+              {selectedCropLabel}
+              <ChevronDown style={{ width: '13px', height: '13px', color: 'rgba(255,255,255,0.7)' }} />
+            </button>
+
+            {openHeaderDropdown === 'crop' && (
+              <div style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, background: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: '10px', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', zIndex: 50, minWidth: '150px', overflow: 'hidden', maxHeight: '280px', overflowY: 'auto' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedCrop(null);
+                    setOpenHeaderDropdown(null);
+                  }}
+                  style={{ width: '100%', textAlign: 'left', padding: '9px 14px', fontSize: '13px', color: selectedCrop === null ? '#15803D' : '#374151', fontWeight: selectedCrop === null ? 500 : 400, background: selectedCrop === null ? '#F0FDF4' : '#FFFFFF', cursor: 'pointer' }}
+                  onMouseEnter={(e) => {
+                    if (selectedCrop !== null) (e.currentTarget as HTMLButtonElement).style.background = '#F9FAFB';
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.background = selectedCrop === null ? '#F0FDF4' : '#FFFFFF';
+                  }}
+                >
+                  All Crops
+                </button>
+                {cropOptions.map((crop) => {
+                  const isSelected = selectedCrop === crop;
+                  return (
+                    <button
+                      key={crop}
+                      type="button"
+                      onClick={() => {
+                        setSelectedCrop(crop);
+                        setOpenHeaderDropdown(null);
+                      }}
+                      style={{ width: '100%', textAlign: 'left', padding: '9px 14px', fontSize: '13px', color: isSelected ? '#15803D' : '#374151', fontWeight: isSelected ? 500 : 400, background: isSelected ? '#F0FDF4' : '#FFFFFF', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                      onMouseEnter={(e) => {
+                        if (!isSelected) (e.currentTarget as HTMLButtonElement).style.background = '#F9FAFB';
+                      }}
+                      onMouseLeave={(e) => {
+                        (e.currentTarget as HTMLButtonElement).style.background = isSelected ? '#F0FDF4' : '#FFFFFF';
+                      }}
+                    >
+                      <span style={{ width: '10px', height: '10px', borderRadius: '2px', display: 'inline-block', marginRight: '6px', background: cropSwatchColors[crop] || '#E5E7EB' }} />
+                      {crop}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 md:gap-5 lg:gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 md:gap-5 lg:gap-6" style={{ marginTop: 0 }}>
         {/* Active Farmers Card */}
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-5 sm:p-6 shadow-md border-l-4 border-l-green-500 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group">
+        <div className="shadow-md transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group" style={dashboardStatCardStyle}>
           <div className="flex flex-col">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">Active Farmers</p>
-              <Users className="w-5 h-5 text-green-600 opacity-70 group-hover:opacity-100 transition-opacity" />
+            <div className="flex items-center">
+              <div style={getDashboardIconBoxStyle('#DCFCE7')}>
+                <Users className="w-5 h-5 text-green-600 opacity-70 group-hover:opacity-100 transition-opacity" />
+              </div>
             </div>
+            <p style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Active Farmers</p>
             <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 my-2 break-words min-w-0">
               {displayFarmers}
             </p>
@@ -663,12 +915,14 @@ export function AdminDashboard() {
         </div>
 
         {/* Total Harvest Card */}
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-5 sm:p-6 shadow-md border-l-4 border-l-green-500 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group">
+        <div className="shadow-md transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group" style={dashboardStatCardStyle}>
           <div className="flex flex-col">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">Total Harvest</p>
-              <Wheat className="w-5 h-5 text-green-600 opacity-70 group-hover:opacity-100 transition-opacity" />
+            <div className="flex items-center">
+              <div style={getDashboardIconBoxStyle('#C8E6C9')}>
+                <Wheat className="w-5 h-5 text-green-700 opacity-70 group-hover:opacity-100 transition-opacity" />
+              </div>
             </div>
+            <p style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Total Harvest</p>
             <div className="flex min-w-0 flex-wrap items-baseline gap-1 sm:gap-2 my-2">
               <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 break-words min-w-0">
                 {displayHarvest}
@@ -683,12 +937,14 @@ export function AdminDashboard() {
         </div>
 
         {/* Active Plots Card */}
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-5 sm:p-6 shadow-md border-l-4 border-l-green-500 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group">
+        <div className="shadow-md transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group" style={dashboardStatCardStyle}>
           <div className="flex flex-col">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">Active Plots</p>
-              <MapPin className="w-5 h-5 text-green-600 opacity-70 group-hover:opacity-100 transition-opacity" />
+            <div className="flex items-center">
+              <div style={getDashboardIconBoxStyle('#D1FAE5')}>
+                <MapPin className="w-5 h-5 text-emerald-600 opacity-70 group-hover:opacity-100 transition-opacity" />
+              </div>
             </div>
+            <p style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Active Plots</p>
             <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 my-2 break-words min-w-0">
               {displayActiveFarms}
             </p>
@@ -699,12 +955,14 @@ export function AdminDashboard() {
         </div>
 
         {/* Active Farmland Card */}
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-5 sm:p-6 shadow-md border-l-4 border-l-green-500 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group">
+        <div className="shadow-md transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group" style={dashboardStatCardStyle}>
           <div className="flex flex-col">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">Active Farmland</p>
-              <Layers className="w-5 h-5 text-green-600 opacity-70 group-hover:opacity-100 transition-opacity" />
+            <div className="flex items-center">
+              <div style={getDashboardIconBoxStyle('#DCEDD5')}>
+                <Layers className="w-5 h-5 text-lime-700 opacity-70 group-hover:opacity-100 transition-opacity" />
+              </div>
             </div>
+            <p style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Active Farmland</p>
             <div className="flex min-w-0 flex-wrap items-baseline gap-1 sm:gap-2 my-2">
               <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 break-words min-w-0">
                 {displayFarmland}
@@ -718,12 +976,14 @@ export function AdminDashboard() {
         </div>
 
         {/* Yield per Acre Card */}
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-5 sm:p-6 shadow-md border-l-4 border-l-green-500 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group">
+        <div className="shadow-md transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group" style={dashboardStatCardStyle}>
           <div className="flex flex-col">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">Yield per Acre</p>
-              <TrendingUp className="w-5 h-5 text-green-600 opacity-70 group-hover:opacity-100 transition-opacity" />
+            <div className="flex items-center">
+              <div style={getDashboardIconBoxStyle('#D5F5E3')}>
+                <TrendingUp className="w-5 h-5 text-emerald-500 opacity-70 group-hover:opacity-100 transition-opacity" />
+              </div>
             </div>
+            <p style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Yield per Acre</p>
             <div className="flex min-w-0 flex-wrap items-baseline gap-1 sm:gap-2 my-2">
               <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 break-words min-w-0">
                 {displayYield}
@@ -738,12 +998,14 @@ export function AdminDashboard() {
         </div>
 
         {/* Disease Reports Card */}
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-5 sm:p-6 shadow-md border-l-4 border-l-green-500 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group">
+        <div className="shadow-md transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group" style={dashboardStatCardStyle}>
           <div className="flex flex-col">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">Disease Reports</p>
-              <AlertTriangle className="w-5 h-5 text-green-600 opacity-70 group-hover:opacity-100 transition-opacity" />
+            <div className="flex items-center">
+              <div style={getDashboardIconBoxStyle('#FEE2E2')}>
+                <AlertTriangle className="w-5 h-5 text-red-600 opacity-70 group-hover:opacity-100 transition-opacity" />
+              </div>
             </div>
+            <p style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Disease Reports</p>
             <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 my-2 break-words min-w-0">
               {displayDiseaseReports}
             </p>
@@ -757,81 +1019,178 @@ export function AdminDashboard() {
       {/* Recent Activity & Quick Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Farmers */}
-        <div className="rounded-2xl shadow-sm border border-gray-100" style={{ backgroundColor: '#f0f7f0' }}>
-          <div className="p-4 md:p-6 border-b border-gray-100 flex items-center justify-between">
-            <h3 className="text-base md:text-lg font-semibold text-gray-800">Recently Added Farmers</h3>
+        <div
+          style={{
+            background: 'linear-gradient(135deg, #F0FDF4 0%, #F7FEF9 100%)',
+            border: '1px solid #BBF7D0',
+            borderRadius: '14px',
+            padding: '20px 24px',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+            transition: 'all 0.2s ease',
+            cursor: 'default',
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 16px rgba(0,0,0,0.1)';
+            (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)';
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 1px 4px rgba(0,0,0,0.05)';
+            (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', paddingBottom: '12px', borderBottom: '1px solid #D1FAE5' }}>
+            <h3 style={{ fontSize: '17px', fontWeight: 600, color: '#111827' }}>Recently Added Farmers</h3>
             <button
               type="button"
               onClick={() => setShowMoreFarmers((prev) => !prev)}
-              className="text-green-600 hover:text-green-700 text-xs font-medium flex items-center gap-1"
+              style={{
+                background: '#FFFFFF',
+                border: '1px solid #16A34A',
+                color: '#16A34A',
+                borderRadius: '8px',
+                padding: '5px 12px',
+                fontSize: '12px',
+                fontWeight: 500,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = '#F0FDF4';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = '#FFFFFF';
+              }}
             >
               {showMoreFarmers ? 'View Less' : 'View More'}
-              <Link2 className="w-3 h-3" />
             </button>
           </div>
           <div>
             {loading ? (
-              <div className="flex justify-center py-8 px-4 md:px-6">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-600"></div>
+              <div style={{ display: 'flex', justifyContent: 'center', paddingTop: '32px', paddingBottom: '32px' }}>
+                <div style={{ animation: 'spin 1s linear infinite', borderRadius: '9999px', width: '24px', height: '24px', borderTop: '2px solid #16A34A', borderRight: '2px solid transparent' }}></div>
               </div>
             ) : visibleRecentFarmers.length > 0 ? (
-              visibleRecentFarmers.map((farmer, index) => (
-                <div
-                  key={index}
-                  className="px-4 py-3 hover:bg-green-50 transition-all duration-200 cursor-pointer flex items-center justify-between"
-                  style={{
-                    animation: 'slideInFromLeft 0.5s ease-out forwards',
-                    animationDelay: `${index * 100}ms`,
-                    opacity: 0,
-                    transform: 'translateX(-20px)',
-                    borderBottom: '1px solid #d9e8d9'
-                  }}
-                  onClick={() => openFarmerProfileByNic(farmer.nic)}
-                >
-                  <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <div className="w-10 h-10 bg-green-100 text-green-700 font-bold rounded-full flex items-center justify-center flex-shrink-0">
-                      <span className="text-sm">
-                        {farmer.firstName.charAt(0)}{farmer.lastName.charAt(0)}
-                      </span>
+              visibleRecentFarmers.map((farmer, index) => {
+                // Rotating green shades for each row
+                const greenShades = ['#16A34A', '#15803D', '#059669', '#10B981', '#34D399'];
+                const borderColor = greenShades[index % greenShades.length];
+
+                return (
+                  <div
+                    key={index}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      padding: '7px 12px',
+                      borderRadius: '0 8px 8px 0',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                      borderLeft: `3px solid ${borderColor}`,
+                      background: 'rgba(255,255,255,0.6)',
+                      marginBottom: '6px',
+                      animation: 'slideInFromLeft 0.5s ease-out forwards',
+                      animationDelay: `${index * 100}ms`,
+                      opacity: 0,
+                    }}
+                    onClick={() => openFarmerProfileByNic(farmer.nic)}
+                    onMouseEnter={(e) => {
+                      (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.95)';
+                      (e.currentTarget as HTMLDivElement).style.boxShadow = '0 4px 12px rgba(22,163,74,0.12)';
+                      (e.currentTarget as HTMLDivElement).style.transform = 'translateX(4px)';
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.6)';
+                      (e.currentTarget as HTMLDivElement).style.boxShadow = 'none';
+                      (e.currentTarget as HTMLDivElement).style.transform = 'translateX(0)';
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: '38px',
+                        height: '38px',
+                        borderRadius: '50%',
+                        background: '#DCFCE7',
+                        color: '#15803D',
+                        fontSize: '13px',
+                        fontWeight: 700,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        textTransform: 'uppercase',
+                        flexShrink: 0,
+                      }}
+                    >
+                      {farmer.firstName.charAt(0)}{farmer.lastName.charAt(0)}
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-sm truncate" style={{ fontSize: '16px', color: '#111827' }}>{farmer.name}</p>
-                      <p className="text-gray-400 truncate flex items-center gap-1" style={{ fontSize: '13px' }}>
-                        <MapPin className="w-3 h-3" />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: '14px', fontWeight: 600, color: '#111827', margin: 0 }}>{farmer.name}</p>
+                      <p style={{ fontSize: '12px', color: '#9CA3AF', margin: '4px 0 0 0', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <MapPin style={{ width: '12px', color: '#9CA3AF' }} />
                         {farmer.location} • {formatDate(farmer.date)}
                       </p>
                     </div>
                   </div>
-                  <span className="px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ml-2 bg-green-100 text-green-700">
-                    Active
-                  </span>
-                </div>
-              ))
+                );
+              })
             ) : (
-              <div className="text-center py-8 px-4 md:px-6 text-gray-500">
-                <p className="text-sm">No farmers found</p>
+              <div style={{ textAlign: 'center', paddingTop: '32px', paddingBottom: '32px', color: '#9CA3AF' }}>
+                <p style={{ fontSize: '14px' }}>No farmers found</p>
               </div>
             )}
           </div>
         </div>
 
         {/* Recent Harvests */}
-        <div className="rounded-2xl shadow-sm border border-gray-100" style={{ backgroundColor: '#f0f7f0' }}>
-          <div className="p-4 md:p-6 border-b border-gray-100 flex items-center justify-between">
-            <h3 className="text-base md:text-lg font-semibold text-gray-800">Recently Added Harvests</h3>
+        <div
+          style={{
+            background: 'linear-gradient(135deg, #FFFBEB 0%, #FFFEF7 100%)',
+            border: '1px solid #FDE68A',
+            borderRadius: '14px',
+            padding: '20px 24px',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+            transition: 'all 0.2s ease',
+            cursor: 'default',
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 16px rgba(0,0,0,0.1)';
+            (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)';
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 1px 4px rgba(0,0,0,0.05)';
+            (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', paddingBottom: '12px', borderBottom: '1px solid #FDE68A' }}>
+            <h3 style={{ fontSize: '17px', fontWeight: 600, color: '#111827' }}>Recently Added Harvests</h3>
             <button
               type="button"
               onClick={() => setShowMoreHarvests((prev) => !prev)}
-              className="text-green-600 hover:text-green-700 text-xs font-medium flex items-center gap-1"
+              style={{
+                background: '#FFFFFF',
+                border: '1px solid #16A34A',
+                color: '#16A34A',
+                borderRadius: '8px',
+                padding: '5px 12px',
+                fontSize: '12px',
+                fontWeight: 500,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = '#F0FDF4';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = '#FFFFFF';
+              }}
             >
               {showMoreHarvests ? 'View Less' : 'View More'}
-              <Link2 className="w-3 h-3" />
             </button>
           </div>
           <div>
             {loading ? (
-              <div className="flex justify-center py-8 px-4 md:px-6">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-600"></div>
+              <div style={{ display: 'flex', justifyContent: 'center', paddingTop: '32px', paddingBottom: '32px' }}>
+                <div style={{ animation: 'spin 1s linear infinite', borderRadius: '9999px', width: '24px', height: '24px', borderTop: '2px solid #16A34A', borderRight: '2px solid transparent' }}></div>
               </div>
             ) : visibleRecentHarvests.length > 0 ? (
               visibleRecentHarvests.map((harvest, index) => {
@@ -839,70 +1198,101 @@ export function AdminDashboard() {
                 const cropName = (harvest.crop || '').toLowerCase();
                 let cropBgColor = '';
                 let cropTextColor = '';
+                let cropBorderColor = '';
 
                 if (cropName.includes('paddy') || cropName.includes('rice')) {
                   cropBgColor = '#FEF08A';
                   cropTextColor = '#713F12';
+                  cropBorderColor = '#EAB308';
                 } else if (cropName.includes('corn')) {
                   cropBgColor = '#FED7AA';
                   cropTextColor = '#9A3412';
+                  cropBorderColor = '#F97316';
                 } else if (cropName.includes('wheat')) {
                   cropBgColor = '#FDE68A';
                   cropTextColor = '#92400E';
+                  cropBorderColor = '#D97706';
                 } else if (cropName.includes('tomato')) {
                   cropBgColor = '#FECACA';
                   cropTextColor = '#991B1B';
+                  cropBorderColor = '#EF4444';
                 } else if (cropName.includes('onion')) {
                   cropBgColor = '#E9D5FF';
                   cropTextColor = '#6B21A8';
+                  cropBorderColor = '#9333EA';
                 } else if (cropName.includes('carrot')) {
                   cropBgColor = '#FFEDD5';
                   cropTextColor = '#C2410C';
+                  cropBorderColor = '#EA580C';
                 } else if (cropName.includes('cabbage')) {
                   cropBgColor = '#BBF7D0';
                   cropTextColor = '#166534';
+                  cropBorderColor = '#16A34A';
                 } else if (cropName.includes('potato')) {
                   cropBgColor = '#D6D3D1';
                   cropTextColor = '#44403C';
+                  cropBorderColor = '#78716C';
                 } else {
                   // Default for unknown crops
                   cropBgColor = '#DBEAFE';
                   cropTextColor = '#1E40AF';
+                  cropBorderColor = '#3B82F6';
                 }
+
+                // Format harvest quantity with comma separators
+                const harvestQtyNumber = typeof harvest.harvestQty === 'number' ? harvest.harvestQty : parseFloat(harvest.harvestQty || '0');
+                const formattedQty = harvestQtyNumber.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
                 return (
                   <div
                     key={index}
-                    className="px-4 py-3 hover:bg-green-50 transition-all duration-200 cursor-pointer flex items-start justify-between"
                     style={{
+                      padding: '7px 12px',
+                      borderRadius: '0 8px 8px 0',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                      borderLeft: `3px solid ${cropBorderColor}`,
+                      background: 'rgba(255,255,255,0.6)',
+                      marginBottom: '6px',
                       animation: 'fadeInUp 0.5s ease-out forwards',
                       animationDelay: `${index * 100}ms`,
                       opacity: 0,
-                      borderBottom: '1px solid #d9e8d9'
                     }}
                     onClick={() => openFarmerProfileByName(harvest.farmerName)}
+                    onMouseEnter={(e) => {
+                      (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.95)';
+                      (e.currentTarget as HTMLDivElement).style.boxShadow = '0 4px 12px rgba(217,119,6,0.12)';
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.6)';
+                      (e.currentTarget as HTMLDivElement).style.boxShadow = 'none';
+                    }}
                   >
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-sm truncate" style={{ fontSize: '16px', color: '#111827' }}>{harvest.farmerName}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span 
-                          className="text-xs px-2 py-0.5 rounded-full font-medium"
-                          style={{ backgroundColor: cropBgColor, color: cropTextColor }}
-                        >
-                          {harvest.crop}
-                        </span>
-                      </div>
-                      <p className="text-gray-400 mt-1" style={{ fontSize: '13px' }}>{formatDate(harvest.harvestDate)}</p>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <p style={{ fontSize: '14px', fontWeight: 600, color: '#111827', margin: 0 }}>{harvest.farmerName}</p>
+                      <p style={{ fontSize: '14px', fontWeight: formattedQty === '0' ? 400 : 700, color: formattedQty === '0' ? '#9CA3AF' : '#15803D', margin: 0 }}>{formattedQty} kg</p>
                     </div>
-                    <div className="flex items-center gap-1 font-bold text-green-700 whitespace-nowrap ml-2 flex-shrink-0" style={{ fontSize: '15px' }}>
-                      {harvest.harvestQty} kg
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                      <span
+                        style={{
+                          backgroundColor: cropBgColor,
+                          color: cropTextColor,
+                          padding: '2px 8px',
+                          borderRadius: '999px',
+                          fontSize: '11px',
+                          fontWeight: 600,
+                        }}
+                      >
+                        {harvest.crop}
+                      </span>
+                      <p style={{ fontSize: '12px', color: '#9CA3AF', margin: 0 }}>{formatDate(harvest.harvestDate)}</p>
                     </div>
                   </div>
                 );
               })
             ) : (
-              <div className="text-center py-8 px-4 md:px-6 text-gray-500">
-                <p className="text-sm">No harvests found</p>
+              <div style={{ textAlign: 'center', paddingTop: '32px', paddingBottom: '32px', color: '#9CA3AF' }}>
+                <p style={{ fontSize: '14px' }}>No harvests found</p>
               </div>
             )}
           </div>

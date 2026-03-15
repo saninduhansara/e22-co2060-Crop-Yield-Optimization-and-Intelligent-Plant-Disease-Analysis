@@ -168,7 +168,7 @@ export function AdminLayout() {
       <div className="flex-1 w-full lg:ml-72 min-w-0">
         {/* Header */}
         <header className="bg-white border-b border-gray-200 px-4 md:px-8 py-4 flex items-center justify-between sticky top-0 z-20">
-          <h1 className="text-gray-800 text-lg md:text-xl font-medium ml-12 lg:ml-0">
+          <h1 style={{ fontSize: '18px', fontWeight: 600, color: '#111827', display: 'flex', alignItems: 'center', paddingLeft: '12px', borderLeft: '3px solid #15803D' }}>
             {getCurrentPage() === 'dashboard' && 'Home'}
             {getCurrentPage() === 'inquiries' && 'Farmer Inquiries'}
             {getCurrentPage() === 'farmers' && 'All Farmers'}
