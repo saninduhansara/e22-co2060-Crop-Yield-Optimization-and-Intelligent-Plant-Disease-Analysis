@@ -1161,8 +1161,8 @@ export function AdminDashboard() {
             (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#111827' }}>Recently Added Harvests</h3>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', paddingBottom: '12px', borderBottom: '1px solid #FDE68A' }}>
+            <h3 style={{ fontSize: '17px', fontWeight: 600, color: '#111827' }}>Recently Added Harvests</h3>
             <button
               type="button"
               onClick={() => setShowMoreHarvests((prev) => !prev)}
@@ -1270,7 +1270,7 @@ export function AdminDashboard() {
                   >
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <p style={{ fontSize: '14px', fontWeight: 600, color: '#111827', margin: 0 }}>{harvest.farmerName}</p>
-                      <p style={{ fontSize: '14px', fontWeight: 700, color: '#15803D', margin: 0 }}>{formattedQty} kg</p>
+                      <p style={{ fontSize: '14px', fontWeight: formattedQty === '0' ? 400 : 700, color: formattedQty === '0' ? '#9CA3AF' : '#15803D', margin: 0 }}>{formattedQty} kg</p>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
                       <span
