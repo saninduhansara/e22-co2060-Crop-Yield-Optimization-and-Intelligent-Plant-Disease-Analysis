@@ -854,13 +854,25 @@ export function AdminReports() {
       </div>
 
       {/* Yield Tabs */}
-      <div style={{
-        background: 'white',
-        border: '1px solid #E5E7EB',
-        borderRadius: '14px',
-        padding: '20px 24px',
-        boxShadow: '0 1px 4px rgba(0,0,0,0.05)'
-      }}>
+      <div
+        style={{
+          background: 'linear-gradient(135deg, #F0FDF4 0%, #F7FEF9 100%)',
+          border: '1px solid #BBF7D0',
+          borderRadius: '14px',
+          padding: '20px 24px',
+          boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+          transition: 'all 0.2s ease',
+          cursor: 'default',
+        }}
+        onMouseEnter={(e) => {
+          (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 16px rgba(0,0,0,0.1)';
+          (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)';
+        }}
+        onMouseLeave={(e) => {
+          (e.currentTarget as HTMLDivElement).style.boxShadow = '0 1px 4px rgba(0,0,0,0.05)';
+          (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
+        }}
+      >
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '16px' }}>
           <button
             type="button"
@@ -1015,13 +1027,25 @@ export function AdminReports() {
       </div>
 
       {/* Insights Tabs */}
-      <div style={{
-        background: 'white',
-        border: '1px solid #E5E7EB',
-        borderRadius: '14px',
-        padding: '20px 24px',
-        boxShadow: '0 1px 4px rgba(0,0,0,0.05)'
-      }}>
+      <div
+        style={{
+          background: 'linear-gradient(135deg, #F0FDF4 0%, #F7FEF9 100%)',
+          border: '1px solid #BBF7D0',
+          borderRadius: '14px',
+          padding: '20px 24px',
+          boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+          transition: 'all 0.2s ease',
+          cursor: 'default',
+        }}
+        onMouseEnter={(e) => {
+          (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 16px rgba(0,0,0,0.1)';
+          (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)';
+        }}
+        onMouseLeave={(e) => {
+          (e.currentTarget as HTMLDivElement).style.boxShadow = '0 1px 4px rgba(0,0,0,0.05)';
+          (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
+        }}
+      >
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '16px' }}>
           <button
             type="button"
@@ -1187,13 +1211,25 @@ export function AdminReports() {
       </div>
 
       {/* Top Performers */}
-      <div style={{
-        background: 'white',
-        border: '1px solid #E5E7EB',
-        borderRadius: '14px',
-        padding: '20px 24px',
-        boxShadow: '0 1px 4px rgba(0,0,0,0.05)'
-      }}>
+      <div
+        style={{
+          background: 'linear-gradient(135deg, #F0FDF4 0%, #F7FEF9 100%)',
+          border: '1px solid #BBF7D0',
+          borderRadius: '14px',
+          padding: '20px 24px',
+          boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+          transition: 'all 0.2s ease',
+          cursor: 'default',
+        }}
+        onMouseEnter={(e) => {
+          (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 16px rgba(0,0,0,0.1)';
+          (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)';
+        }}
+        onMouseLeave={(e) => {
+          (e.currentTarget as HTMLDivElement).style.boxShadow = '0 1px 4px rgba(0,0,0,0.05)';
+          (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
+        }}
+      >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
           <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#111827', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Trophy style={{ color: '#B45309', width: '18px', height: '18px' }} />
