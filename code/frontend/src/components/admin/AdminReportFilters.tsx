@@ -34,11 +34,12 @@ export function AdminReportFilters({
   return (
     <div
       style={{
-        background: '#F9FAFB',
-        border: '1px solid #E5E7EB',
-        borderRadius: '12px',
-        padding: '16px 20px',
+        background: 'linear-gradient(135deg, #FFFBEB 0%, #FFFEF7 100%)',
+        border: '1px solid #FDE68A',
+        borderRadius: '14px',
+        padding: '20px 24px',
         marginBottom: '20px',
+        boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
       }}
     >
       {/* Dropdowns Row */}
