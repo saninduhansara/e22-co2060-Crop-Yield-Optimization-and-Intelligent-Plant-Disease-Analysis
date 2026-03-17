@@ -585,10 +585,10 @@ export function AllFarmers() {
                             row.style.borderLeft = '3px solid transparent';
                           }}
                         >
-                          <td style={{ padding: '12px 16px', fontSize: '14px', color: '#374151', cursor: 'default', whiteSpace: 'nowrap' }}>
-                            <span className="font-medium" style={{ color: '#374151' }}>{farm.farmId}</span>
+                          <td style={{ padding: '12px 16px', fontSize: '14px', color: '#374151', cursor: 'default', whiteSpace: 'nowrap', fontWeight: 400 }}>
+                            {farm.farmId}
                           </td>
-                          <td style={{ padding: '12px 16px', fontSize: '14px', color: '#374151' }}>
+                          <td style={{ padding: '12px 16px', fontSize: '14px', color: '#374151', fontWeight: 400 }}>
                             <div className="flex items-center gap-2">
                               <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden bg-green-100 border border-green-200">
                                 {farm.farmerImage ? (
@@ -607,7 +607,7 @@ export function AllFarmers() {
                                 </span>
                               </div>
                               <div>
-                                <p className="font-medium" style={{ fontSize: '14px', color: '#374151' }}>{farm.farmerName}</p>
+                                <p style={{ fontSize: '14px', color: '#374151', fontWeight: 400 }}>{farm.farmerName}</p>
                               </div>
                             </div>
                           </td>
@@ -615,7 +615,7 @@ export function AllFarmers() {
                           <td style={{ padding: '12px 16px', fontSize: '14px', color: '#374151', whiteSpace: 'nowrap' }}>{farm.phone}</td>
                           <td style={{ padding: '12px 16px', fontSize: '14px', color: '#374151', whiteSpace: 'nowrap' }}>{farm.division}</td>
                           <td style={{ padding: '12px 16px', fontSize: '14px', color: '#374151', whiteSpace: 'nowrap' }}>{farm.district}</td>
-                          <td style={{ padding: '12px 16px', fontSize: '14px', color: '#374151', fontWeight: '500', whiteSpace: 'nowrap' }}>{farm.farmSize} acres</td>
+                          <td style={{ padding: '12px 16px', fontSize: '14px', color: '#374151', fontWeight: 400, whiteSpace: 'nowrap' }}>{farm.farmSize} acres</td>
                           <td style={{ padding: '12px 16px', fontSize: '14px', color: '#374151', whiteSpace: 'nowrap' }}>
                             {(() => {
                               const cropColor = getCropBadgeColor(farm.crop);
@@ -797,8 +797,8 @@ export function AllFarmers() {
                           </span>
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="font-semibold text-gray-800 truncate">{farm.farmerName}</p>
-                          <p className="text-sm text-green-600 font-medium">{farm.farmId}</p>
+                          <p className="text-gray-800 truncate" style={{ fontWeight: 400 }}>{farm.farmerName}</p>
+                          <p className="text-sm text-green-600" style={{ fontWeight: 400 }}>{farm.farmId}</p>
                         </div>
                       </div>
                       <span style={{
@@ -826,7 +826,7 @@ export function AllFarmers() {
                       </div>
                       <div>
                         <p className="text-gray-500 text-xs mb-1">Farm Size</p>
-                        <p className="text-gray-800 font-medium">{farm.farmSize} acres</p>
+                        <p className="text-gray-800" style={{ fontWeight: 400 }}>{farm.farmSize} acres</p>
                       </div>
                       <div>
                         <p className="text-gray-500 text-xs mb-1">Division</p>
