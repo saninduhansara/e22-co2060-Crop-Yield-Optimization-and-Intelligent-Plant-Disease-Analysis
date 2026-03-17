@@ -649,7 +649,6 @@ export function AdminDashboard() {
       <div
         style={{
           backgroundColor: '#15803D',
-          backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.03) 10px, rgba(255,255,255,0.03) 20px)',
           borderRadius: '14px',
           padding: '18px 28px',
           display: 'flex',
