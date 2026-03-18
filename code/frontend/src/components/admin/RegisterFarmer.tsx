@@ -54,6 +54,8 @@ export function RegisterFarmer() {
 
   // Ref for click-outside handling
   const farmerInputRef = useRef<HTMLDivElement>(null);
+  const nicInputRef = useRef<HTMLInputElement>(null);
+  const phoneInputRef = useRef<HTMLInputElement>(null);
 
   const [farmerData, setFarmerData] = useState({
     firstName: '',
@@ -79,6 +81,11 @@ export function RegisterFarmer() {
     'Matara', 'Monaragala', 'Mullaitivu', 'Nuwara Eliya', 'Polonnaruwa', 'Puttalam', 'Ratnapura',
     'Trincomalee', 'Vavuniya'
   ];
+
+  const isValidNIC = (nic: string) => {
+    const normalizedNic = nic.trim();
+    return /^(?:\d{12}|\d{9}V)$/.test(normalizedNic);
+  };
 
   const dsDivisions = {
     'Ampara': ['Ampara', 'Kalmunai', 'Samanturai'],
@@ -185,6 +192,29 @@ export function RegisterFarmer() {
       return;
     }
 
+    if (!farmerData.nic) {
+      setError('Please enter NIC number');
+      toast.error('Please enter NIC number');
+      nicInputRef.current?.setCustomValidity('Please enter NIC number');
+      nicInputRef.current?.reportValidity();
+      return;
+    }
+
+    if (nicInputRef.current) {
+      if (!nicInputRef.current.checkValidity()) {
+        nicInputRef.current.reportValidity();
+        setError('Wrong NIC number entered');
+        toast.error('Wrong NIC number entered');
+        return;
+      }
+    }
+
+    if (!isValidNIC(farmerData.nic)) {
+      setError('Wrong NIC number entered');
+      toast.error('Wrong NIC number entered');
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -234,7 +264,7 @@ export function RegisterFarmer() {
         setRegisteredFarmerId(farmerData.nic);
         setStep(2);
         setSuccess(true);
-        setTimeout(() => setSuccess(false), 3000);
+        setTimeout(() => setSuccess(false), 20000);
       } else {
         toast.error('Failed to register farmer. Please try again.');
         setError('Failed to register farmer. Please try again.');
@@ -651,10 +681,29 @@ export function RegisterFarmer() {
                   <div className="relative">
                     <IdCard className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                     <input
+                      ref={nicInputRef}
                       type="text"
                       value={farmerData.nic}
-                      onChange={(e) => setFarmerData({ ...farmerData, nic: e.target.value })}
-                      placeholder="e.g., 199512345678"
+                      onChange={(e) => {
+                        const raw = e.target.value.toUpperCase().trim();
+                        setFarmerData({ ...farmerData, nic: raw });
+                        setError(null);
+                        (e.target as HTMLInputElement).setCustomValidity('');
+                      }}
+                      onInvalid={(e) => {
+                        const target = e.target as HTMLInputElement;
+                        if (target.validity.valueMissing) {
+                          target.setCustomValidity('Please enter NIC number');
+                        } else {
+                          target.setCustomValidity('Wrong NIC number entered');
+                        }
+                      }}
+                      onInput={(e) => {
+                        (e.target as HTMLInputElement).setCustomValidity('');
+                      }}
+                      placeholder="199512345678 or 951234678V"
+                      pattern="^([0-9]{12}|[0-9]{9}V)$"
+                      title="NIC number should be 12 digits or 9 digits followed by uppercase V"
                       className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                       required
                     />
@@ -668,10 +717,29 @@ export function RegisterFarmer() {
                   <div className="relative">
                     <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                     <input
+                      ref={phoneInputRef}
                       type="tel"
                       value={farmerData.phone}
-                      onChange={(e) => setFarmerData({ ...farmerData, phone: e.target.value })}
-                      placeholder="077-1234567"
+                      onChange={(e) => {
+                        const val = e.target.value.trim();
+                        setFarmerData({ ...farmerData, phone: val });
+                        setError(null);
+                        (e.target as HTMLInputElement).setCustomValidity('');
+                      }}
+                      onInvalid={(e) => {
+                        const target = e.target as HTMLInputElement;
+                        if (target.validity.valueMissing) {
+                          target.setCustomValidity('Please enter Phone Number');
+                        } else {
+                          target.setCustomValidity('Invalid Phone Number');
+                        }
+                      }}
+                      onInput={(e) => {
+                        (e.target as HTMLInputElement).setCustomValidity('');
+                      }}
+                      placeholder="0712345678"
+                      pattern="^0[0-9]{9}$"
+                      title="Phone number should be 10 digits and start with 0"
                       className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                       required
                     />

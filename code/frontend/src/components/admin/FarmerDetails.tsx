@@ -1,11 +1,99 @@
 import { ArrowLeft, User, MapPin, Phone, Mail, Calendar, Star, TrendingUp, Wheat, FileText, X } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router';
+import { useState, useEffect } from 'react';
+import { farmAPI } from '../../services/api';
+import { EditFarmModal } from './EditFarmModal';
 
-interface FarmerDetailsProps {
-  farmer: any;
-  onClose: () => void;
-}
+export function FarmerDetails() {
+  const { farmerId } = useParams<{ farmerId: string }>();
+  const navigate = useNavigate();
+  const [farmer, setFarmer] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [farmData, setFarmData] = useState<any>(null);
 
-export function FarmerDetails({ farmer, onClose }: FarmerDetailsProps) {
+  useEffect(() => {
+    if (!farmerId) {
+      setError('Farm ID not found');
+      setLoading(false);
+      return;
+    }
+
+    const fetchFarmerData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await farmAPI.getFarmById(farmerId);
+        const farm = response.farm || response;
+        
+        // Transform farm data to match expected structure
+        const farmerData = {
+          name: farm.farmerName || farm.name,
+          id: farm.farmId || farm.id,
+          nic: farm.farmerNIC || farm.nic,
+          phone: farm.phone,
+          email: farm.email,
+          division: farm.division,
+          district: farm.district,
+          crop: farm.crop,
+          farmSize: farm.farmSize,
+          status: farm.status,
+          points: farm.points || 0,
+          harvests: farm.harvests || [],
+          farmerImage: farm.farmerImage
+        };
+        
+        // Store farm data in format needed for EditFarmModal
+        setFarmData({
+          farmId: farm.farmId || farm.id,
+          farmName: farm.farmerName || farm.name,
+          location: farm.division,
+          crop: farm.crop,
+          farmSize: farm.farmSize,
+          district: farm.district,
+          status: farm.status
+        });
+        
+        setFarmer(farmerData);
+      } catch (err: any) {
+        console.error('Error fetching farmer data:', err);
+        setError('Failed to load farmer details. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFarmerData();
+  }, [farmerId]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-green-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading farmer details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !farmer) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">{error || 'Farmer not found'}</p>
+          <button
+            onClick={() => navigate('/admin/farmers')}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          >
+            Back to All Farms
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const cultivationRecords = farmer.harvests || [];
 
   const totalAcres = cultivationRecords.reduce((sum: number, record: any) => sum + (record.acres || 0), 0);
@@ -13,49 +101,63 @@ export function FarmerDetails({ farmer, onClose }: FarmerDetailsProps) {
   const avgYieldPerAcre = totalAcres > 0 ? (totalYield / totalAcres).toFixed(2) : '0.00';
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center overflow-y-auto p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl my-8">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-green-700 to-green-800 text-white p-4 md:p-6 rounded-t-2xl">
-          <div className="flex items-center justify-between mb-4">
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-white/20 rounded-lg transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-white/20 rounded-lg transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
+    <div className="min-h-screen bg-gray-50">
+      <div className="bg-gradient-to-r from-green-700 to-green-800 text-white p-4 md:p-6">
+        <div className="flex items-center justify-between mb-4">
+          <button
+            onClick={() => navigate('/admin/farmers')}
+            className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => navigate('/admin/farmers')}
+            className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="flex items-start gap-4 md:gap-6">
+          <div className="w-16 h-16 md:w-20 md:h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center flex-shrink-0">
+            <span className="text-2xl md:text-3xl font-bold">
+              {farmer.name.split(' ').map((n: string) => n[0]).join('')}
+            </span>
           </div>
-          <div className="flex items-start gap-4 md:gap-6">
-            <div className="w-16 h-16 md:w-20 md:h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center flex-shrink-0">
-              <span className="text-2xl md:text-3xl font-bold">
-                {farmer.name.split(' ').map((n: string) => n[0]).join('')}
+          <div className="flex-1">
+            <h2 className="text-2xl md:text-3xl font-bold mb-2">{farmer.name}</h2>
+            <div className="flex flex-wrap gap-3 md:gap-4 items-center mb-4">
+              <span className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs md:text-sm font-medium">
+                Farm ID: {farmer.id}
+              </span>
+              <span className={`px-3 py-1 rounded-full text-xs md:text-sm font-medium ${farmer.status === 'Active' || farmer.status === 'active'
+                  ? 'bg-green-400 text-green-900'
+                  : 'bg-yellow-400 text-yellow-900'
+                }`}>
+                {farmer.status.charAt(0).toUpperCase() + farmer.status.slice(1)}
               </span>
             </div>
-            <div className="flex-1">
-              <h2 className="text-2xl md:text-3xl font-bold mb-2">{farmer.name}</h2>
-              <div className="flex flex-wrap gap-3 md:gap-4">
-                <span className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs md:text-sm font-medium">
-                  Farm ID: {farmer.id}
-                </span>
-                <span className={`px-3 py-1 rounded-full text-xs md:text-sm font-medium ${farmer.status === 'Active'
-                    ? 'bg-green-400 text-green-900'
-                    : 'bg-yellow-400 text-yellow-900'
-                  }`}>
-                  {farmer.status}
-                </span>
-              </div>
+            {/* Action Buttons in Header */}
+            <div className="flex flex-col sm:flex-row gap-2 md:gap-3">
+              <button
+                onClick={() => setShowEditModal(true)}
+                className="px-4 py-2 bg-white text-green-700 rounded-lg font-medium hover:bg-gray-100 transition-colors text-sm md:text-base"
+              >
+                Edit Farmer Details
+              </button>
+              <button
+                onClick={() => navigate('/admin/add-harvest', { state: { farmerId: farmer.id } })}
+                className="px-4 py-2 bg-blue-400 text-white rounded-lg font-medium hover:bg-blue-500 transition-colors text-sm md:text-base"
+              >
+                Add New Harvest Record
+              </button>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Content */}
-        <div className="p-4 md:p-8 space-y-6">
+      {/* Content */}
+      <div className="p-4 md:p-8">
+        <div className="max-w-6xl mx-auto space-y-6">
           {/* Stats Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
             <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
@@ -230,21 +332,54 @@ export function FarmerDetails({ farmer, onClose }: FarmerDetailsProps) {
 
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
-            <button className="flex-1 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors text-sm md:text-base">
-              Edit Farmer Details
-            </button>
-            <button className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors text-sm md:text-base">
-              Add New Harvest Record
-            </button>
             <button
-              onClick={onClose}
+              onClick={() => navigate('/admin/farmers')}
               className="flex-1 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg font-medium transition-colors text-sm md:text-base"
             >
-              Close
+              Back to All Farms
             </button>
           </div>
         </div>
       </div>
+
+      {/* Edit Farm Modal */}
+      {showEditModal && farmData && (
+        <EditFarmModal
+          farm={farmData}
+          onClose={() => setShowEditModal(false)}
+          onSuccess={() => {
+            setShowEditModal(false);
+            // Refresh farmer data
+            if (farmerId) {
+              const fetchFarmerData = async () => {
+                try {
+                  const response = await farmAPI.getFarmById(farmerId);
+                  const farm = response.farm || response;
+                  const farmerData = {
+                    name: farm.farmerName || farm.name,
+                    id: farm.farmId || farm.id,
+                    nic: farm.farmerNIC || farm.nic,
+                    phone: farm.phone,
+                    email: farm.email,
+                    division: farm.division,
+                    district: farm.district,
+                    crop: farm.crop,
+                    farmSize: farm.farmSize,
+                    status: farm.status,
+                    points: farm.points || 0,
+                    harvests: farm.harvests || [],
+                    farmerImage: farm.farmerImage
+                  };
+                  setFarmer(farmerData);
+                } catch (err: any) {
+                  console.error('Error refreshing farmer data:', err);
+                }
+              };
+              fetchFarmerData();
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
