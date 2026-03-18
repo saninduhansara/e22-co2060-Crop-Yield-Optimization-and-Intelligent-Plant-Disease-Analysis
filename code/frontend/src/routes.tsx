@@ -25,6 +25,7 @@ import { AdminProfilePage } from "./components/admin/AdminProfilePage";
 import { AdminInquiries } from "./components/admin/AdminInquiries";
 import { NotFoundPage } from "./components/NotFoundPage";
 import { getAuthData, isAdmin, isFarmer } from "./utils/authUtils";
+import { FarmerDetails } from "./components/admin/FarmerDetails";
 
 // Protected Route Component for Farmers
 function FarmerRoute({ children }: { children: React.ReactNode }) {
@@ -207,6 +208,10 @@ export const router = createBrowserRouter([
       {
         path: "farmers",
         element: <AllFarmers />,
+      },
+      {
+        path: "farmer-profile/:farmerId",
+        element: <FarmerDetails />,
       },
       {
         path: "register-farmer",

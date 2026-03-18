@@ -104,7 +104,11 @@ export function AdminSidebar({ currentPage, onNavigate, onLogout }: AdminSidebar
         ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
         {/* Logo */}
-        <div className="p-6 border-b border-green-600/30">
+        <div className="p-6" style={{
+          borderBottom: '1px solid rgba(255,255,255,0.15)',
+          paddingBottom: '16px',
+          marginBottom: '8px'
+        }}>
           <div className="flex items-center gap-3 mb-2">
             <div className="bg-white/15 p-2 rounded-lg backdrop-blur-sm">
               <Shield className="w-6 h-6" />
@@ -126,13 +130,30 @@ export function AdminSidebar({ currentPage, onNavigate, onLogout }: AdminSidebar
               <button
                 key={item.id}
                 onClick={() => handleNavigate(item.id)}
-                className={`w-full flex items-center gap-3 px-6 py-4 transition-all ${isActive
-                  ? 'bg-green-600/50 text-white border-r-4 border-white'
-                  : 'text-green-50 hover:bg-green-600/30'
-                  }`}
+                className={`w-full flex items-center gap-3 px-6 py-4 ${isActive ? 'text-white' : 'text-green-50 group hover:text-white'}`}
+                style={isActive ? {
+                  background: 'rgba(255,255,255,0.2)',
+                  borderLeft: '3px solid white',
+                  borderRadius: '0 8px 8px 0',
+                  fontWeight: '600',
+                  transition: 'all 0.15s ease'
+                } : {
+                  transition: 'all 0.15s ease'
+                }}
+                onMouseEnter={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
+                    e.currentTarget.style.borderRadius = '8px';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.background = 'transparent';
+                  }
+                }}
               >
-                <Icon className="w-5 h-5" />
-                <span className="text-sm font-medium">{item.label}</span>
+                <Icon className="w-5 h-5" style={isActive ? { color: 'white' } : { transition: 'color 0.15s ease' }} />
+                <span className="text-sm" style={isActive ? { color: 'white', fontWeight: '600' } : { transition: 'color 0.15s ease' }}>{item.label}</span>
               </button>
             );
           })}
@@ -145,20 +166,41 @@ export function AdminSidebar({ currentPage, onNavigate, onLogout }: AdminSidebar
             onClick={() => handleNavigate('profile')}
             className="w-full flex items-center gap-3 mb-4 p-3 rounded-lg hover:bg-green-600/30 transition-all"
           >
-            <div className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center overflow-hidden border-2 border-green-500">
-              {adminUser?.image && !adminUser.image.includes('blank-profile') ? (
-                <img src={adminUser.image} alt={adminUser.firstName} className="w-full h-full object-cover" />
+            <div style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '50%',
+              background: '#DCFCE7',
+              color: '#15803D',
+              fontSize: '13px',
+              fontWeight: '700',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
+            }}>
+              {adminUser ? (
+                `${adminUser.firstName?.charAt(0) || 'A'}${adminUser.lastName?.charAt(0) || 'D'}`
               ) : (
-                <span className="text-sm font-semibold uppercase">
-                  {(adminUser?.firstName?.charAt(0) || 'A') + (adminUser?.lastName?.charAt(0) || 'D')}
-                </span>
+                'AD'
               )}
             </div>
             <div className="text-left overflow-hidden">
-              <p className="text-sm font-medium truncate">
+              <p style={{
+                fontSize: '14px',
+                fontWeight: '600',
+                color: 'white'
+              }} className="truncate">
                 {adminUser ? `${adminUser.firstName} ${adminUser.lastName}` : 'Admin User'}
               </p>
-              <p className="text-xs text-green-200 truncate">
+              <p style={{
+                fontSize: '12px',
+                color: 'rgba(255,255,255,0.6)',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                maxWidth: '140px'
+              }}>
                 {adminUser?.email || 'admin@agriconnect.lk'}
               </p>
             </div>

@@ -1,18 +1,27 @@
-import { Download, TrendingUp, Users, Wheat, FileText, BarChart3, Link2, MapPin, Layers } from 'lucide-react';
+import { Download, TrendingUp, Users, Wheat, FileText, BarChart3, MapPin, Layers, Trophy, Star, RefreshCw } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import { useState, useEffect, useRef } from 'react';
+import { toast } from 'sonner';
 import { farmAPI } from '../../services/api';
 import { FarmerProfile } from './FarmerProfile';
 import { formatNumber } from '../../utils/numberUtils';
 import { downloadReportAsPDF } from '../../utils/pdfDownload';
+import { AdminReportFilters } from './AdminReportFilters';
 
 export function AdminReports() {
   const reportContentRef = useRef<HTMLDivElement>(null);
   const pdfContentRef = useRef<HTMLDivElement>(null);
+  const lastUpdatedTime = new Date().toLocaleTimeString([], {
+    hour: 'numeric',
+    minute: '2-digit',
+  });
   const [selectedFarmer, setSelectedFarmer] = useState<any | null>(null);
   const [loadingFarmerDetails, setLoadingFarmerDetails] = useState<boolean>(false);
+  const [refreshingReport, setRefreshingReport] = useState<boolean>(false);
   // control expansion of the top performers list (5 vs 10 entries)
   const [showAllPerformers, setShowAllPerformers] = useState(false);
+  const [activeInsightsTab, setActiveInsightsTab] = useState<'growth' | 'variety'>('growth');
+  const [activeYieldTab, setActiveYieldTab] = useState<'season' | 'district'>('season');
   
   // Handle PDF download
   const handleDownloadReport = async () => {
@@ -33,12 +42,36 @@ export function AdminReports() {
       if (pdfContentRef.current) {
         pdfContentRef.current.style.display = 'none';
       }
+      
+      toast.success('Report downloaded successfully.');
     } catch (error) {
       // Hide PDF content on error too
       if (pdfContentRef.current) {
         pdfContentRef.current.style.display = 'none';
       }
       alert(`Failed to generate PDF: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
+  const handleRefreshReport = async () => {
+    try {
+      setRefreshingReport(true);
+      setLoadingHarvests(true);
+      const harvestData = await farmAPI.getHarvestHistory();
+      setHarvests(harvestData.harvests || []);
+
+      const farmsData = await farmAPI.getAllFarms();
+      setFarms(farmsData.farms || []);
+
+      const cropsData = await farmAPI.getAllCrops();
+      setAvailableCrops(cropsData.crops || []);
+      toast.success('Refreshed successfully.');
+    } catch (err) {
+      console.error('Failed to refresh data', err);
+      toast.error('Failed to refresh report.');
+    } finally {
+      setRefreshingReport(false);
+      setLoadingHarvests(false);
     }
   };
 
@@ -78,9 +111,12 @@ export function AdminReports() {
   const [selectedSeason, setSelectedSeason] = useState<string>('');
   const [selectedCrop, setSelectedCrop] = useState<string | null>(null);
   const [availableCrops, setAvailableCrops] = useState<string[]>([]);
+  const [varietyYear, setVarietyYear] = useState<string>('');
+  const [varietySeason, setVarietySeason] = useState<string>('');
   const [districtYear, setDistrictYear] = useState<string>('');
   const [districtSeason, setDistrictSeason] = useState<string>('');
   const [districtCrop, setDistrictCrop] = useState<string>('');
+  const [focusedFilter, setFocusedFilter] = useState<string | null>(null);
 
   // dropdown toggles (reuse patterns from AddHarvest)
   // dropdown open state no longer needed; using native <select> elements for
@@ -113,8 +149,40 @@ export function AdminReports() {
 
   const normalizeSeason = (val: any) => {
     const s = String(val || '').toLowerCase().trim();
-    return s.includes('maha') ? 'maha' : s.includes('yala') ? 'yala' : s;
+    // Handle single letters and numbers
+    if (s === 'm' || s === '1') return 'maha';
+    if (s === 'y' || s === '2') return 'yala';
+    // Handle full names and partial matches
+    if (s.includes('maha')) return 'maha';
+    if (s.includes('yala')) return 'yala';
+    return s;
   };
+
+  const formatDistrictYAxisTick = (value: number | string) => {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return String(value);
+
+    if (n >= 1_000_000) {
+      const m = n / 1_000_000;
+      return `${Number.isInteger(m) ? m : Number(m.toFixed(1))}M`;
+    }
+
+    return String(value); // below 1,000,000 stays as-is
+  };
+
+  const getCompactFilterStyle = (isActive: boolean) => ({
+    background: isActive ? '#DCFCE7' : '#F3F4F6',
+    border: `1px solid ${isActive ? '#86EFAC' : '#E5E7EB'}`,
+    borderRadius: '999px',
+    padding: '4px 12px',
+    fontSize: '12px',
+    fontWeight: 500,
+    color: isActive ? '#15803D' : '#374151',
+    cursor: 'pointer',
+    minWidth: '105px',
+    outline: 'none',
+    transition: 'all 0.2s ease',
+  });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -143,7 +211,7 @@ export function AdminReports() {
   // compute filtered harvests when filters change
   const filteredHarvests = harvests.filter((h) => {
     const yearMatch = selectedYear ? String(h.year) === selectedYear : true;
-    const seasonMatch = selectedSeason ? normalizeSeason(h.season) === selectedSeason.toLowerCase() : true;
+    const seasonMatch = selectedSeason ? normalizeSeason(h.season) === normalizeSeason(selectedSeason) : true;
     const cropMatch = selectedCrop ? (String(h.crop || '').toLowerCase() === selectedCrop.toLowerCase()) : true;
     return yearMatch && seasonMatch && cropMatch;
   });
@@ -368,8 +436,8 @@ export function AdminReports() {
 
   // Filter by year and season only (NOT crop) for variety distribution
   const filteredHarvestsForVariety = harvests.filter((h) => {
-    const yearMatch = selectedYear ? String(h.year) === selectedYear : true;
-    const seasonMatch = selectedSeason ? normalizeSeason(h.season) === selectedSeason.toLowerCase() : true;
+    const yearMatch = varietyYear ? String(h.year) === varietyYear : true;
+    const seasonMatch = varietySeason ? normalizeSeason(h.season) === normalizeSeason(varietySeason) : true;
     return yearMatch && seasonMatch;
   });
 
@@ -384,16 +452,16 @@ export function AdminReports() {
     cropVarietyMap[crop] += Number(h.harvestQty) || 0;
   });
 
-  // Define colors for crops
+  // Define colors for crops - variations of green with clear visible differences
   const cropColors: Record<string, string> = {
-    'Paddy': '#16a34a',
-    'Corn': '#22c55e',
-    'Wheat': '#4ade80',
-    'Cabbage': '#86efac',
-    'Tomatoes': '#fbbf24',
-    'Onion': '#f97316',
-    'Carrots': '#fb923c',
-    'Potatoes': '#f87171',
+    'Paddy': '#7FFF00',        // Chartreuse (bright lime green)
+    'Corn': '#32CD32',         // Lime Green (bright green)
+    'Wheat': '#00FF00',        // Pure Bright Green
+    'Tomatoes': '#228B22',     // Forest Green (dark green)
+    'Onion': '#2E8B57',        // Sea Green (teal-green)
+    'Carrots': '#3CB371',      // Medium Sea Green
+    'Cabbage': '#6B8E23',      // Olive Green
+    'Potatoes': '#20B2AA',     // Light Sea Green (blue-green)
   };
 
   const varietyData = Object.entries(cropVarietyMap)
@@ -411,7 +479,7 @@ export function AdminReports() {
   // We use the base 'harvests' array instead of 'filteredHarvests' which uses global filters.
   const filteredHarvestsForDistrict = harvests.filter((h) => {
     const yearMatch = districtYear ? String(h.year) === districtYear : true;
-    const seasonMatch = districtSeason ? normalizeSeason(h.season) === districtSeason.toLowerCase() : true;
+    const seasonMatch = districtSeason ? normalizeSeason(h.season) === normalizeSeason(districtSeason) : true;
     const cropMatch = districtCrop ? (String(h.crop || '').toLowerCase() === districtCrop.toLowerCase()) : true;
     return yearMatch && seasonMatch && cropMatch;
   });
@@ -427,345 +495,829 @@ export function AdminReports() {
     .map(([district, yieldVal]) => ({ district, yield: yieldVal }))
     .sort((a, b) => b.yield - a.yield);
 
+  const getRankBadgeStyle = (rank: number) => {
+    if (rank === 1) {
+      return {
+        background: '#FEF9C3',
+        color: '#B45309',
+        border: '1px solid #FDE68A',
+      };
+    }
+    if (rank === 2) {
+      return {
+        background: '#F3F4F6',
+        color: '#6B7280',
+        border: '1px solid #D1D5DB',
+      };
+    }
+    if (rank === 3) {
+      return {
+        background: '#FFEDD5',
+        color: '#C2410C',
+        border: '1px solid #FED7AA',
+      };
+    }
+    return {
+      background: '#F9FAFB',
+      color: '#9CA3AF',
+      border: '1px solid #E5E7EB',
+    };
+  };
+
+  const getPointsTextStyle = (points: number) => {
+    if (points >= 100000) {
+      return {
+        color: '#B45309',
+        fontWeight: 700,
+      };
+    }
+    if (points >= 10000) {
+      return {
+        color: '#374151',
+        fontWeight: 600,
+      };
+    }
+    return {
+      color: '#9CA3AF',
+      fontWeight: 500,
+    };
+  };
+
   return (
     <div ref={reportContentRef} className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
 
           <p className="text-gray-600">Comprehensive insights and data analysis</p>
+          <span style={{ fontSize: '12px', color: '#9CA3AF', marginLeft: '12px' }}>
+            Last updated: today at {lastUpdatedTime}
+          </span>
         </div>
-        <button 
-          onClick={handleDownloadReport}
-          className="px-6 py-3 bg-green-700 hover:bg-green-800 text-white rounded-lg flex items-center gap-2 transition-colors">
-          <Download className="w-5 h-5" />
-          Download Report
-        </button>
-      </div>
-      {/* Filters - Year / Season / Crop (matching AddHarvest style) */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4">
-        <div>
-          <h4 className="text-sm md:text-md font-semibold text-gray-800 mb-3">Primary Information</h4>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Year */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Year</label>
-              <select
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(e.target.value)}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-left hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              >
-                <option value="">All Years</option>
-                {years.map((y) => (
-                  <option key={y} value={y}>{y}</option>
-                ))}
-              </select>
-            </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'nowrap' }}>
+          <button
+            type="button"
+            onClick={handleRefreshReport}
+            disabled={refreshingReport}
+            style={{
+              padding: '10px 16px',
+              background: '#E0F2FE',
+              border: '1px solid #BAE6FD',
+              color: '#075985',
+              borderRadius: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              cursor: refreshingReport ? 'not-allowed' : 'pointer',
+              transition: 'all 0.2s ease',
+              fontWeight: 500,
+              opacity: refreshingReport ? 0.8 : 1,
+            }}
+            onMouseEnter={(e) => {
+              if (!refreshingReport) {
+                (e.currentTarget as HTMLButtonElement).style.background = '#BAE6FD';
+              }
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.background = '#E0F2FE';
+            }}
+          >
+            <RefreshCw className={`w-4 h-4 ${refreshingReport ? 'animate-spin' : ''}`} />
+            {refreshingReport ? 'Refreshing' : 'Refresh'}
+          </button>
 
-            {/* Season */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Harvest Season</label>
-              <select
-                value={selectedSeason}
-                onChange={(e) => setSelectedSeason(e.target.value)}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-left hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              >
-                <option value="">All Seasons</option>
-                {seasons.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Crop - Using select like AdminDashboard */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Crop</label>
-              <select
-                value={selectedCrop || ''}
-                onChange={(e) => setSelectedCrop(e.target.value || null)}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-left hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              >
-                <option value="">All Crops</option>
-                {Array.from(new Set([...defaultCropOptions, ...availableCrops])).map((crop) => (
-                  <option key={crop} value={crop}>
-                    {crop}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
+          <button
+            type="button"
+            onClick={handleDownloadReport}
+            style={{
+              padding: '10px 16px',
+              background: '#15803D',
+              border: 'none',
+              color: '#FFFFFF',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              fontWeight: 500,
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.background = '#166534';
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.background = '#15803D';
+            }}
+          >
+            <Download className="w-5 h-5" />
+            Download Report
+          </button>
         </div>
       </div>
+      {/* Filters - Year / Season / Crop */}
+      <AdminReportFilters
+        selectedYear={selectedYear}
+        selectedSeason={selectedSeason}
+        selectedCrop={selectedCrop}
+        years={years}
+        seasons={seasons}
+        availableCrops={availableCrops}
+        defaultCropOptions={defaultCropOptions}
+        onYearChange={setSelectedYear}
+        onSeasonChange={setSelectedSeason}
+        onCropChange={setSelectedCrop}
+      />
 
       {/* Summary Cards - matching AdminDashboard styling */}
       <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 md:gap-5 lg:gap-6">
         {/* Active Farmers Card */}
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-5 sm:p-6 shadow-md border-l-4 border-l-green-500 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group">
-          <div className="flex flex-col">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">Active Farmers</p>
-              <Users className="w-5 h-5 text-green-600 opacity-70 group-hover:opacity-100 transition-opacity" />
+        <div
+          style={{
+            background: 'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)',
+            borderRadius: '14px',
+            padding: '16px 20px',
+            boxShadow: '0 8px 16px -2px rgba(0, 0, 0, 0.15), 0 4px 8px -1px rgba(0, 0, 0, 0.1)',
+            transition: 'all 0.2s ease',
+            cursor: 'pointer',
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-3px)';
+            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 12px 28px rgba(0,0,0,0.12)';
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
+            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 16px -2px rgba(0, 0, 0, 0.15), 0 4px 8px -1px rgba(0, 0, 0, 0.1)';
+          }}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
+              <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: '#DCFCE7', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '10px' }}>
+                <Users style={{ width: '18px', height: '18px', color: '#16A34A' }} />
+              </div>
             </div>
-            <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 my-2 break-words min-w-0">
+            <p style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Active Farmers</p>
+            <p style={{ fontSize: '28px', fontWeight: 700, color: '#111827', margin: '0', marginBottom: '4px' }} title={loadingHarvests ? '...' : formattedTotalFarmers}>
               {loadingHarvests ? '...' : formattedTotalFarmers}
             </p>
-            <p className="text-xs sm:text-sm text-green-700 flex items-center gap-1 mt-2">
-              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4" />
+            <p style={{ fontSize: '11px', color: '#9CA3AF', fontStyle: 'normal', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <TrendingUp style={{ width: '12px', height: '12px' }} />
               {loadingHarvests ? '...' : farmersGrowthText}
             </p>
           </div>
         </div>
 
         {/* Active Plots Card */}
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-5 sm:p-6 shadow-md border-l-4 border-l-green-500 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group">
-          <div className="flex flex-col">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">Active Plots</p>
-              <MapPin className="w-5 h-5 text-green-600 opacity-70 group-hover:opacity-100 transition-opacity" />
+        <div
+          style={{
+            background: 'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)',
+            borderRadius: '14px',
+            padding: '16px 20px',
+            boxShadow: '0 8px 16px -2px rgba(0, 0, 0, 0.15), 0 4px 8px -1px rgba(0, 0, 0, 0.1)',
+            transition: 'all 0.2s ease',
+            cursor: 'pointer',
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-3px)';
+            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 12px 28px rgba(0,0,0,0.12)';
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
+            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 16px -2px rgba(0, 0, 0, 0.15), 0 4px 8px -1px rgba(0, 0, 0, 0.1)';
+          }}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
+              <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: '#D1FAE5', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '10px' }}>
+                <MapPin style={{ width: '18px', height: '18px', color: '#059669' }} />
+              </div>
             </div>
-            <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 my-2 break-words min-w-0">
+            <p style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Active Plots</p>
+            <p style={{ fontSize: '28px', fontWeight: 700, color: '#111827', margin: '0', marginBottom: '4px' }} title={loadingHarvests ? '...' : formattedActivePlots}>
               {loadingHarvests ? '...' : formattedActivePlots}
             </p>
-            <p className="text-xs sm:text-sm text-gray-600 mt-2">
+            <p style={{ fontSize: '11px', color: '#9CA3AF', fontStyle: 'normal', marginTop: '4px' }}>
               Calculated from harvest records
             </p>
           </div>
         </div>
 
         {/* Active Farmland Card */}
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-5 sm:p-6 shadow-md border-l-4 border-l-green-500 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group">
-          <div className="flex flex-col">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">Active Farmland</p>
-              <Layers className="w-5 h-5 text-green-600 opacity-70 group-hover:opacity-100 transition-opacity" />
+        <div
+          style={{
+            background: 'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)',
+            borderRadius: '14px',
+            padding: '16px 20px',
+            boxShadow: '0 8px 16px -2px rgba(0, 0, 0, 0.15), 0 4px 8px -1px rgba(0, 0, 0, 0.1)',
+            transition: 'all 0.2s ease',
+            cursor: 'pointer',
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-3px)';
+            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 12px 28px rgba(0,0,0,0.12)';
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
+            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 16px -2px rgba(0, 0, 0, 0.15), 0 4px 8px -1px rgba(0, 0, 0, 0.1)';
+          }}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
+              <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: '#DCEDD5', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '10px' }}>
+                <Layers style={{ width: '18px', height: '18px', color: '#4D7C0F' }} />
+              </div>
             </div>
-            <div className="flex min-w-0 flex-wrap items-baseline gap-1 sm:gap-2 my-2">
-              <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 break-words min-w-0">
+            <p style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Active Farmland</p>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '4px' }}>
+              <p style={{ fontSize: '28px', fontWeight: 700, color: '#111827', margin: '0' }} title={loadingHarvests ? '...' : formattedActiveFarmland}>
                 {loadingHarvests ? '...' : formattedActiveFarmland}
               </p>
-              <span className="text-xs sm:text-sm font-medium text-gray-600 break-words">acres</span>
+              <span style={{ fontSize: '11px', fontWeight: 500, color: '#6B7280' }}>acres</span>
             </div>
-            <p className="text-xs sm:text-sm text-gray-600 mt-2">
+            <p style={{ fontSize: '11px', color: '#9CA3AF', fontStyle: 'normal', marginTop: '4px' }}>
               Calculated from harvest records
             </p>
           </div>
         </div>
 
         {/* Total Harvest Card */}
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-5 sm:p-6 shadow-md border-l-4 border-l-green-500 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group">
-          <div className="flex flex-col">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">Total Harvest</p>
-              <Wheat className="w-5 h-5 text-green-600 opacity-70 group-hover:opacity-100 transition-opacity" />
+        <div
+          style={{
+            background: 'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)',
+            borderRadius: '14px',
+            padding: '16px 20px',
+            boxShadow: '0 8px 16px -2px rgba(0, 0, 0, 0.15), 0 4px 8px -1px rgba(0, 0, 0, 0.1)',
+            transition: 'all 0.2s ease',
+            cursor: 'pointer',
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-3px)';
+            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 12px 28px rgba(0,0,0,0.12)';
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
+            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 16px -2px rgba(0, 0, 0, 0.15), 0 4px 8px -1px rgba(0, 0, 0, 0.1)';
+          }}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
+              <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: '#C8E6C9', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '10px' }}>
+                <Wheat style={{ width: '18px', height: '18px', color: '#15803D' }} />
+              </div>
             </div>
-            <div className="flex min-w-0 flex-wrap items-baseline gap-1 sm:gap-2 my-2">
-              <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 break-words min-w-0">
+            <p style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Total Harvest</p>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '4px' }}>
+              <p style={{ fontSize: '28px', fontWeight: 700, color: '#111827', margin: '0' }} title={loadingHarvests ? '...' : formattedTotalHarvest}>
                 {loadingHarvests ? '...' : formattedTotalHarvest}
               </p>
-              <span className="text-xs sm:text-sm font-medium text-gray-600 break-words">tons</span>
+              <span style={{ fontSize: '11px', fontWeight: 500, color: '#6B7280' }}>tons</span>
             </div>
-            <p className="text-xs sm:text-sm text-green-700 flex items-center gap-1 mt-2">
-              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4" />
+            <p style={{ fontSize: '11px', color: '#9CA3AF', fontStyle: 'normal', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <TrendingUp style={{ width: '12px', height: '12px' }} />
               {loadingHarvests ? '...' : harvestGrowthText}
             </p>
           </div>
         </div>
 
         {/* Avg Yield/Acre Card */}
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-5 sm:p-6 shadow-md border-l-4 border-l-green-500 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group">
-          <div className="flex flex-col">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">Avg Yield/Acre</p>
-              <TrendingUp className="w-5 h-5 text-green-600 opacity-70 group-hover:opacity-100 transition-opacity" />
+        <div
+          style={{
+            background: 'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)',
+            borderRadius: '14px',
+            padding: '16px 20px',
+            boxShadow: '0 8px 16px -2px rgba(0, 0, 0, 0.15), 0 4px 8px -1px rgba(0, 0, 0, 0.1)',
+            transition: 'all 0.2s ease',
+            cursor: 'pointer',
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-3px)';
+            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 12px 28px rgba(0,0,0,0.12)';
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
+            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 16px -2px rgba(0, 0, 0, 0.15), 0 4px 8px -1px rgba(0, 0, 0, 0.1)';
+          }}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
+              <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: '#D5F5E3', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '10px' }}>
+                <TrendingUp style={{ width: '18px', height: '18px', color: '#10B981' }} />
+              </div>
             </div>
-            <div className="flex min-w-0 flex-wrap items-baseline gap-1 sm:gap-2 my-2">
-              <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 break-words min-w-0">
+            <p style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Avg Yield/Acre</p>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '4px' }}>
+              <p style={{ fontSize: '28px', fontWeight: 700, color: '#111827', margin: '0' }} title={loadingHarvests ? '...' : formattedAvgYield}>
                 {loadingHarvests ? '...' : formattedAvgYield}
               </p>
-              <span className="text-xs sm:text-sm font-medium text-gray-600 break-words">kg</span>
+              <span style={{ fontSize: '11px', fontWeight: 500, color: '#6B7280' }}>kg</span>
             </div>
-            <p className="text-xs sm:text-sm text-green-700 flex items-center gap-1 mt-2">
-              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4" />
+            <p style={{ fontSize: '11px', color: '#9CA3AF', fontStyle: 'normal', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <TrendingUp style={{ width: '12px', height: '12px' }} />
               {loadingHarvests ? '...' : yieldGrowthText}
             </p>
           </div>
         </div>
 
         {/* Total Points Card */}
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-5 sm:p-6 shadow-md border-l-4 border-l-green-500 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:cursor-pointer group">
-          <div className="flex flex-col">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">Total Points</p>
-              <FileText className="w-5 h-5 text-green-600 opacity-70 group-hover:opacity-100 transition-opacity" />
+        <div
+          style={{
+            background: 'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)',
+            borderRadius: '14px',
+            padding: '16px 20px',
+            boxShadow: '0 8px 16px -2px rgba(0, 0, 0, 0.15), 0 4px 8px -1px rgba(0, 0, 0, 0.1)',
+            transition: 'all 0.2s ease',
+            cursor: 'pointer',
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-3px)';
+            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 12px 28px rgba(0,0,0,0.12)';
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
+            (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 16px -2px rgba(0, 0, 0, 0.15), 0 4px 8px -1px rgba(0, 0, 0, 0.1)';
+          }}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
+              <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: '#FEF9C3', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '10px' }}>
+                <FileText style={{ width: '18px', height: '18px', color: '#B45309' }} />
+              </div>
             </div>
-            <p className="text-3xl sm:text-2xl lg:text-3xl font-bold text-gray-900 my-2 break-words min-w-0">
+            <p style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Total Points</p>
+            <p style={{ fontSize: '28px', fontWeight: 700, color: '#111827', margin: '0', marginBottom: '4px' }} title={loadingHarvests ? '...' : formattedTotalPoints}>
               {loadingHarvests ? '...' : formattedTotalPoints}
             </p>
-            <p className="text-xs sm:text-sm text-green-700 mt-2">
+            <p style={{ fontSize: '11px', color: '#9CA3AF', fontStyle: 'normal', marginTop: '4px' }}>
               {loadingHarvests ? '...' : 'Aggregated'}
             </p>
           </div>
         </div>
       </div>
 
-      {/* Charts Row 1 */}
-      <div className="grid grid-cols-1 gap-6">
-        {/* Season Comparison */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Yield by Season {selectedCrop && `- ${selectedCrop}`}</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={seasonData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="year" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="Maha" fill="#16a34a" name="Maha (tons)" />
-              <Bar dataKey="Yala" fill="#60a5fa" name="Yala (tons)" />
-            </BarChart>
-          </ResponsiveContainer>
+      {/* Yield Tabs */}
+      <div
+        style={{
+          background: 'linear-gradient(135deg, #F0FDF4 0%, #F7FEF9 100%)',
+          border: '1px solid #BBF7D0',
+          borderRadius: '14px',
+          padding: '20px 24px',
+          boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+          transition: 'all 0.2s ease',
+          cursor: 'default',
+        }}
+        onMouseEnter={(e) => {
+          (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 16px rgba(0,0,0,0.1)';
+          (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)';
+        }}
+        onMouseLeave={(e) => {
+          (e.currentTarget as HTMLDivElement).style.boxShadow = '0 1px 4px rgba(0,0,0,0.05)';
+          (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
+        }}
+      >
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '16px' }}>
+          <button
+            type="button"
+            onClick={() => setActiveYieldTab('season')}
+            style={{
+              padding: '8px 14px',
+              borderRadius: '999px',
+              border: activeYieldTab === 'season' ? '1px solid #15803D' : '1px solid #D1D5DB',
+              background: activeYieldTab === 'season' ? '#DCFCE7' : '#FFFFFF',
+              color: activeYieldTab === 'season' ? '#166534' : '#374151',
+              fontSize: '13px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            Yield by Season
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveYieldTab('district')}
+            style={{
+              padding: '8px 14px',
+              borderRadius: '999px',
+              border: activeYieldTab === 'district' ? '1px solid #15803D' : '1px solid #D1D5DB',
+              background: activeYieldTab === 'district' ? '#DCFCE7' : '#FFFFFF',
+              color: activeYieldTab === 'district' ? '#166534' : '#374151',
+              fontSize: '13px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            Yield by District
+          </button>
         </div>
 
-        {/* Variety Distribution */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Crop Variety Distribution</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={varietyData}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={({ name, value }) => `${name}: ${value}%`}
-                outerRadius={100}
-                fill="#8884d8"
-                dataKey="value"
-              >
-                {varietyData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* Charts Row 2 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Farmer Growth */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Farmer Participation Growth</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={farmerTimelineData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="season" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Line type="monotone" dataKey="farmers" stroke="#16a34a" strokeWidth={2} name="Farmers" />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* District Performance */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-4">
-            <h3 className="text-lg font-semibold text-gray-800">Yield by District</h3>
-            <div className="flex gap-2 flex-wrap">
-              <select
-                value={districtYear}
-                onChange={(e) => setDistrictYear(e.target.value)}
-                className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-green-500 min-w-[90px]"
-              >
-                <option value="">All Years</option>
-                <option value="2026">2026</option>
-                <option value="2025">2025</option>
-                <option value="2024">2024</option>
-              </select>
-              <select
-                value={districtSeason}
-                onChange={(e) => setDistrictSeason(e.target.value)}
-                className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-green-500 min-w-[90px]"
-              >
-                <option value="">All Seasons</option>
-                <option value="Maha">Maha</option>
-                <option value="Yala">Yala</option>
-              </select>
-              <select
-                value={districtCrop}
-                onChange={(e) => setDistrictCrop(e.target.value)}
-                className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-green-500 min-w-[90px]"
-              >
-                <option value="">All Crops</option>
-                {Array.from(new Set([...defaultCropOptions, ...availableCrops])).map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
+        {activeYieldTab === 'season' ? (
+          <div>
+            <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#111827' }}>
+              Yield by Season {selectedCrop && `- ${selectedCrop}`}
+            </h3>
+            <p style={{ fontSize: '12px', color: '#9CA3AF', margin: 0, marginTop: '2px' }}>
+              Total yield in tons by harvest season
+            </p>
+            <div style={{ padding: '12px', background: '#FAFAFA', borderRadius: '8px', marginTop: '12px' }}>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={seasonData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                  <XAxis dataKey="year" />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="Maha" fill="#16a34a" name="Maha (tons)" />
+                  <Bar dataKey="Yala" fill="#60a5fa" name="Yala (tons)" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '16px', flexWrap: 'wrap' }}>
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: '#F3F4F6',
+                padding: '4px 12px',
+                borderRadius: '999px',
+                fontSize: '12px',
+                fontWeight: 500,
+                color: '#374151',
+                marginRight: '8px'
+              }}>
+                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#15803D' }} />
+                Maha (tons)
+              </div>
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: '#F3F4F6',
+                padding: '4px 12px',
+                borderRadius: '999px',
+                fontSize: '12px',
+                fontWeight: 500,
+                color: '#374151',
+                marginRight: '8px'
+              }}>
+                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#3B82F6' }} />
+                Yala (tons)
+              </div>
             </div>
           </div>
-          <ResponsiveContainer width="100%" height={300}>
-            {/* same format as yield-by-season chart */}
-            <BarChart data={districtData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="district" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="yield" fill="#16a34a" name="Yield (kg)" />
-            </BarChart>
-          </ResponsiveContainer>
+        ) : (
+          <div>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h3 style={{ fontSize: '15px', fontWeight: 600, color: '#111827' }}>Yield by District</h3>
+                <p style={{ fontSize: '12px', color: '#9CA3AF', margin: '2px 0 0 0' }}>
+                  Total crop yield in kilograms across districts
+                </p>
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                <select
+                  value={districtYear}
+                  onChange={(e) => setDistrictYear(e.target.value)}
+                  onFocus={() => setFocusedFilter('districtYear')}
+                  onBlur={() => setFocusedFilter(null)}
+                  style={getCompactFilterStyle(focusedFilter === 'districtYear' || districtYear !== '')}
+                >
+                  <option value="">All Years</option>
+                  <option value="2026">2026</option>
+                  <option value="2025">2025</option>
+                  <option value="2024">2024</option>
+                </select>
+                <select
+                  value={districtSeason}
+                  onChange={(e) => setDistrictSeason(e.target.value)}
+                  onFocus={() => setFocusedFilter('districtSeason')}
+                  onBlur={() => setFocusedFilter(null)}
+                  style={getCompactFilterStyle(focusedFilter === 'districtSeason' || districtSeason !== '')}
+                >
+                  <option value="">All Seasons</option>
+                  <option value="Maha">Maha</option>
+                  <option value="Yala">Yala</option>
+                </select>
+                <select
+                  value={districtCrop}
+                  onChange={(e) => setDistrictCrop(e.target.value)}
+                  onFocus={() => setFocusedFilter('districtCrop')}
+                  onBlur={() => setFocusedFilter(null)}
+                  style={getCompactFilterStyle(focusedFilter === 'districtCrop' || districtCrop !== '')}
+                >
+                  <option value="">All Crops</option>
+                  {Array.from(new Set([...defaultCropOptions, ...availableCrops])).map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div style={{ padding: '12px', background: '#FAFAFA', borderRadius: '8px', marginTop: '12px' }}>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={districtData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                  <XAxis dataKey="district" />
+                  <YAxis tickFormatter={formatDistrictYAxisTick} />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="yield" fill="#16a34a" name="Yield (kg)" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Insights Tabs */}
+      <div
+        style={{
+          background: 'linear-gradient(135deg, #F0FDF4 0%, #F7FEF9 100%)',
+          border: '1px solid #BBF7D0',
+          borderRadius: '14px',
+          padding: '20px 24px',
+          boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+          transition: 'all 0.2s ease',
+          cursor: 'default',
+        }}
+        onMouseEnter={(e) => {
+          (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 16px rgba(0,0,0,0.1)';
+          (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)';
+        }}
+        onMouseLeave={(e) => {
+          (e.currentTarget as HTMLDivElement).style.boxShadow = '0 1px 4px rgba(0,0,0,0.05)';
+          (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
+        }}
+      >
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '16px' }}>
+          <button
+            type="button"
+            onClick={() => setActiveInsightsTab('growth')}
+            style={{
+              padding: '8px 14px',
+              borderRadius: '999px',
+              border: activeInsightsTab === 'growth' ? '1px solid #15803D' : '1px solid #D1D5DB',
+              background: activeInsightsTab === 'growth' ? '#DCFCE7' : '#FFFFFF',
+              color: activeInsightsTab === 'growth' ? '#166534' : '#374151',
+              fontSize: '13px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            Farmer Participation Growth
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveInsightsTab('variety')}
+            style={{
+              padding: '8px 14px',
+              borderRadius: '999px',
+              border: activeInsightsTab === 'variety' ? '1px solid #15803D' : '1px solid #D1D5DB',
+              background: activeInsightsTab === 'variety' ? '#DCFCE7' : '#FFFFFF',
+              color: activeInsightsTab === 'variety' ? '#166534' : '#374151',
+              fontSize: '13px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            Crop Variety Distribution
+          </button>
         </div>
+
+        {activeInsightsTab === 'growth' ? (
+          <div>
+            <h3 style={{ fontSize: '15px', fontWeight: 600, color: '#111827' }}>Farmer Participation Growth</h3>
+            <p style={{ fontSize: '12px', color: '#9CA3AF', margin: '2px 0 0 0' }}>
+              Number of participating farmers across each harvest season
+            </p>
+            <div style={{ padding: '12px', background: '#FAFAFA', borderRadius: '8px', marginTop: '12px' }}>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={farmerTimelineData} margin={{ top: 20, right: 20, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                  <XAxis dataKey="season" />
+                  <YAxis />
+                  <Tooltip
+                    labelFormatter={(label: any) => `Season: ${label}`}
+                    formatter={(value: any) => [`${value}`, 'Farmers']}
+                  />
+                  <Legend />
+                  <Line
+                    type="monotone"
+                    dataKey="farmers"
+                    stroke="#15803D"
+                    strokeWidth={3}
+                    dot={{ r: 6 }}
+                    activeDot={{ r: 6 }}
+                    name="Farmers"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        ) : (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', flexWrap: 'wrap' }}>
+              <div>
+                <h3 style={{ fontSize: '15px', fontWeight: 600, color: '#111827' }}>Crop Variety Distribution</h3>
+                <p style={{ fontSize: '12px', color: '#9CA3AF', margin: '2px 0 0 0' }}>
+                  Distribution of crop varieties in tons
+                </p>
+              </div>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <select
+                  value={varietyYear}
+                  onChange={(e) => setVarietyYear(e.target.value)}
+                  onFocus={() => setFocusedFilter('varietyYear')}
+                  onBlur={() => setFocusedFilter(null)}
+                  style={getCompactFilterStyle(focusedFilter === 'varietyYear' || varietyYear !== '')}
+                >
+                  <option value="">All Years</option>
+                  {years.map((y) => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
+                <select
+                  value={varietySeason}
+                  onChange={(e) => setVarietySeason(e.target.value)}
+                  onFocus={() => setFocusedFilter('varietySeason')}
+                  onBlur={() => setFocusedFilter(null)}
+                  style={getCompactFilterStyle(focusedFilter === 'varietySeason' || varietySeason !== '')}
+                >
+                  <option value="">All Seasons</option>
+                  {seasons.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '32px', marginTop: '16px', flexWrap: 'wrap' }}>
+              <div style={{ flex: '0 0 auto', maxWidth: '260px' }}>
+                <ResponsiveContainer width={260} height={280}>
+                  <PieChart>
+                    <Pie
+                      data={varietyData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={false}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {varietyData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '220px' }}>
+                {varietyData.map((item, index) => (
+                  <div key={index} style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    marginBottom: '10px'
+                  }}>
+                    <div style={{
+                      width: '12px',
+                      height: '12px',
+                      borderRadius: '3px',
+                      background: item.color,
+                      flexShrink: 0
+                    }} />
+                    <span style={{
+                      fontSize: '13px',
+                      fontWeight: 500,
+                      color: '#374151',
+                      flex: 1
+                    }}>
+                      {item.name}
+                    </span>
+                    <span style={{
+                      fontSize: '13px',
+                      fontWeight: 700,
+                      color: '#111827',
+                      marginLeft: 'auto'
+                    }}>
+                      {item.value}%
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Top Performers */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-        <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-800">Top Performing Farmers</h3>
-                  {topPerformers.length > 5 && (
-                    <button
-                      type="button"
-                      onClick={() => setShowAllPerformers((prev) => !prev)}
-                      className="text-green-600 hover:text-green-700 text-xs font-medium flex items-center gap-1"
-                    >
-                      {showAllPerformers ? 'View Less' : 'View More'}
-                      <Link2 className="w-3 h-3" />
-                    </button>
-                  )}
+      <div
+        style={{
+          background: 'linear-gradient(135deg, #F0FDF4 0%, #F7FEF9 100%)',
+          border: '1px solid #BBF7D0',
+          borderRadius: '14px',
+          padding: '20px 24px',
+          boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+          transition: 'all 0.2s ease',
+          cursor: 'default',
+        }}
+        onMouseEnter={(e) => {
+          (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 16px rgba(0,0,0,0.1)';
+          (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)';
+        }}
+        onMouseLeave={(e) => {
+          (e.currentTarget as HTMLDivElement).style.boxShadow = '0 1px 4px rgba(0,0,0,0.05)';
+          (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+          <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#111827', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Trophy style={{ color: '#B45309', width: '18px', height: '18px' }} />
+            Top Performing Farmers
+          </h3>
+          {topPerformers.length > 5 && (
+            <button
+              type="button"
+              onClick={() => setShowAllPerformers((prev) => !prev)}
+              style={{
+                background: 'white',
+                border: '1px solid #16A34A',
+                color: '#16A34A',
+                borderRadius: '8px',
+                padding: '6px 14px',
+                fontSize: '13px',
+                fontWeight: 500,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = '#F0FDF4';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = 'white';
+              }}
+            >
+              {showAllPerformers ? 'View Less' : 'View More'}
+            </button>
+          )}
         </div>
         <div className="overflow-x-auto relative">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
+          <table className="w-full" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
+            <thead style={{ background: '#F9FAFB' }}>
               <tr>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Rank</th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Farmer</th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">District</th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Total Yield</th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Avg Yield/Acre</th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Points</th>
+                <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '11px', fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '2px solid #E5E7EB' }}>Rank</th>
+                <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '11px', fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '2px solid #E5E7EB' }}>Farmer</th>
+                <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '11px', fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '2px solid #E5E7EB' }}>District</th>
+                <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '11px', fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '2px solid #E5E7EB' }}>Total Yield</th>
+                <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '11px', fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '2px solid #E5E7EB' }}>Avg Yield/Acre</th>
+                <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '11px', fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '2px solid #E5E7EB' }}>Points</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
-              {topPerformers.slice(0, showAllPerformers ? 10 : 5).map((farmer) => (
+            <tbody>
+              {topPerformers.slice(0, showAllPerformers ? 10 : 5).map((farmer, idx) => (
                 <tr
                   key={farmer.rank}
-                  className="hover:bg-gray-50 transition-colors cursor-pointer"
+                  style={{
+                    background: idx % 2 === 0 ? '#FFFFFF' : '#F9FAFB',
+                    borderLeft: '3px solid transparent',
+                    transition: 'all 0.15s ease',
+                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLTableRowElement).style.background = '#F0FDF4';
+                    (e.currentTarget as HTMLTableRowElement).style.borderLeft = '3px solid #16A34A';
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLTableRowElement).style.background = idx % 2 === 0 ? '#FFFFFF' : '#F9FAFB';
+                    (e.currentTarget as HTMLTableRowElement).style.borderLeft = '3px solid transparent';
+                  }}
                   onClick={() => handleSelectPerformer(farmer)}
                 >
-                  <td className="px-6 py-4">
-                    <span className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${farmer.rank === 1 ? 'bg-yellow-100 text-yellow-700' :
-                      farmer.rank === 2 ? 'bg-gray-100 text-gray-700' :
-                        farmer.rank === 3 ? 'bg-orange-100 text-orange-700' :
-                          'bg-gray-50 text-gray-600'
-                      }`}>
+                  <td style={{ padding: '12px 16px' }}>
+                    <span style={{
+                      width: '28px',
+                      height: '28px',
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '13px',
+                      fontWeight: 700,
+                      ...getRankBadgeStyle(farmer.rank)
+                    }}>
                       {farmer.rank}
                     </span>
                   </td>
-                  <td className="px-6 py-4 font-medium text-gray-800">{farmer.name}</td>
-                  <td className="px-6 py-4 text-sm text-gray-700">{farmer.district}</td>
-                  <td className="px-6 py-4 text-sm font-medium text-gray-800">{farmer.yield} tons</td>
-                  <td className="px-6 py-4 text-sm font-medium text-gray-800">{farmer.avgYield} kg</td>
-                  <td className="px-6 py-4 text-sm font-semibold text-green-700">{Math.round(farmer.points)}</td>
+                  <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 500, color: '#1F2937' }}>{farmer.name}</td>
+                  <td style={{ padding: '12px 16px', fontSize: '14px', color: '#374151' }}>{farmer.district}</td>
+                  <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 500, color: '#1F2937' }}>{farmer.yield} tons</td>
+                  <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 500, color: '#1F2937' }}>{farmer.avgYield} kg</td>
+                  <td style={{ padding: '12px 16px' }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '14px', ...getPointsTextStyle(Math.round(farmer.points)) }}>
+                      <Star style={{ width: '12px', height: '12px' }} />
+                      {Math.round(farmer.points)}
+                    </span>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -922,9 +1474,20 @@ export function AdminReports() {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="season" angle={-45} textAnchor="end" height={80} />
               <YAxis />
-              <Tooltip />
+              <Tooltip
+                labelFormatter={(label: any) => `Season: ${label}`}
+                formatter={(value: any) => [`${value}`, 'Farmers']}
+              />
               <Legend />
-              <Line type="monotone" dataKey="farmers" stroke="#16a34a" strokeWidth={2} name="Active Farmers" />
+              <Line
+                type="monotone"
+                dataKey="farmers"
+                stroke="#15803D"
+                strokeWidth={2}
+                dot={{ r: 6 }}
+                activeDot={{ r: 6 }}
+                name="Active Farmers"
+              />
             </LineChart>
           </ResponsiveContainer>
         </div>
