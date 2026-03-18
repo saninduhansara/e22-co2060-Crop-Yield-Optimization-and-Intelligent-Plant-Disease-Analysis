@@ -264,7 +264,7 @@ export function RegisterFarmer() {
         setRegisteredFarmerId(farmerData.nic);
         setStep(2);
         setSuccess(true);
-        setTimeout(() => setSuccess(false), 3000);
+        setTimeout(() => setSuccess(false), 20000);
       } else {
         toast.error('Failed to register farmer. Please try again.');
         setError('Failed to register farmer. Please try again.');
