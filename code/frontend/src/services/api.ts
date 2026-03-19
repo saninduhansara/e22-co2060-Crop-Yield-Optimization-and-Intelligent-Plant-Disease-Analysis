@@ -1,0 +1,227 @@
+/**
+ * Frontend API Service Layer
+ * Configures the Axios instance, HTTP interceptors for JWT auth/error handling,
+ * and exports organized objects for User, Farm, and Yield endpoints.
+ */
+import axios from 'axios';
+import { clearAuthData } from '../utils/authUtils';
+
+// Base API URL - use relative path in development to work with Vite proxy
+// In production, use the full API URL from environment variable
+const API_BASE_URL = import.meta.env.PROD
+  ? (import.meta.env.VITE_API_URL || 'http://localhost:5000')
+  : ''; // Empty string means use relative paths in dev mode
+
+// Create axios instance with default config
+const api = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  timeout: 10000, // 10 seconds timeout
+});
+
+// Request interceptor to add auth token
+api.interceptors.request.use(
+  (config) => {
+    const authData = localStorage.getItem('agriconnect_auth');
+    if (authData) {
+      const { token } = JSON.parse(authData);
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor to handle errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    // Avoid triggering global unauthenticated redirects if the user is currently trying to log in
+    if (error.config?.url?.includes('/api/users/login')) {
+      return Promise.reject(error);
+    }
+
+    if (error.response?.status === 403 || error.response?.status === 401) {
+      // Token expired or invalid - clear auth and redirect to root login page
+      clearAuthData();
+      window.location.href = '/';
+    }
+    return Promise.reject(error);
+  }
+);
+
+// User API endpoints
+export const userAPI = {
+  register: async (userData: {
+    email: string;
+    password: string;
+    firstName: string;
+    lastName: string;
+    phone: string;
+    nic: string;
+    address: string;
+    division: string;
+    district: string;
+    role: 'farmer' | 'admin';
+    isBlocked?: boolean;
+  }) => {
+    const response = await api.post('/api/users', userData);
+    return response.data;
+  },
+
+  login: async (credentials: { email: string; password: string; intendedRole?: string }) => {
+    try {
+      const response = await api.post('/api/users/login', credentials);
+      return response.data;
+    } catch (error: any) {
+      // Re-throw with better error handling
+      throw error;
+    }
+  },
+
+  fetchProfile: async () => {
+    const response = await api.get('/api/users/profile');
+    return response.data;
+  },
+
+  updateProfile: async (userData: {
+    firstName?: string;
+    lastName?: string;
+    phone?: string;
+    address?: string;
+    district?: string;
+    division?: string;
+    image?: string;
+  }) => {
+    const response = await api.put('/api/users/profile', userData);
+    return response.data;
+  },
+
+  getRecentFarmers: async (limit?: number) => {
+    const response = await api.get(`/api/users/recent-farmers`, {
+      params: limit ? { limit } : {}
+    });
+    return response.data;
+  },
+};
+
+// Farm API endpoints
+export const farmAPI = {
+  createFarm: async (farmData: {
+    farmName: string;
+    location: string;
+    crop: string;
+    sizeInAcres: number;
+    farmerNIC: string;
+    district: string;
+    status?: string;
+  }) => {
+    const response = await api.post('/api/farms', farmData);
+    return response.data;
+  },
+
+  updateFarm: async (farmId: string, farmData: {
+    farmName?: string;
+    location?: string;
+    crop?: string;
+    sizeInAcres?: number;
+    district?: string;
+    status?: string;
+  }) => {
+    const response = await api.put(`/api/farms/${farmId}`, farmData);
+    return response.data;
+  },
+
+  deleteFarm: async (farmId: string) => {
+    const response = await api.delete(`/api/farms/${farmId}`);
+    return response.data;
+  },
+
+  addHarvestAndPoints: async (harvestData: {
+    farmId: string;
+    season: string;
+    year: string;
+    harvestQty: number;
+  }) => {
+    const response = await api.post('/api/farms/addharvestandpoints', harvestData);
+    return response.data;
+  },
+
+  recalculatePoints: async () => {
+    const response = await api.post('/api/farms/recalculate-points');
+    return response.data;
+  },
+
+  getAllFarms: async () => {
+    const response = await api.get('/api/farms');
+    return response.data;
+  },
+
+  getFarmById: async (farmId: string) => {
+    const response = await api.get(`/api/farms/${farmId}`);
+    return response.data;
+  },
+
+  getHarvestHistory: async () => {
+    const response = await api.get('/api/farms/harvests');
+    return response.data;
+  },
+
+  getFarmerReport: async () => {
+    const response = await api.get('/api/farms/my-report');
+    return response.data;
+  },
+
+  getAllCrops: async () => {
+    const response = await api.get('/api/farms/crops/list');
+    return response.data;
+  },
+};
+
+// Average Yield API endpoints
+export const avgYieldAPI = {
+  getAll: async () => {
+    const response = await api.get('/api/avgYields');
+    return response.data;
+  },
+
+  create: async (yieldData: {
+    crop: string;
+    location: string;
+    avgYield: number;
+  }) => {
+    const response = await api.post('/api/avgYields', yieldData);
+    return response.data;
+  },
+};
+
+// Inquiry API endpoints
+export const inquiryAPI = {
+  createInquiry: async (inquiryData: {
+    subject: string;
+    message: string;
+    farmerId?: string;
+  }) => {
+    const response = await api.post('/api/inquiries', inquiryData);
+    return response.data;
+  },
+
+  getAllInquiries: async () => {
+    const response = await api.get('/api/inquiries');
+    return response.data;
+  },
+
+  updateStatus: async (inquiryId: string, status: string) => {
+    const response = await api.put(`/api/inquiries/${inquiryId}/status`, { status });
+    return response.data;
+  }
+};
+
+// Export the axios instance for custom requests
+export default api;
