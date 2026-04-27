@@ -2,10 +2,7 @@ import { useEffect, useState } from 'react';
 import { Download, TrendingUp, BarChart3, PieChart } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart as RePieChart, Pie, Cell } from 'recharts';
 import { farmAPI } from '../services/api';
-import { useHomeDashboardData } from './HomePage';
 import { SummaryCard } from './SummaryCard';
-
-
 
 export function ReportsPage() {
   const [reportData, setReportData] = useState<{
@@ -15,7 +12,6 @@ export function ReportsPage() {
     harvestTrend?: { month: string; qty: number }[];
   } | null>(null);
   const [loading, setLoading] = useState(true);
-  const { totalFarmers, totalHarvest, yieldPerAcre, loading: metricsLoading, error: metricsError } = useHomeDashboardData();
 
   useEffect(() => {
     const fetchReport = async () => {
@@ -49,43 +45,8 @@ export function ReportsPage() {
     return <div className="p-8 text-center text-gray-500">Loading reports...</div>;
   }
 
-  // show any metrics loading or error states above summary cards
-  const renderMetricsSection = () => {
-    if (metricsLoading) {
-      return <div className="p-4 text-center text-gray-500">Loading metrics...</div>;
-    }
-    if (metricsError) {
-      return <div className="p-4 text-center text-red-600">Error loading metrics: {metricsError}</div>;
-    }
-
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-        <SummaryCard
-          title="Total Farmers"
-          value={totalFarmers.toLocaleString()}
-          hoverable={false}
-        />
-        <SummaryCard
-          title="Total Harvest"
-          value={totalHarvest.toLocaleString()}
-          unit="kg"
-          hoverable={false}
-        />
-        <SummaryCard
-          title="Yield per Acre"
-          value={yieldPerAcre.toFixed(2)}
-          unit="kg/acre"
-          hoverable={false}
-        />
-      </div>
-    );
-  };
-
   return (
     <div className="space-y-6">
-      {/* Metrics pulled from home dashboard logic */}
-      {renderMetricsSection()}
-
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         {/* Total Points Card */}
@@ -184,8 +145,6 @@ export function ReportsPage() {
           </ResponsiveContainer>
         </div>
       </div>
-
-
 
       {/* Summary Tables */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
