@@ -40,7 +40,7 @@ AgriConnect is a digital platform designed to connect farmers with agricultural 
 
 ### Frontend
 - React  
-- HTML, Tailwind CSS, JavaScript  
+- HTML, Tailwind CSS, JavaScript, TypeScript 
 
 ### Backend
 - Express.js  
@@ -70,6 +70,10 @@ AgriConnect is a digital platform designed to connect farmers with agricultural 
 
 <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript">
   <img src="https://github.com/tandpfun/skill-icons/raw/main/icons/JavaScript.svg" width="50"/>
+</a>
+
+<a href="https://www.typescriptlang.org/">
+  <img src="https://github.com/tandpfun/skill-icons/blob/main/icons/TypeScript.svg" width="50"/>
 </a>
 
 <a href="https://nodejs.org">
