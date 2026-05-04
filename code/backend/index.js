@@ -18,8 +18,14 @@ dotenv.config()
 const app = express()
 
 // Enable CORS for frontend
+const allowedOrigins = [
+    process.env.FRONTEND_URL,
+    'http://localhost:3000',
+    'http://localhost:5173'
+].filter(Boolean)
+
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: allowedOrigins,
     credentials: true
 }))
 
@@ -82,7 +88,7 @@ app.use("/api/inquiries", inquiryRouter)
 
 
 
-app.listen(5000, () => {
+app.listen(5000, '0.0.0.0', () => {
     console.log("server started at port 5000")
 })
 
