@@ -12,14 +12,24 @@ import farmRouter from "./routers/farmRouter.js"
 import jwt from "jsonwebtoken"
 import avgYieldRouter from "./routers/avgYieldRouter.js"
 import inquiryRouter from "./routers/inquiryRouter.js"
+
+import dns from "node:dns"
+dns.setServers(['1.1.1.1', '8.8.8.8'])
+
 dotenv.config()
 
 
 const app = express()
 
 // Enable CORS for frontend
+const allowedOrigins = [
+    process.env.FRONTEND_URL,
+    'http://localhost:3000',
+    'http://localhost:5173'
+].filter(Boolean)
+
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: allowedOrigins,
     credentials: true
 }))
 
@@ -82,7 +92,7 @@ app.use("/api/inquiries", inquiryRouter)
 
 
 
-app.listen(5000, () => {
+app.listen(5000, '0.0.0.0', () => {
     console.log("server started at port 5000")
 })
 
