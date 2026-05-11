@@ -12,6 +12,10 @@ import farmRouter from "./routers/farmRouter.js"
 import jwt from "jsonwebtoken"
 import avgYieldRouter from "./routers/avgYieldRouter.js"
 import inquiryRouter from "./routers/inquiryRouter.js"
+
+import dns from "node:dns"
+dns.setServers(['1.1.1.1', '8.8.8.8'])
+
 dotenv.config()
 
 
