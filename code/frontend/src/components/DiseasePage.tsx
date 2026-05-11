@@ -1,43 +1,127 @@
 import { useState } from 'react';
 import { Upload, MapPin, Loader2, CheckCircle, AlertCircle, Send } from 'lucide-react';
+import uploadfile from '../utils/mediaUpload';
+
+type PredictionResult = {
+  class_id: number;
+  disease: string;
+  confidence: number;
+  all_probabilities: Record<string, number>;
+  imageUrl?: string;
+};
+
+const DISEASE_DETAILS: Record<string, { label: string; description: string; treatment: string; prevention: string }> = {
+  bacterial_leaf_blight: {
+    label: 'Bacterial Leaf Blight',
+    description: 'A bacterial disease that causes wilting, yellowing, and leaf drying.',
+    treatment: 'Remove infected plants, avoid excess nitrogen, and use recommended bactericide guidance from local agronomy services.',
+    prevention: 'Use resistant varieties, keep field drainage good, and avoid unnecessary leaf damage during field work.',
+  },
+  brown_spot: {
+    label: 'Brown Spot',
+    description: 'A fungal disease that creates brown lesions on leaves and can reduce grain quality.',
+    treatment: 'Apply recommended fungicide practices and correct nutrient imbalance, especially potassium and silicon where needed.',
+    prevention: 'Maintain balanced fertilization, avoid water stress, and monitor fields regularly during humid periods.',
+  },
+  healthy: {
+    label: 'Healthy',
+    description: 'The uploaded leaf does not show a strong sign of disease from the model output.',
+    treatment: 'No treatment is needed. Keep monitoring the crop and maintain normal agronomic practices.',
+    prevention: 'Continue routine scouting, proper irrigation, and balanced fertilization to preserve crop health.',
+  },
+  leaf_blast: {
+    label: 'Leaf Blast',
+    description: 'A common fungal rice disease that creates diamond-shaped lesions and rapid leaf damage.',
+    treatment: 'Use a recommended fungicide program and remove heavily infected debris when possible.',
+    prevention: 'Choose resistant varieties, avoid excess nitrogen, and maintain proper spacing for airflow.',
+  },
+  leaf_scald: {
+    label: 'Leaf Scald',
+    description: 'A fungal disease that appears as elongated lesions with pale centers and darker edges.',
+    treatment: 'Apply an approved fungicide if recommended and reduce plant stress with balanced crop care.',
+    prevention: 'Improve field sanitation, avoid over-fertilization, and inspect crops after wet weather.',
+  },
+  narrow_brown_spot: {
+    label: 'Narrow Brown Spot',
+    description: 'A fungal disease that produces narrow brown lines on leaves and can reduce photosynthesis.',
+    treatment: 'Use fungicide guidance from local extension services and correct nutrient deficiencies.',
+    prevention: 'Maintain healthy spacing, balanced fertilization, and regular disease scouting.',
+  },
+};
+
+function formatDiseaseName(disease: string) {
+  return DISEASE_DETAILS[disease]?.label ?? disease.replace(/_/g, ' ');
+}
+
+function getSeverity(confidence: number) {
+  if (confidence >= 0.9) return 'High';
+  if (confidence >= 0.7) return 'Medium';
+  return 'Low';
+}
 
 export function DiseasePage() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState<any>(null);
+  const [analysisResult, setAnalysisResult] = useState<PredictionResult | null>(null);
   const [location, setLocation] = useState('');
   const [notes, setNotes] = useState('');
   const [reportSent, setReportSent] = useState(false);
+  const [analysisError, setAnalysisError] = useState('');
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setSelectedFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         setSelectedImage(reader.result as string);
         setAnalysisResult(null);
+        setAnalysisError('');
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const handleAnalyze = () => {
-    if (!selectedImage) return;
+  const handleAnalyze = async () => {
+    if (!selectedImage || !selectedFile) return;
 
     setIsAnalyzing(true);
-    // Simulate AI analysis
-    setTimeout(() => {
+
+    try {
+      setAnalysisError('');
+
+      const imageUrl = await uploadfile(selectedFile);
+      const response = await fetch('http://localhost:8000/api/predict_url', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          image_url: imageUrl,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Disease prediction failed');
+      }
+
+      const prediction = data.prediction;
+
       setAnalysisResult({
-        disease: 'Leaf Blast',
-        confidence: 92.5,
-        severity: 'High',
-        riskLevel: 'high',
-        description: 'Leaf blast is a fungal disease caused by Pyricularia oryzae. It affects leaves, nodes, and panicles.',
-        treatment: 'Apply Tricyclazole 75% WP at 0.6g/L. Spray every 7-10 days until symptoms reduce.',
-        prevention: 'Use resistant varieties, maintain proper spacing, avoid excessive nitrogen fertilization.',
+        class_id: prediction.class_id,
+        disease: prediction.disease,
+        confidence: prediction.confidence,
+        all_probabilities: prediction.all_probabilities,
+        imageUrl,
       });
       setIsAnalyzing(false);
-    }, 2500);
+    } catch (error: any) {
+      setAnalysisError(error?.message || 'Failed to analyze the image');
+      setIsAnalyzing(false);
+    }
   };
 
   const handleSendReport = () => {
@@ -95,7 +179,9 @@ export function DiseasePage() {
                 <button
                   onClick={() => {
                     setSelectedImage(null);
+                    setSelectedFile(null);
                     setAnalysisResult(null);
+                    setAnalysisError('');
                   }}
                   className="absolute top-3 right-3 bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg transition-colors"
                 >
@@ -142,13 +228,13 @@ export function DiseasePage() {
         {/* Analyze Button */}
         <button
           onClick={handleAnalyze}
-          disabled={!selectedImage || isAnalyzing}
+          disabled={!selectedImage || !selectedFile || isAnalyzing}
           className="w-full py-3 md:py-4 bg-orange-400 hover:bg-orange-500 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-xl font-medium flex items-center justify-center gap-3 transition-all text-sm md:text-base"
         >
           {isAnalyzing ? (
             <>
               <Loader2 className="w-4 h-4 md:w-5 md:h-5 animate-spin" />
-              Analyzing Disease...
+              Uploading and Analyzing...
             </>
           ) : (
             <>
@@ -157,6 +243,12 @@ export function DiseasePage() {
             </>
           )}
         </button>
+
+        {analysisError && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700">
+            {analysisError}
+          </div>
+        )}
 
         {/* Analysis Results */}
         {analysisResult && (
@@ -174,40 +266,54 @@ export function DiseasePage() {
             <div className="space-y-4">
               <div>
                 <p className="text-xs md:text-sm text-gray-600 mb-1">Detected Disease</p>
-                <p className="text-xl md:text-2xl font-bold text-gray-900">{analysisResult.disease}</p>
+                <p className="text-xl md:text-2xl font-bold text-gray-900">{formatDiseaseName(analysisResult.disease)}</p>
               </div>
 
               <div className="flex gap-4 md:gap-6">
                 <div>
                   <p className="text-xs md:text-sm text-gray-600 mb-1">Confidence</p>
-                  <p className="text-base md:text-lg font-semibold text-green-600">{analysisResult.confidence}%</p>
+                  <p className="text-base md:text-lg font-semibold text-green-600">{(analysisResult.confidence * 100).toFixed(2)}%</p>
                 </div>
                 <div>
                   <p className="text-xs md:text-sm text-gray-600 mb-1">Severity</p>
-                  <span className={`inline-flex px-2 md:px-3 py-0.5 md:py-1 rounded-full text-xs md:text-sm font-medium ${analysisResult.severity === 'High'
+                  <span className={`inline-flex px-2 md:px-3 py-0.5 md:py-1 rounded-full text-xs md:text-sm font-medium ${getSeverity(analysisResult.confidence) === 'High'
                       ? 'bg-red-100 text-red-700'
-                      : analysisResult.severity === 'Medium'
+                      : getSeverity(analysisResult.confidence) === 'Medium'
                         ? 'bg-orange-100 text-orange-700'
                         : 'bg-yellow-100 text-yellow-700'
                     }`}>
-                    {analysisResult.severity}
+                    {getSeverity(analysisResult.confidence)}
                   </span>
                 </div>
               </div>
 
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 md:p-4">
                 <h4 className="font-semibold text-gray-800 mb-2 text-xs md:text-sm">Description</h4>
-                <p className="text-xs md:text-sm text-gray-700">{analysisResult.description}</p>
+                <p className="text-xs md:text-sm text-gray-700">{DISEASE_DETAILS[analysisResult.disease]?.description ?? 'No description available for this prediction.'}</p>
               </div>
 
               <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 md:p-4">
                 <h4 className="font-semibold text-gray-800 mb-2 text-xs md:text-sm">Recommended Treatment</h4>
-                <p className="text-xs md:text-sm text-gray-700">{analysisResult.treatment}</p>
+                <p className="text-xs md:text-sm text-gray-700">{DISEASE_DETAILS[analysisResult.disease]?.treatment ?? 'Follow agricultural guidance for treatment.'}</p>
               </div>
 
               <div className="bg-green-50 border border-green-200 rounded-lg p-3 md:p-4">
                 <h4 className="font-semibold text-gray-800 mb-2 text-xs md:text-sm">Prevention</h4>
-                <p className="text-xs md:text-sm text-gray-700">{analysisResult.prevention}</p>
+                <p className="text-xs md:text-sm text-gray-700">{DISEASE_DETAILS[analysisResult.disease]?.prevention ?? 'Continue monitoring and follow local crop protection practices.'}</p>
+              </div>
+
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 md:p-4">
+                <h4 className="font-semibold text-gray-800 mb-3 text-xs md:text-sm">Backend Probabilities</h4>
+                <div className="space-y-2">
+                  {Object.entries(analysisResult.all_probabilities)
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([label, value]) => (
+                      <div key={label} className="flex items-center justify-between gap-3 text-xs md:text-sm">
+                        <span className="text-gray-700">{formatDiseaseName(label)}</span>
+                        <span className="font-medium text-gray-900">{(value * 100).toFixed(2)}%</span>
+                      </div>
+                    ))}
+                </div>
               </div>
             </div>
 
