@@ -59,6 +59,11 @@ function getSeverity(confidence: number) {
   return 'Low';
 }
 
+const PREDICT_URL_ENDPOINTS = [
+  'http://localhost:8000/api/predict_url',
+  'https://ai-plant-disease-scanner.onrender.com/api/predict_url',
+];
+
 export function DiseasePage() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -92,23 +97,38 @@ export function DiseasePage() {
       setAnalysisError('');
 
       const imageUrl = await uploadfile(selectedFile);
-      const response = await fetch('http://localhost:8000/api/predict_url', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          image_url: imageUrl,
-        }),
-      });
+      let prediction: any = null;
+      let lastError = 'Disease prediction failed';
 
-      const data = await response.json();
+      for (const endpoint of PREDICT_URL_ENDPOINTS) {
+        try {
+          const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              image_url: imageUrl,
+            }),
+          });
 
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Disease prediction failed');
+          const data = await response.json();
+
+          if (!response.ok || !data.success) {
+            lastError = data.error || `Prediction failed at ${endpoint}`;
+            continue;
+          }
+
+          prediction = data.prediction;
+          break;
+        } catch (endpointError: any) {
+          lastError = endpointError?.message || `Unable to reach ${endpoint}`;
+        }
       }
 
-      const prediction = data.prediction;
+      if (!prediction) {
+        throw new Error(lastError);
+      }
 
       setAnalysisResult({
         class_id: prediction.class_id,
