@@ -1,0 +1,84 @@
+name: Full Stack Auto Deploy CI/CD
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+
+  # =========================
+  # FRONTEND CI/CD - VERCEL
+  # =========================
+  frontend:
+    name: Frontend Deploy to Vercel
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build Frontend
+        run: npm run build
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel
+
+      - name: Pull Vercel Environment
+        run: |
+          vercel pull --yes \
+          --environment=production \
+          --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build Vercel Project
+        run: |
+          vercel build --prod \
+          --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy to Vercel
+        run: |
+          vercel deploy --prebuilt --prod \
+          --token=${{ secrets.VERCEL_TOKEN }}
+
+  # =========================
+  # BACKEND CI/CD - RENDER
+  # =========================
+  backend:
+    name: Backend Deploy to Render
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Run Backend Tests
+        run: |
+          echo "Add your tests here"
+
+      - name: Trigger Render Deployment
+        run: |
+          curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}
