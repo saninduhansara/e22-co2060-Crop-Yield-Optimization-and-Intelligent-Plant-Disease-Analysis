@@ -2,6 +2,8 @@
  * Main application entry point for the AgriConnect backend.
  * Configures Express, CORS, MongoDB connection, routing, and global JWT middleware.
  */
+
+/*Test CICD */
 import express from "express"
 import mongoose from "mongoose"
 import dotenv from "dotenv"
