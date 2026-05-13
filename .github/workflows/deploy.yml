@@ -16,7 +16,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: frontend
+        working-directory: code/frontend
 
     steps:
       - name: Checkout Repository
@@ -61,7 +61,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: backend
+        working-directory: code/backend
 
     steps:
       - name: Checkout Repository
